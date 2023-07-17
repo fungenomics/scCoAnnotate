@@ -3,6 +3,8 @@ library(tidyverse)
 library(SingleR)
 library(SingleCellExperiment)
 
+set.seed(1234)
+
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
@@ -13,8 +15,7 @@ threads = as.numeric(args[4])
 
 # read reference matrix and transpose 
 message('@ READ REF')
-ref = data.table::fread(ref_path, data.table=F, header=T, nThread=threads) %>%
-      as.data.frame() %>% 
+ref = data.table::fread(ref_path, nThread=threads, header=T, data.table=F) %>%
       column_to_rownames('V1') %>%
       t()
 message('@ DONE')
@@ -28,10 +29,11 @@ ref = scuttle::logNormCounts(ref)
 message('@ DONE')
 
 # Read Reference labels
-labels = data.table::fread(lab_path)
+labels = data.table::fread(lab_path, header=T, data.table=F) %>%
+         column_to_rownames('V1')
 
 # check if cell names are in the same order in labels and ref
-order = all(labels$cell == colnames(ref))
+order = all(rownames(labels) == colnames(ref))
 
 # throw error if order is not the same 
 if(!order){

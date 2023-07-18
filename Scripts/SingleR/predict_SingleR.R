@@ -51,7 +51,7 @@ pred_labs = data.frame(SingleR = pred$labels,
 print(pred_labs)
 
 # write prediction 
-data.table::fwrite(pred_labs, file = paste0(out_path, 'SingleR_pred.csv'))
+data.table::fwrite(pred_labs, file = paste0(out_path, '/SingleR_pred.csv'))
 
 #----------------------------------------
 

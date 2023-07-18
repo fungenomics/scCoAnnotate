@@ -11,7 +11,7 @@ lab_path = args[2]
 out_path = args[3]
 threads = as.numeric(args[4])
 
-#--------------- Data --------------
+#--------------- Data -------------------
 
 # read reference matrix and transpose 
 message('@ READ REF')
@@ -20,15 +20,15 @@ ref = data.table::fread(ref_path, nThread=threads, header=T, data.table=F) %>%
       t()
 message('@ DONE')
 
-# Make SingleCellExperiment object
+# make SingleCellExperiment object
 ref = SingleCellExperiment(assays = list(counts = ref))
 
-# Log normalize reference 
+# log normalize reference 
 message('@ NORMALIZE REF')
 ref = scuttle::logNormCounts(ref)
 message('@ DONE')
 
-# Read Reference labels
+# read reference labels
 labels = data.table::fread(lab_path, header=T, data.table=F) %>%
          column_to_rownames('V1')
 
@@ -40,11 +40,11 @@ if(!order){
     stop("@ Order of cells in reference and labels do not match")
 }
 
-#------------- SingleR -------------
+#------------- Train SingleR -------------
 
-# Train SingleR
+# train SingleR
 message('@ TRAINING MODEL')
-singler = trainSingleR(ref, labels=labels$label, num.threads = threads)
+singler = trainSingleR(ref, labels=labels$label, num.threads = threads, assay.type = "logcounts")
 message('@ DONE')
 
 # save trained model 
@@ -52,4 +52,4 @@ message('@ SAVE MODEL')
 save(singler, file = paste0(out_path, '/model_SingleR.Rda'))
 message('@ DONE')
 
-#-----------------------------------
+#----------------------------------------

@@ -70,11 +70,57 @@ rule concat:
 
 """
 Rules for R based tools.
-"""
-
 
 
 #---------------------------------------------------------------------------
+
+rule train_SingleR:
+  input:
+    reference = config['output_dir'] + "/expression.csv",
+    labfile = config['reference_annotations']
+  output:
+    model = config['output_dir'] + "/SingleR/SingleR_model.Rda"
+  params:
+      basedir = {workflow.basedir}
+  log: 
+    config['output_dir'] + "/SingleR/SingleR.log"
+  benchmark:
+    config['output_dir'] + "/SingleR/SingleR_train_benchmark.txt"
+  threads: 1
+  resources: 
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/SingleR/train_SingleR.R \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    &> {log}
+    """
+
+rule predict_SingleR:
+  input:
+    query = config['output_dir'] + "/{sample}/expression.csv",
+    model = config['output_dir'] + "/SingleR/SingleR_model.Rda"
+  output:
+    pred = config['output_dir'] + "/{sample}/SingleR/SingleR_pred.csv"
+  params:
+      basedir = {workflow.basedir}
+  log: 
+    config['output_dir'] + "/{sample}/SingleR/SingleR.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/SingleR/SingleR_predict_benchmark.txt"
+  threads: 1
+  resources: 
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/SingleR/predict_SingleR.R \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {threads} \
+    &> {log}
+    """
 
 rule correlation:
   input:
@@ -133,8 +179,6 @@ rule SingleCellNet:
     "--query {input.query} "
     "--output_dir {input.output_dir} "
     "&> {log}"   
-<<<<<<< HEAD
-=======
 
 rule scPred:
   input:
@@ -155,7 +199,6 @@ rule scPred:
     "--query {input.query} "
     "--output_dir {input.output_dir} "
     "&> {log}"   
->>>>>>> 64bc0da (tested versions of SingleR scripts and Snakefile updated to split SingleR rule into training and predicting. Everything working on test data.)
     
 rule CHETAH:
   input:
@@ -281,7 +324,6 @@ rule scHPL:
     "--labs {input.labfile} "
     "--query {input.query} "
     "--output_dir {input.output_dir} "
-<<<<<<< HEAD
     "&> {log}"  
 
 rule scPred:
@@ -324,6 +366,3 @@ rule SingleR:
     "--query {input.query} "
     "--output_dir {input.output_dir} "
     "&> {log}"
-=======
-    "&> {log}"  
->>>>>>> 64bc0da (tested versions of SingleR scripts and Snakefile updated to split SingleR rule into training and predicting. Everything working on test data.)

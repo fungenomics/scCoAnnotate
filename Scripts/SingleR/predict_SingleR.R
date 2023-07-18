@@ -2,6 +2,7 @@
 library(tidyverse)
 library(SingleR)
 library(SingleCellExperiment)
+library(WGCNA)
 
 set.seed(1234)
 
@@ -15,7 +16,7 @@ threads = as.numeric(args[4])
 
 # read query matrix and transpose 
 message('@ READ QUERY')
-query = data.table::fread(sample_path, nThread=threads, header=T, data.table=F, nrow = 500) %>%
+query = data.table::fread(sample_path, nThread=threads, header=T, data.table=F) %>%
         column_to_rownames('V1') 
 message('@ DONE')
 
@@ -24,15 +25,14 @@ message('@ LOAD MODEL')
 load(model_path)
 message('@ DONE')
 
-# Make SingleCellExperiment object from query
+# Make SingleCellExperiment object from query (transpose query first)
+query = transposeBigData(query, blocksize = 10000)
 query = SingleCellExperiment(assays = list(counts = query))
 
 # Log normalize query counts 
 message('@ NORMALIZE QUERY')
 query = scuttle::logNormCounts(query)
 message('@ DONE')
-print(query)
-
 
 #----------- Predict SingleR ------------
 
@@ -41,15 +41,11 @@ message('@ PREDICT LABELS')
 pred = classifySingleR(query, singler, assay.type = "logcounts")
 message('@ DONE')
 
-save(pred, file = paste0(out_path, '/SingleR_pred.Rda'))
-
-pred_labs = data.frame(SingleR = pred$labels,
-	               row.names = rownames(pred))
-
-print(pred_labs)
+pred_labs = data.frame(cell = rownames(pred),
+	               SingleR = pred$labels)
 
 # write prediction 
-data.table::fwrite(pred_labs, file = paste0(out_path, '/SingleR_pred.csv'))
+data.table::fwrite(pred_labs, file = out_path)
 
 #----------------------------------------
 

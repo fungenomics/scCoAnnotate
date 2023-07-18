@@ -1,37 +1,33 @@
 # target directory
-output_dir: /project/kleinman/hussein.lakkis/from_hydra/test
+output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/out
+
 # path to reference to train classifiers on (cell x gene raw counts)
-training_reference: /project/kleinman/hussein.lakkis/from_hydra/2022_01_10-Datasets/Cortex/p0/expression.csv
+training_reference: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
+
 # path to annotations for the reference (csv file with cellname and label headers)
-reference_annotations: /project/kleinman/hussein.lakkis/from_hydra/2022_01_10-Datasets/Cortex/p0/labels.csv
+reference_annotations: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
+
 # path to query datasets (cell x gene raw counts)
 query_datasets:
-      - /project/kleinman/hussein.lakkis/from_hydra/Collab/HGG_Selin_Revision/test/BT2016062/expression.csv
-      - /project/kleinman/hussein.lakkis/from_hydra/Collab/HGG_Selin_Revision/test/P-1694_S-1694_multiome/expression.csv
-      - /project/kleinman/hussein.lakkis/from_hydra/Collab/HGG_Selin_Revision/test/P-1701_S-1701_multiome/expression.csv
+      - /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
+      - /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
+
 # step to check if some genes are kept in the common gene space between ref and query
 check_genes: False
-# path for the genes required
 genes_required: Null
+
 # rejection option for SVM
 rejection: True
+
 # classifiers to run
 tools_to_run:
-      - ACTINN
-      - scHPL
-      - scClassify
-      - correlation
-      - scmapcluster
-      - scPred
-      - SingleCellNet
-      - SVM_reject
       - SingleR
-      - CHETAH
-      - scmapcell
-      - SciBet
+      - correlation 
+
 # benchmark tools on reference
 benchmark: False
-plots: True
+
+plots: False
 consensus:
       - all
 

@@ -2,6 +2,7 @@
 library(tidyverse)
 library(SingleR)
 library(SingleCellExperiment)
+library(WGCNA)
 
 set.seed(1234)
 
@@ -12,7 +13,6 @@ out_path = args[3]
 threads = as.numeric(args[4])
 
 #--------------- Data -------------------
-
 # read reference matrix and transpose 
 message('@ READ REF')
 ref = data.table::fread(ref_path, nThread=threads, header=T, data.table=F) %>%
@@ -24,15 +24,16 @@ labels = data.table::fread(lab_path, header=T, data.table=F) %>%
          column_to_rownames('V1')
 
 # check if cell names are in the same order in labels and ref
-order = all(rownames(labels..) == rownames(ref..))
+order = all(as.character(rownames(labels)) == as.character(rownames(ref)))
 
 # throw error if order is not the same 
 if(!order){
     stop("@ Order of cells in reference and labels do not match")
 }
 
-# make SingleCellExperiment object
-ref = SingleCellExperiment(assays = list(counts = t(ref)))
+# make SingleCellExperiment object (transpose ref first)
+ref = transposeBigData(ref, blocksize = 10000)
+ref = SingleCellExperiment(assays = list(counts = ref))
 
 # log normalize reference 
 message('@ NORMALIZE REF')
@@ -48,7 +49,7 @@ message('@ DONE')
 
 # save trained model 
 message('@ SAVE MODEL')
-save(singler, file = paste0(out_path, '/model_SingleR.Rda'))
+save(singler, file = out_path)
 message('@ DONE')
 
 #----------------------------------------

@@ -2,6 +2,7 @@
 library(scPred)
 library(Seurat)
 library(tidyverse)
+library(doParallel)
 
 set.seed(1234)
 
@@ -10,6 +11,8 @@ ref_path = args[1]
 lab_path = args[2]
 out_path = args[3]
 threads = as.numeric(args[4])
+model_dir = args[5]
+model = args[6]
 
 #--------------- Data -------------------
 
@@ -48,16 +51,19 @@ ref = getFeatureSpace(ref, "label")
 
 #------------- Train scPred -------------
 
-# train model 
-scpred = trainModel(ref)
+# train model (parallelized) 
+cl = makePSOCKcluster(threads)
+registerDoParallel(cl)
+scpred = trainModel(ref, model = model, allowParallel = T)
+stopCluster(cl)
 
 # print model info 
 get_scpred(scpred)
 
-# Plot prob (implement extra output later)
-#pdf('plot_prob')
-#plot_probabilities(scpred)
-#dev.off()
+# Plot prob 
+pdf(paste0(model_dir, 'qc_plots.pdf'), width=10, height=10)
+plot_probabilities(scpred)
+dev.off()
 
 # save trained model 
 message('@ SAVE MODEL')

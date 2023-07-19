@@ -129,7 +129,9 @@ rule train_scPred:
   output:
     model = config['output_dir'] + "/scPred/scPred_model.Rda"
   params:
-      basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    modeldir = config['output_dir'] + "/scPred/", 
+    model = "svmRadial"
   log: 
     config['output_dir'] + "/scPred/scPred.log"
   benchmark:
@@ -143,6 +145,8 @@ rule train_scPred:
     {input.labfile} \
     {output.model} \
     {threads} \
+    {params.modeldir} \
+    {params.model} \
     &> {log}
     """
 

@@ -1,4 +1,7 @@
 # load libraries and arguments 
+library(scPred)
+library(Seurat)
+library(tidyverse)
 
 set.seed(1234)
 
@@ -12,7 +15,7 @@ threads = as.numeric(args[4])
 
 # read query matrix 
 message('@ READ QUERY')
-query = data.table::fread(sample_path, nThread=threads, header=T, data.table=F) %>%
+query = data.table::fread(query_path, nThread=threads, header=T, data.table=F) %>%
         column_to_rownames('V1') 
 message('@ DONE')
 
@@ -32,10 +35,15 @@ query = query %>%
 #----------- Predict scPred -------------
 
 # predict cells 
+message('@ PREDICT')
 query = scPredict(query, scpred)
+message('@ DONE')
 
-pred_labs = data.frame(cell = rownames(query),
-                       scPred = query$scpred)
+head(colnames(query))
+head(query$scpred_prediction)
+
+pred_labs = data.frame(cell = colnames(query),
+                       scPred = query$scpred_prediction)
 
 # write prediction 
 data.table::fwrite(pred_labs, file = out_path)

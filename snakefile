@@ -122,6 +122,56 @@ rule predict_SingleR:
     &> {log}
     """
 
+rule train_scPred:
+  input:
+    reference = config['output_dir'] + "/expression.csv",
+    labfile = config['reference_annotations']
+  output:
+    model = config['output_dir'] + "/scPred/scPred_model.Rda"
+  params:
+      basedir = {workflow.basedir}
+  log: 
+    config['output_dir'] + "/scPred/scPred.log"
+  benchmark:
+    config['output_dir'] + "/scPred/scPred_train_benchmark.txt"
+  threads: 1
+  resources: 
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scPred/train_scPred.R \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    &> {log}
+    """
+
+rule predict_scPred:
+  input:
+    query = config['output_dir'] + "/{sample}/expression.csv",
+    model = config['output_dir'] + "/scPred/scPred_model.Rda"
+  output:
+    pred = config['output_dir'] + "/{sample}/scPred/scPred_pred.csv"
+  params:
+      basedir = {workflow.basedir}
+  log: 
+    config['output_dir'] + "/{sample}/scPred/scPred.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/scPred/scPred_predict_benchmark.txt"
+  threads: 1
+  resources: 
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scPred/predict_scPred.R \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {threads} \
+    &> {log}
+    """
+
+#---------------------------------------------------------------------------
+
 rule correlation:
   input:
     reference = "{output_dir}/expression.csv".format(output_dir =config['output_dir']),
@@ -174,26 +224,6 @@ rule SingleCellNet:
   log: expand("{output_dir}/{sample}/SingleCellNet/SingleCellNet.log", sample = samples,output_dir=config["output_dir"])
   shell:
     "Rscript Scripts/run_SingleCellNet.R "
-    "--ref {input.reference} "
-    "--labs {input.labfile} "
-    "--query {input.query} "
-    "--output_dir {input.output_dir} "
-    "&> {log}"   
-
-rule scPred:
-  input:
-    reference = "{output_dir}/expression.csv".format(output_dir =config['output_dir']),
-    labfile = config['reference_annotations'],
-    query = expand("{output_dir}/{sample}/expression.csv",sample = samples,output_dir=config['output_dir']),
-    output_dir =  expand("{output_dir}/{sample}",sample = samples,output_dir=config['output_dir'])
-
-  output:
-    pred = expand("{output_dir}/{sample}/scPred/scPred_pred.csv", sample  = samples,output_dir=config["output_dir"]),
-    query_time = expand("{output_dir}/{sample}/scPred/scPred_query_time.csv",sample  = samples,output_dir=config["output_dir"]),
-    training_time = expand("{output_dir}/{sample}/scPred/scPred_training_time.csv",sample  = samples,output_dir=config["output_dir"])
-  log: expand("{output_dir}/{sample}/scPred/scPred.log", sample = samples,output_dir=config["output_dir"])
-  shell:
-    "Rscript Scripts/run_scPred.R "
     "--ref {input.reference} "
     "--labs {input.labfile} "
     "--query {input.query} "

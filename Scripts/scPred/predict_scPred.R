@@ -35,7 +35,7 @@ query = query %>%
 #----------- Predict scPred -------------
 
 # predict cells 
-message('@ PREDICT')
+message('@ PREDICT LABELS')
 query = scPredict(query, scpred)
 message('@ DONE')
 

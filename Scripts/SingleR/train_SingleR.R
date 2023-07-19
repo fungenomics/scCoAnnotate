@@ -2,7 +2,6 @@
 library(tidyverse)
 library(SingleR)
 library(SingleCellExperiment)
-library(WGCNA)
 
 set.seed(1234)
 
@@ -32,7 +31,7 @@ if(!order){
 }
 
 # make SingleCellExperiment object (transpose ref first)
-ref = transposeBigData(ref, blocksize = 10000)
+ref = t(ref)
 ref = SingleCellExperiment(assays = list(counts = ref))
 
 # log normalize reference 
@@ -44,7 +43,12 @@ message('@ DONE')
 
 # train SingleR
 message('@ TRAINING MODEL')
-singler = trainSingleR(ref, labels=labels$label, num.threads = threads, assay.type = "logcounts")
+singler = trainSingleR(ref, 
+                       labels=labels$label, 
+		       num.threads = threads, 
+		       assay.type = "logcounts",
+		       de.method = "wilcox",
+		       de.n = 50)
 message('@ DONE')
 
 # save trained model 

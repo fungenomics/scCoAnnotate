@@ -8,7 +8,7 @@ set.seed(1234)
 args = commandArgs(trailingOnly = TRUE)
 query_path = args[1]
 model_path = args[2]
-out_path = args[3]
+pred_path = args[3]
 threads = as.numeric(args[4])
 
 #--------------- Data -------------------
@@ -46,6 +46,6 @@ pred_labs = data.frame(cell = colnames(query),
                        scPred = query$scpred_prediction)
 
 # write prediction 
-data.table::fwrite(pred_labs, file = out_path)
+data.table::fwrite(pred_labs, file = pred_path)
 
 #----------------------------------------

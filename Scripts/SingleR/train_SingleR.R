@@ -8,7 +8,7 @@ set.seed(1234)
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
-out_path = args[3]
+model_path = args[3]
 threads = as.numeric(args[4])
 
 #--------------- Data -------------------
@@ -53,7 +53,7 @@ message('@ DONE')
 
 # save trained model 
 message('@ SAVE MODEL')
-save(singler, file = out_path)
+save(singler, file = model_path)
 message('@ DONE')
 
 #----------------------------------------

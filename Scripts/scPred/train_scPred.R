@@ -9,10 +9,12 @@ set.seed(1234)
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
-out_path = args[3]
+model_path = args[3]
 threads = as.numeric(args[4])
-model_dir = args[5]
-model = args[6]
+model_type = args[5]
+
+# path for other outputs (depends on tools)
+out_path = dirname(model_path)
 
 #--------------- Data -------------------
 
@@ -54,20 +56,20 @@ ref = getFeatureSpace(ref, "label")
 # train model (parallelized) 
 cl = makePSOCKcluster(threads)
 registerDoParallel(cl)
-scpred = trainModel(ref, model = model, allowParallel = T)
+scpred = trainModel(ref, model = model_type, allowParallel = T)
 stopCluster(cl)
 
 # print model info 
 get_scpred(scpred)
 
 # Plot prob 
-pdf(paste0(model_dir, 'qc_plots.pdf'), width=10, height=10)
+pdf(paste0(out_path, 'qc_plots.pdf'), width=10, height=10)
 plot_probabilities(scpred)
 dev.off()
 
 # save trained model 
 message('@ SAVE MODEL')
-save(scpred, file = out_path)
+save(scpred, file = model_path)
 message('@ DONE')
 
 #---------------------------------------------

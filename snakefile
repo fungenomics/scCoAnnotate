@@ -127,10 +127,9 @@ rule train_scPred:
     reference = config['output_dir'] + "/expression.csv",
     labfile = config['reference_annotations']
   output:
-    model = config['output_dir'] + "/scPred/scPred_model.Rda"
+    model_type = config['output_dir'] + "/scPred/scPred_model.Rda"
   params:
     basedir = {workflow.basedir},
-    modeldir = config['output_dir'] + "/scPred/", 
     model = "svmRadial"
   log: 
     config['output_dir'] + "/scPred/scPred.log"
@@ -145,8 +144,7 @@ rule train_scPred:
     {input.labfile} \
     {output.model} \
     {threads} \
-    {params.modeldir} \
-    {params.model} \
+    {params.model_type} \
     &> {log}
     """
 

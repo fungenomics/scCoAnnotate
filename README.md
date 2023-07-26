@@ -238,3 +238,25 @@ Detailed documentation for scClassify train and predict scripts, written July 20
 * scClassify train function `train_scClassify()` can either return a list output for the model, or an R object of class `scClassifyTrainModel`, based on boolean argument `returnList`. Both types work as input for prediction with `predict_scClassify()`. However, in order to use `scClassify::cellTypeTree()` to extract and output the tree produced by scClassify during training, the input must be the R object of class `scClassifyTrainModel`. Therefore, I have chosen to set `returnList` in `train_scClassify()` to FALSE (default: TRUE), and use the resulting object for `cellTypeTree()`. (Function documentation [source](https://www.bioconductor.org/packages/release/bioc/manuals/scClassify/man/scClassify.pdf))
 
 * `scClassify::plotCellTypeTree()` produces a ggplot object. Therefore, I am using `ggplot2::ggsave()` to save it as a png file. (Function documentation [source](https://www.bioconductor.org/packages/release/bioc/manuals/scClassify/man/scClassify.pdf))
+
+# scPred
+
+Both reference and query is normaluzed using `Seurat::NormalizeData()`.     
+Needs computed PCA space. Dimesions set to 1:30 according to tutorial.    
+Default model `SVMradial`. Option to switch model should be set up in snakemake.   
+
+Normalization and parameters based on this tutorial:   
+https://powellgenomicslab.github.io/scPred/articles/introduction.html
+
+# SingleR 
+
+Both reference and query is normaluzed using `scuttle::logNormCounts()`. Both reference and query is converted to SingleCellExperiment objects before normalization.   
+
+Deviation from default parameters: 
+* `de.method = de.method="wilcox"`
+Method for generating marker genes for each class in reference. Wilcox is recomended when single cell data is used as reference
+* `de.n = 50` 
+Number of marker genes to use for each class. Default is `de.n = 10`. Seemed to low so chnaged to 50 (arbitrary). Should be tested with benchmarking at some point (?)
+
+Normalization and parameters based on this tutorial:    
+http://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html#3_Using_single-cell_references

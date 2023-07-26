@@ -242,7 +242,7 @@ Detailed documentation for scClassify train and predict scripts, written July 20
 # scPred
 
 Both reference and query is normaluzed using `Seurat::NormalizeData()`.     
-Needs computed PCA space. Dimesions set to 1:30 according to tutorial.    
+Needs computed PCA space. Dims set to 1:30 according to tutorial.    
 Default model `SVMradial`. Option to switch model should be set up in snakemake.   
 
 Normalization and parameters based on this tutorial:   

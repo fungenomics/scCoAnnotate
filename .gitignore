@@ -1,0 +1,4 @@
+.Rhistory
+.RData
+out_test/
+.snakemake/

@@ -71,7 +71,6 @@ run_SingleR <- function(RefPath, LabelsPath, QueryPaths, OutputDirs){
      # tidy up prediction dataframe
       Pred_Labels_SingleR <- as.vector(pred$labels)
       Pred_Labels_SingleR <- data.frame(SingleR =Pred_Labels_SingleR,row.names = cellnames)
-      Test_Time_SingleR <- as.numeric(difftime(end_time,start_time,units = 'secs'))
 
       # Create SingleR subdir in target dir
       dir.create(file.path(OutputDir, "SingleR"), showWarnings = FALSE)

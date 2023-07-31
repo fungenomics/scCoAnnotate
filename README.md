@@ -1,48 +1,41 @@
 # scCoAnnotate <img src ="https://user-images.githubusercontent.com/59002771/130340419-3d1eff0b-ecb2-4104-9bf4-1bb968aff433.png" width="50" height="50">
 
+scRNA-seq based prediction of cell-types using an automated Snakemake pipeline to produce a consensus of several prediction tools. 
+
 # Summary
 
-scRNA-seq based prediction of cell-types using a fast and efficient Snakemake pipeline to increase automation and reduce the need to run several scripts and experiments. The pipeline allows the user to select what single-cell annotation tools they want to run on a selected reference to annotate a list of query datasets. It then outputs a consensus of the predictions across tools selected. This pipeline trains classifiers on genes common to the reference and all query datasets. 
-
-The pipeline also features parallelization options to exploit the computational resources available. 
+The pipeline allows the user to select what single-cell annotation tools they want to run on a selected reference to annotate a list of query datasets. It then outputs a consensus of the predictions across tools selected. This pipeline trains classifiers on genes common to the reference and all query datasets. The pipeline also features parallelization options to exploit the computational resources available. 
 
 # Installation and Dependencies
 
-Install [Snakemake](https://snakemake.readthedocs.io/en/stable/) in your linux environment.
+* Install or load [R](https://www.r-project.org/) version 4.2.2 and Python version 3.6.5.
 
-You need to have have [R](https://www.r-project.org/) Version 4.0.5 and Python 3.6.5.
+* Install [Snakemake](https://snakemake.readthedocs.io/en/stable/) version 5.32.0 in your linux environment.
 
 ```bash
 $ conda activate base
 $ mamba create -c conda-forge -c bioconda -n snakemake snakemake
 ```
 
-
-
-You need to also install all the dependancies for the tools you plan on using. You have to copy everything present in this repository and not break paths because it would disrupt the dependancies. One note is to change the paths in run_ACTINN.py to match your own directories when you clone the repository. The paths are in lines 44,45,49.
-
-
-
-Current version of snakemake is snakemake/5.32.0
+* Install all the dependencies for the tools you plan on using. See [the list of dependencies below](#Required-packages)
+  
+* Clone this repository into your directory of choice
 
 # Quickstart
 
-Using snakemake is straight forward and simple. The rules and processes are arranged as per this rule graph:
-
-Rule preprocess gets the common genes and creates temporary reference and query datasets based ob the common genes. Rule concat appends all predictions into one tab seperate file (prediction_summary.tsv) and gets the consensus prediction
-
+The processes of the snakemake pipeline are arranged as per this rule graph:
 
 ![dag](https://user-images.githubusercontent.com/59002771/191146873-5c680bbd-d11c-418c-ae96-7662ee7f99ed.png)
 
+Rule preprocess gets the common genes and creates temporary reference and query datasets based ob the common genes. Rule concat appends all predictions into one tab seperate file (`prediction_summary.tsv`) and gets the consensus prediction.
 
-
-You need to set everything up in a config file and then run the following command:
+After preparing your config file, you can run the pipeline with the following command:
 
 ```bash
 snakemake --use-conda --configfile config.yml --cores 3
 ```
 
-##  Config File:
+##  Config file template
 ```yaml 
 # target directory
 output_dir: <path to outputs directory>
@@ -79,7 +72,7 @@ consensus:
 ```
 
 
-### An Example Config is attached 
+### Example config file 
 
 ```yaml 
 # target directory
@@ -124,7 +117,6 @@ consensus:
 
 An example of the submission file is also available in this repository and is called submit.sh. This is for TORQUE schedulers.
 
-
 ``` bash 
 #!/usr/bin/bash
 #PBS -N scCoAnnotate
@@ -152,7 +144,7 @@ module load python/3.6.5
 snakemake --use-conda --configfile config.yml --cores 3
 ```
 
-# Tools Available
+# Available tools
 
 1. [ACTINN](https://github.com/mafeiyang/ACTINN)
 2. [SciBet](https://github.com/PaulingLiu/scibet)
@@ -166,11 +158,9 @@ snakemake --use-conda --configfile config.yml --cores 3
 11. [scPred](https://github.com/powellgenomicslab/scPred)
 12. [scmap (cell and cluster)](https://bioconductor.org/packages/release/bioc/html/scmap.html)
 
+# Required packages
 
-
-# Packages Required:
-
-## Python Specific Libraries:
+## Python Libraries:
 
 ```
 tensorboard==1.7.0
@@ -190,6 +180,8 @@ scHPL==0.0.2
 ## R Libraries:
 
 ```
+glue
+data.table
 scPred_1.9.2
 SingleCellExperiment_1.12.0
 SummarizedExperiment_1.20.0
@@ -231,7 +223,18 @@ rule {rulename}:
     "&> {log}"   
 
  ```   
- The tool script you add must generate outputs that match the output of the rule..
+ The tool script you add must generate outputs that match the output of the rule.
 
+# scClassify
 
+Detailed documentation for scClassify train and predict scripts, written July 2023 by Bhavyaa Chandarana
 
+* scCoAnnotate input reference and query have cells as the rows, genes as columns. scClassify (and the Seurat function used for normalization, see below) requires genes on the rows and cells on the columns. Therefore, I used `WGCNA::transposeBigData()` (function optimized for large sparse matrices) to transpose the inputs before normalization and training/prediction.
+
+* scClassify documentation defines "log-transformed" data as "size-factor normalized" data ([source](https://www.bioconductor.org/packages/devel/bioc/vignettes/scClassify/inst/doc/scClassify.html#2_Setting_up_the_data)). Function documentation for both `train_scClassify()` and `predict_scClassify()` specify that reference and query data must be "log-transformed" ([source](https://www.bioconductor.org/packages/release/bioc/manuals/scClassify/man/scClassify.pdf)) Therefore, I am normalizing both query and reference with `Seurat::NormalizeData()` (default parameters), which performs log normalization with scale factor 10000 ([source](https://satijalab.org/seurat/reference/normalizedata))
+
+* scClassify train and predict functions `train_scClassify()` and `predict_scClassify()` both allow parallelization with package `BiocParallel`. If greater than one thread was requested by the user, I turn parallelization mode on with parallel = TRUE, and set the `BiocParallel` parameter to `BiocParallel::MulticoreParam()` with workers equal to number of requested threads (based on code in [this issue](https://github.com/SydneyBioX/scClassify/issues/14)) Otherwise I have set parallelization to FALSE and the `BiocParallel` parameter to `BiocParallel::SerialParam()` (which is the default value of the parameter in the functions - [source](https://www.bioconductor.org/packages/release/bioc/manuals/scClassify/man/scClassify.pdf)).
+
+* scClassify train function `train_scClassify()` can either return a list output for the model, or an R object of class `scClassifyTrainModel`, based on boolean argument `returnList`. Both types work as input for prediction with `predict_scClassify()`. However, in order to use `scClassify::cellTypeTree()` to extract and output the tree produced by scClassify during training, the input must be the R object of class `scClassifyTrainModel`. Therefore, I have chosen to set `returnList` in `train_scClassify()` to FALSE (default: TRUE), and use the resulting object for `cellTypeTree()`. (Function documentation [source](https://www.bioconductor.org/packages/release/bioc/manuals/scClassify/man/scClassify.pdf))
+
+* `scClassify::plotCellTypeTree()` produces a ggplot object. Therefore, I am using `ggplot2::ggsave()` to save it as a png file. (Function documentation [source](https://www.bioconductor.org/packages/release/bioc/manuals/scClassify/man/scClassify.pdf))

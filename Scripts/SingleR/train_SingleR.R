@@ -48,7 +48,7 @@ singler = trainSingleR(ref,
 		       num.threads = threads, 
 		       assay.type = "logcounts",
 		       de.method = "wilcox",
-		       de.n = 50)
+		       de.n = 10)
 message('@ DONE')
 
 # save trained model 

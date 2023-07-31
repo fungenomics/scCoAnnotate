@@ -255,8 +255,6 @@ Both reference and query is normaluzed using `scuttle::logNormCounts()`. Both re
 Deviation from default parameters: 
 * `de.method = de.method="wilcox"`
 Method for generating marker genes for each class in reference. Wilcox is recomended when single cell data is used as reference
-* `de.n = 50` 
-Number of marker genes to use for each class. Default is `de.n = 10`. Seemed to low so chnaged to 50 (arbitrary). Should be tested with benchmarking at some point (?)
 
 Normalization and parameters based on this tutorial:    
 http://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html#3_Using_single-cell_references

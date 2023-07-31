@@ -2,3 +2,5 @@
 .RData
 out_test/
 .snakemake/
+config.yml
+test/

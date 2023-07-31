@@ -70,24 +70,27 @@ rule concat:
 
 """
 Rules for R based tools.
-"""
-rule train_scClassify:
+
+
+#---------------------------------------------------------------------------
+
+rule train_SingleR:
   input:
     reference = config['output_dir'] + "/expression.csv",
     labfile = config['reference_annotations']
   output:
-    model = config['output_dir'] + "/scClassify/scClassify_model.Rda"
+    model = config['output_dir'] + "/SingleR/SingleR_model.Rda"
   params:
       basedir = {workflow.basedir}
   log: 
-    config['output_dir'] + "/scClassify/scClassify.log"
+    config['output_dir'] + "/SingleR/SingleR.log"
   benchmark:
-    config['output_dir'] + "/scClassify/scClassify_train_benchmark.txt"
+    config['output_dir'] + "/SingleR/SingleR_train_benchmark.txt"
   threads: 1
   resources: 
   shell:
     """
-    Rscript {params.basedir}/Scripts/scClassify/train_scClassify.R \
+    Rscript {params.basedir}/Scripts/SingleR/train_SingleR.R \
     {input.reference} \
     {input.labfile} \
     {output.model} \
@@ -95,23 +98,23 @@ rule train_scClassify:
     &> {log}
     """
 
-rule predict_scClassify:
+rule predict_SingleR:
   input:
     query = config['output_dir'] + "/{sample}/expression.csv",
-    model = config['output_dir'] + "/scClassify/scClassify_model.Rda"
+    model = config['output_dir'] + "/SingleR/SingleR_model.Rda"
   output:
-    pred = config['output_dir'] + "/{sample}/scClassify/scClassify_pred.csv"
+    pred = config['output_dir'] + "/{sample}/SingleR/SingleR_pred.csv"
   params:
-    basedir = {workflow.basedir}
+      basedir = {workflow.basedir}
   log: 
-    config['output_dir'] + "/{sample}/scClassify/scClassify.log"
+    config['output_dir'] + "/{sample}/SingleR/SingleR.log"
   benchmark:
-    config['output_dir'] + "/{sample}/scClassify/scClassify_predict_benchmark.txt"
+    config['output_dir'] + "/{sample}/SingleR/SingleR_predict_benchmark.txt"
   threads: 1
   resources: 
   shell:
     """
-    Rscript {params.basedir}/Scripts/scClassify/predict_scClassify.R \
+    Rscript {params.basedir}/Scripts/SingleR/predict_SingleR.R \
     {input.query} \
     {input.model} \
     {output.pred} \
@@ -119,6 +122,55 @@ rule predict_scClassify:
     &> {log}
     """
 
+rule train_scPred:
+  input:
+    reference = config['output_dir'] + "/expression.csv",
+    labfile = config['reference_annotations']
+  output:
+    model_type = config['output_dir'] + "/scPred/scPred_model.Rda"
+  params:
+    basedir = {workflow.basedir},
+    model = "svmRadial"
+  log: 
+    config['output_dir'] + "/scPred/scPred.log"
+  benchmark:
+    config['output_dir'] + "/scPred/scPred_train_benchmark.txt"
+  threads: 1
+  resources: 
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scPred/train_scPred.R \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.model_type} \
+    &> {log}
+    """
+
+rule predict_scPred:
+  input:
+    query = config['output_dir'] + "/{sample}/expression.csv",
+    model = config['output_dir'] + "/scPred/scPred_model.Rda"
+  output:
+    pred = config['output_dir'] + "/{sample}/scPred/scPred_pred.csv"
+  params:
+      basedir = {workflow.basedir}
+  log: 
+    config['output_dir'] + "/{sample}/scPred/scPred.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/scPred/scPred_predict_benchmark.txt"
+  threads: 1
+  resources: 
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scPred/predict_scPred.R \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {threads} \
+    &> {log}
+    """
 
 #---------------------------------------------------------------------------
 

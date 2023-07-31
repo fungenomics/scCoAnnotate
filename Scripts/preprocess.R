@@ -87,6 +87,7 @@ options.names <- sapply(listoptions,function(x){
 # Set variables containing command line argument values
 names(options.args) <- unlist(options.names)
 ref <- unlist(options.args['ref'])
+print(ref)
 test <- unlist(options.args['query'])
 output_dir <- unlist(options.args['output_dir' ])
 check_genes <- unlist(options.args['check_genes' ])

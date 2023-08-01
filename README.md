@@ -256,5 +256,20 @@ Deviation from default parameters:
 * `de.method = de.method="wilcox"`
 Method for generating marker genes for each class in reference. Wilcox is recomended when single cell data is used as reference
 
-Normalization and parameters based on this tutorial:    
+Normalization and parameters based on this tutorial:
 http://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html#3_Using_single-cell_references
+
+# singleCellNet
+
+Documentation written by: Rodrigo Lopez Gutierrez
+Date written: 2023-08-01
+
+Input for `singleCellNet` is raw counts for both reference and query. The reference is normalized within the `scn_train()` function. The query is currently not normalized. In the tutorial example they used raw query data. Furthermore, according to the tutorial, the classification step is robust to the normalization and transformation steps of the query data sets. They claim that one can even directly use raw data to query and still obtains accurate classification. This could be tested in the future with our data to see if normalized queries perform better.
+
+Normal parameters were used in both the training and prediction functions, with the expection of the following parameters:
+* In `scn_train()`, we used parameter `nTrees = 500` compared to the default `nTrees = 1000`. This parameter changes the number of trees for the random forest classifier. The value selected is based on Hussein's thesis and is changed to improve the speed of `singleCellNet`. It is mentioned that additional training parameters may need to be adjusted depending on the quality of the reference data. Additionally, tutorial mentions that classifier performance may increase if the values for `nTopGenes` and `nTopGenePairs` are increased.
+* In `scn_predict()`, we used parameter `nrand = 0` compared to the default `nrand = 50`. This parameter changes the number of randomized single cell RNA-seq profiles which serve as positive controls that should be mostly classified as `rand` (unknown) category. If left at default value, then this would generate extra cells that might complicate downstream consolidation of the consensus predictions for each cell. Therefore, the selected value is used to avoid complication. 
+
+singleCellNet workflow was generated following the tutorial below:
+https://pcahan1.github.io/singleCellNet/
+

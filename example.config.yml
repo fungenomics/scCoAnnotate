@@ -31,6 +31,9 @@ tools_to_run:
       - SVMlinear
       - Correlation
 
+consensus_tools:
+      - all 
+
 # benchmark tools on reference
 benchmark:
   n_folds: 3

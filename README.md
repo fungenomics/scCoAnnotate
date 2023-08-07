@@ -69,7 +69,7 @@ devtools::install_github(<pkg>)
 pip install <pkg>
 ```
 
-# Quickstart
+# Quickstart 
 
 UPDATE 
 
@@ -79,19 +79,18 @@ UPDATE
 # UPDATE 
 ```
 
-### An Example Config is attached 
+## Submission File
 
-```yaml 
-# UPDATE
+### Annotation 
+
+```bash 
+# UPDATE 
 ```
 
-## Submission File:
+### Benchmark
 
-An example of the submission file is also available in this repository and is called submit.sh. This is for TORQUE schedulers.
-
-
-``` bash 
-# UPDATE
+```bash 
+# UPDATE 
 ```
 
 # Tools Available

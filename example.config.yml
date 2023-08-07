@@ -29,6 +29,7 @@ tools_to_run:
       - singleCellNet
       - scHPL 
       - SVMlinear
+      - scLearn
       - Correlation
 
 consensus_tools:

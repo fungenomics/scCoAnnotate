@@ -1,5 +1,6 @@
 .Rhistory
 .RData
 .snakemake/
+.ipynb_checkpoints
 config.yml
 test/

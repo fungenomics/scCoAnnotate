@@ -81,7 +81,7 @@ UPDATE
 
 ## Submission File
 
-### Annotation 
+### Annotate
 
 ```bash 
 # UPDATE 

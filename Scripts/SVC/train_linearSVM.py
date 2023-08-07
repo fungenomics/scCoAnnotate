@@ -24,6 +24,7 @@ random.seed(123456)
 ref_path = str(sys.argv[1])
 lab_path = str(sys.argv[2])
 out_path = str(sys.argv[3])
+out_other_path = os.path.dirname(str(sys.argv[3]))
 threads = int(sys.argv[4])
 
 #--------------- Data -------------------------

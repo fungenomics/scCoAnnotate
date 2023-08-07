@@ -61,7 +61,7 @@ def run_concat(Results_Folder_Path, tools_for_consensus):
 	for path in paths[1:]:
 		current = pd.read_csv(path, index_col = 0)
 		result = pd.concat([result, current], axis = 1)
-
+ 
 	# case 1: get consensus of all tools 
 	if tools_for_consensus[0] == 'all':
 		mode = result.select_dtypes(exclude=['float64']).mode(axis = 1)

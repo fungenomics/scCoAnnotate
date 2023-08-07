@@ -26,7 +26,7 @@ load(model_path)
 message('@ DONE')
 
 # Make SingleCellExperiment object from query (transpose query first)
-query = transposeBigData(query, blocksize = 10000)
+query = transposeBigData(query)
 query = SingleCellExperiment(assays = list(counts = query))
 
 # Log normalize query counts 

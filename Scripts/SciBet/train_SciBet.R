@@ -1,8 +1,8 @@
 # load libraries and arguments 
 library(data.table)
 library(scibet)
-library(WGCNA)
 library(tidyverse)
+library(WGCNA)
 library(Seurat)
 library(glue)
 set.seed(1234)
@@ -24,7 +24,7 @@ ref <- data.table::fread(ref_path,
                          header=T,
                          nThread=threads) %>%
   column_to_rownames('V1') %>% 
-  WGCNA::transposeBigData()
+  transposeBigData()
 
 message('@ DONE')
 
@@ -45,7 +45,7 @@ if(!order){
 
 ### The matrix here is transposed since SciBet expect a cell x gene matrix and
 ### converted to data.frame since labels need to be add.
-ref <- Seurat::NormalizeData(ref) %>% as.data.frame() %>% WGCNA::transposeBigData()
+ref <- NormalizeData(ref) %>% as.data.frame() %>% transposeBigData()
 
 ref$label <- labels$label
 

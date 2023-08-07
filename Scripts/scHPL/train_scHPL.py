@@ -9,7 +9,8 @@ Created on Mon Jul 24 18:37:59 2023
 #--------------- Libraries -------------------
 import numpy as np
 import pandas as pd
-from scHPL import train, learn, utils, TreeNode, _print_node, _count_nodes
+from scHPL import learn, train, utils
+from scHPL.utils import TreeNode, _print_node, _count_nodes
 from matplotlib import pyplot as plt
 import matplotlib.lines as mlines
 import anndata as ad
@@ -18,6 +19,7 @@ import scanpy as sc
 import pickle
 import os
 import random
+
 ### Set seed
 random.seed(123456) 
 
@@ -26,8 +28,8 @@ ref_path = str(sys.argv[1])
 lab_path = str(sys.argv[2])
 out_path = str(sys.argv[3])
 out_other_path = os.path.dirname(str(sys.argv[3]))
-classifier = str(sys.argv[5])
-dimred = bool(sys.argv[6])
+classifier = str(sys.argv[4])
+dimred = bool(sys.argv[5])
 
 #--------------- Data -------------------------
 # read the data
@@ -94,11 +96,6 @@ print('@ DONE')
 
 #------------- Other outputs --------------
 ### Plot the tree
-
-from scHPL.utils import 
-from matplotlib import pyplot as plt
-import matplotlib.lines as mlines
-import numpy as np
 
 #I'm using this method since they provided it here:
 #https://github.com/lcmmichielsen/scHPL/issues/5

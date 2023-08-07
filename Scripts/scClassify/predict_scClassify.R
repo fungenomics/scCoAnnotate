@@ -4,10 +4,9 @@
 # load libraries and arguments 
 library(data.table) 
 library(Seurat)
-library(WGCNA)
 library(scClassify)
-library(dplyr)
-library(tibble)
+library(tidyverse)
+library(WGCNA)
 
 set.seed(1234)
 
@@ -35,7 +34,7 @@ load(model_path)
 message('@ DONE')
 
 # transpose (put cells in columns) for Seurat normalization and scClassify, normalize 
-query <- query %>% WGCNA::transposeBigData() %>% Seurat::NormalizeData()
+query <- query %>% transposeBigData() %>% Seurat::NormalizeData()
 
 #----------- Predict scClassify --------
 

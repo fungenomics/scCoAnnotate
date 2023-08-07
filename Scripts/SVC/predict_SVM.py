@@ -21,12 +21,14 @@ import random
 random.seed(123456) 
 
 #--------------- Parameters -------------------
-sample_path = str(sys.args[1])
-model_path = str(sys.args[2])
+sample_path = str(sys.argv[1])
+model_path = str(sys.argv[2])
 out_path = str(sys.argv[3])
-out_other_path = os.path.dirname(str(sys.args[3]))
-threshold = float(sys.args[4])
+out_other_path = os.path.dirname(str(sys.argv[3]))
+threshold = float(sys.argv[4])
 threads = int(sys.argv[5])
+tool_name = str(sys.argv[6])
+
 #--------------- Data -------------------------
 print('@ READ QUERY')
 query = pd.read_csv(sample_path,
@@ -36,10 +38,27 @@ query = pd.read_csv(sample_path,
 
 print('@ DONE')
 
+query = ad.AnnData(X = query,
+                   obs = dict(obs_names=query.index.astype(str)),
+                   var = dict(var_names=query.columns.astype(str))
+)
+
+## Now I normalize the matrix with scanpy:
+#Normalize each cell by total counts over all genes,
+#so that every cell has the same total count after normalization.
+#If choosing `target_sum=1e6`, this is CPM normalization
+#1e4 similar as Seurat
+sc.pp.normalize_total(query, target_sum=1e4)
+#Logarithmize the data:
+sc.pp.log1p(query)
+
+
 # load model 
 print('@ LOAD MODEL')
 SVM_model = pickle.load(open(model_path, 'rb'))
 print('@ DONE')
+
+
 ### If the trained model was generated with a diff number of threads and the
 ## prediction is done with other number
 SVM_model.n_jobs = threads
@@ -65,8 +84,8 @@ df['pred_label'], df['proba_label'] = zip(*df.apply(get_max_column_and_value, ax
 df['pred_label_reject'] = df.apply(lambda row: 'Unknown' if row['proba_label'] < threshold else row['pred_label'], axis=1)
 
 print('@ WRITTING PREDICTIONS')
-pred_df = pd.DataFrame({'cell': df.index, 'SVM': df.pred_label_reject})
-pred_df.to_csv(out_path)
+pred_df = pd.DataFrame({'cell': df.index, tool_name: df.pred_label_reject})
+pred_df.to_csv(out_path, index = False)
 print('@ DONE')
 
 #------------- Other outputs --------------

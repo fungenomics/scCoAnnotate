@@ -44,8 +44,9 @@ query <- Seurat::NormalizeData(query) %>% as.data.frame() %>% WGCNA::transposeBi
 pred <- Scibet_model(query,
                      result = 'list')
 
-pred_labels <- data.frame(SciBet = pred,
-                          cell = rownames(query))
+pred_labels <- data.frame(cell = rownames(query),
+                          SciBet = pred)
+
 message('@ WRITTING PREDICTIONS')
 data.table::fwrite(pred_labels,
                    file = pred_path,

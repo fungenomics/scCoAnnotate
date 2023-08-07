@@ -3,6 +3,7 @@ library(scPred)
 library(Seurat)
 library(tidyverse)
 library(doParallel)
+library(WGCNA)
 
 set.seed(1234)
 
@@ -37,8 +38,8 @@ if(!order){
 }
 
 # transpose and create seurat object with the labels as meta data 
-ref = t(ref)
-ref = CreateSeuratObject(ref, row.names = colnames(ref), meta.data = labels)
+ref = transposeBigData(ref)
+ref = CreateSeuratObject(ref, meta.data = labels)
 
 # normalize reference
 ref = ref %>% 
@@ -63,7 +64,7 @@ stopCluster(cl)
 get_scpred(scpred)
 
 # Plot prob 
-pdf(paste0(out_path, 'qc_plots.pdf'), width=10, height=10)
+pdf(paste0(out_path, '/qc_plots.pdf'), width=10, height=10)
 plot_probabilities(scpred)
 dev.off()
 

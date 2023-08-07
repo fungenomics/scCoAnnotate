@@ -52,7 +52,7 @@ def run_ACTINN(RefPath, LabelsPath, QueryPaths, OutputDirs):
 	tm.sleep(60)
 
 	# RUN ACTINN formatting
-	os.system("python ../Scripts/ACTINN_scripts/actinn_format.py -i train.csv -o train -f csv")
+	os.system("python /lustre06/project/6004736/alvann/from_narval/DEV/scCoAnnotate-dev/Scripts/ACTINN/actinn_format.py -i train.csv -o train -f csv")
 
 	i = 0
 	for Query in QueryPaths:
@@ -66,24 +66,24 @@ def run_ACTINN(RefPath, LabelsPath, QueryPaths, OutputDirs):
 		Query = np.log1p(Query)
 		Query = Query.transpose()
 		Query.to_csv("Query.csv")
-		os.system("python ../Scripts/ACTINN_scripts/actinn_format.py -i Query.csv -o Query -f csv")
+		os.system("python /lustre06/project/6004736/alvann/from_narval/DEV/scCoAnnotate-dev/Scripts/ACTINN/actinn_format.py -i Query.csv -o Query -f csv")
 		# measure total time
 		start = tm.time()
 
 		# execute the actinn prediction file
-		os.system("python ../Scripts/ACTINN_scripts/actinn_predict.py -trs train.h5 -trl train_lab.csv -ts Query.h5 -op False ")	
+		os.system("python /lustre06/project/6004736/alvann/from_narval/DEV/scCoAnnotate-dev/Scripts/ACTINN/actinn_predict.py -trs train.h5 -trl train_lab.csv -ts Query.h5 -op False ")	
 		tot.append(tm.time()-start)
 		tm.sleep(60)
 		
 		# read predictions and probabilities
-		predlabels = pd.read_csv('{tmp}/predicted_label.txt'.format(tmp = tmp_path),header=0,index_col=0, sep='\t')
+		predlabels = pd.read_csv('{tmp}/predicted_label.txt'.format(tmp = tmp_path),sep='\t')
 
-		pred = pd.DataFrame({"ACTINN":predlabels['celltype']}, index = predlabels.index)
+		pred = pd.DataFrame({"cell":predlabels["cellname"], "ACTINN":predlabels["celltype"]})
 		tot_time = pd.DataFrame(tot)
 
 		# output the files
 		os.chdir(path)
-		pred.to_csv("ACTINN_pred.csv", index = True)
+		pred.to_csv("ACTINN_pred.csv", index = False)
 		tot_time.to_csv("ACTINN_training_time.csv", index = False)
 		tot_time.to_csv("ACTINN_query_time.csv", index = False)
 		i = i+1

@@ -19,11 +19,11 @@ import random
 random.seed(123456) 
 
 #--------------- Parameters -------------------
-sample_path = str(sys.args[1])
-model_path = str(sys.args[2])
+sample_path = str(sys.argv[1])
+model_path = str(sys.argv[2])
 out_path = str(sys.argv[3])
-out_other_path = os.path.dirname(str(sys.args[3]))
-threshold = float(sys.args[4])
+out_other_path = os.path.dirname(str(sys.argv[3]))
+threshold = float(sys.argv[4])
 #threads = as.numeric(args[4])
 
 #--------------- Data -------------------
@@ -67,6 +67,6 @@ pred = predict.predict_labels(testdata= query.X,
 print('@ WRITTING PREDICTIONS')
 
 pred_labels = pd.DataFrame({'cell': query.obs_names, 'scHPL': pred})
-pred_labels.to_csv(out_path)
+pred_labels.to_csv(out_path, index = False)
 print('@ DONE')
 #----------------------------------------

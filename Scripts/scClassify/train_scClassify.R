@@ -4,12 +4,11 @@
 # load libraries and arguments
 library(data.table) 
 library(Seurat)
-library(WGCNA)
 library(scClassify)
-library(dplyr)
-library(tibble)
+library(tidyverse)
 library(ggplot2)
 library(glue)
+library(WGCNA)
 
 set.seed(1234)
 
@@ -26,8 +25,9 @@ out_path = dirname(model_path)
 
 # read reference matrix 
 message('@ READ REF')
-ref <- data.table::fread(ref_path, nThread=threads, header=T, data.table=F) %>%
-      column_to_rownames('V1') 
+ref <- data.table::fread(ref_path, nThread=threads, header=T, data.table=F) %>% 
+       column_to_rownames("V1")
+message('@ DONE')
 
 # read reference labels
 labels <- data.table::fread(lab_path, header=T, data.table=F) %>%
@@ -43,7 +43,7 @@ if(!order){
 }
 
 # transpose (put cells in columns) for Seurat normalization and scClassify, normalize 
-ref <- ref %>% WGCNA::transposeBigData() %>% Seurat::NormalizeData()
+ref <- ref %>% transposeBigData() %>% Seurat::NormalizeData()
 
 #------------- Train scClassify -------------
 

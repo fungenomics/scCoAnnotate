@@ -2,6 +2,7 @@
 library(scPred)
 library(Seurat)
 library(tidyverse)
+library(WGCNA)
 
 set.seed(1234)
 
@@ -25,8 +26,8 @@ load(model_path)
 message('@ DONE')
 
 # transpose and create seurat object 
-query = t(query)
-query = CreateSeuratObject(query, row.names = colnames(query))
+query = transposeBigData(query)
+query = CreateSeuratObject(query)
 
 # normalize query 
 query = query %>% 

@@ -1,5 +1,8 @@
 # target directory
-output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/out
+output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/out/
+
+references: 'Braindex'
+marker_genes: 'PDGFRA OLIG2 PTPRC'
 
 # path to reference to train classifiers on (cell x gene raw counts)
 training_reference: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
@@ -16,24 +19,19 @@ query_datasets:
 check_genes: False
 genes_required: Null
 
-# rejection option for SVM
-rejection: True
 
 # classifiers to run
 tools_to_run:
+      - scPred
       - SingleR
-      - correlation 
+      - scClassify
+      - SciBet
+      - singleCellNet
+      - scHPL 
+      - SVMlinear
+      - Correlation
 
 # benchmark tools on reference
-benchmark: False
-
-plots: False
-consensus:
-      - all
-
-
-
-
-
-
+benchmark:
+  n_folds: 3
 

@@ -24,9 +24,9 @@ random.seed(123456)
 ref_path = str(sys.argv[1])
 lab_path = str(sys.argv[2])
 out_path = str(sys.argv[3])
-out_other_path = os.path.dirname(str(sys.argv[4]))
-classifier = str(sys.argv[5])
-threads = int(sys.argv[6])
+out_other_path = os.path.dirname(str(sys.argv[3]))
+classifier = str(sys.argv[4])
+threads = int(sys.argv[5])
 
 #--------------- Data -------------------------
 # read the data

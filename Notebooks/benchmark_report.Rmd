@@ -1,0 +1,239 @@
+---
+title: "scCoAnnotate - Benchmarking"
+output:
+  html_document:
+    df_print: paged
+    theme: flatly
+    toc: yes
+    toc_float: yes
+    toc_depth: 1 
+    code_folding: hide
+params: 
+    tools: ''
+    ref_name: ''
+    pred_path: ''
+    fold: ''
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning=FALSE)
+```
+
+```{r}
+set.seed(1234)
+library(tidyverse)
+library(caret)
+library(ComplexHeatmap)
+```
+
+```{r}
+# Function to read true and predicted labels
+# Returns a list object with 'pred' and 'true'
+read_results = function(path, tool, fold){
+
+  # set up path to predicted and true labels 
+  pred_path = paste0(path, '/fold', fold, '/', tool, '/', tool, '_pred.csv') 
+  true_path = paste0(path, '/fold', fold, '/test_labels.csv') 
+  
+  list = list()
+  list$true = data.table::fread(true_path, header = T) %>% 
+              column_to_rownames('V1') %>%
+              mutate(label = factor(label, ordered = TRUE)) 
+
+  list$pred = data.table::fread(pred_path, header = T) %>% 
+              column_to_rownames('cell') %>%
+              mutate(label = .data[[tool]],
+                     label = ifelse(!label %in% list$true$label, NA, label),
+                     label = factor(label, ordered = TRUE))
+  
+  return(list)
+}
+
+# Plot confusion matrix as a heatmap 
+plot_cm = function(cm_table){
+  col_fun = circlize::colorRamp2(c(range(cm_table)[1], 
+                                   range(cm_table)[2]/2, 
+                                   range(cm_table)[2]), 
+                                 c("#5C80BC", "#F2EFC7", "#FF595E")) 
+  
+  h = Heatmap(cm_table,
+              name = 'Counts',
+              col = col_fun,
+              width = ncol(cm_table)*unit(2, "mm"),
+              height = nrow(cm_table)*unit(2, "mm"),
+              cluster_rows = F, 
+              cluster_columns = F, 
+              row_names_gp = gpar(fontsize = 7),
+              column_names_gp = gpar(fontsize = 7), 
+              column_title = 'True Class', 
+              row_title = 'Predicted Class')
+  
+  return(h)
+}
+
+# Plot class stat per fold (F1 etc) as barplot
+plot_stat = function(cm_byclass, stat){
+p = cm_byclass %>% 
+  as.data.frame() %>%
+  rownames_to_column('class') %>%
+  separate(class, into = c(NA, 'class'), sep = ': ') %>%
+  ggplot(aes(reorder(class, -.data[[stat]]), .data[[stat]])) +
+  geom_bar(stat = 'identity', col = 'white', fill = 'lightgrey') +
+  theme_bw() +
+  theme(text = element_text(size = 10), 
+        axis.title.x = element_blank(),
+        axis.line = element_line(size = 0.5), 
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 45,
+                                   vjust = 1, 
+                                   hjust=1),
+        aspect.ratio = 0.5) +
+  scale_y_continuous(expand = c(0, 0)) +
+  geom_hline(yintercept = c(1, 0.5), linetype = 'dotted', color = 'red')
+
+return(p)
+}
+
+# plot F1 accross folds for each class as a boxplot  
+plot_stat_boxplot = function(list, tool, stat){
+  
+df = lapply(list[[tool]], get_stat, stat = stat)
+
+bind_rows(df) %>%
+  ggplot(aes(reorder(class, -.data[[stat]], mean), .data[[stat]])) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(text = element_text(size = 10), 
+        axis.title.x = element_blank(),
+        axis.line = element_line(size = 0.5), 
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 45,
+                                   vjust = 1, 
+                                   hjust=1),
+        aspect.ratio = 0.5) +
+  scale_y_continuous(expand = c(0, 0)) +
+  geom_hline(yintercept = c(1, 0.5), linetype = 'dotted', color = 'red')
+}
+
+# plot average stat for all tools 
+plot_mean_tool = function(list, stat){
+
+df = lapply(list, function(x){lapply(x, get_stat, stat = stat) %>% bind_rows()})
+
+df = bind_rows(df) %>% 
+  group_by(class, tool) %>%
+  mutate(mean = mean(.data[[stat]])) %>%
+  distinct(class, tool, mean) %>% 
+  pivot_wider(names_from = 'class', values_from = mean) %>%
+  column_to_rownames('tool')
+
+df[is.na(df)] = 0
+
+col_fun = circlize::colorRamp2(c(0, 
+                                range(df)[2]/2, 
+                                range(df)[2]), 
+                                 c("#3B5B91", "#F2EFC7", "#CC0007")) 
+  
+h = Heatmap(df,
+              name = paste('Mean ', stat),
+              col = col_fun,
+              width = ncol(df)*unit(4, "mm"),
+              height = nrow(df)*unit(6, "mm"),
+              row_names_side = 'left',
+              row_names_gp = gpar(fontsize = 12),
+              show_column_dend = F,
+              show_row_dend = F)
+
+return(h)
+}
+
+#--------- HELPER FUNCTIONS ----------------
+
+# gets stat for each fold and returns data frame 
+get_stat = function(x, stat){
+  x$byClass %>% 
+  as.data.frame() %>%
+  rownames_to_column('class') %>%
+  separate(class, into = c(NA, 'class'), sep = ': ') %>%
+  select(class, .data[[stat]]) %>%
+  mutate(fold = x$fold,
+         tool = x$tool)
+}
+#-------------------------------------------
+```
+
+```{r}
+tools = strsplit(params$tools, split = ' ')[[1]]
+fold = as.numeric(params$fold)
+```
+
+```{r}
+# Read prediction and true labels for each tool and each fold and calculate confusion matrix and stats 
+# Save everything in a list object with hierarchy TOOL > FOLD > STATS 
+list = list()
+for(t in tools) {
+  for(n in 1:fold){
+    tmp = read_results(params$pred_path, t, n)
+    list[[t]][[n]] = confusionMatrix(data = tmp$pred$label, reference = tmp$true$label, mode = 'everything')
+    list[[t]][[n]]$fold = paste0('fold', n)
+    list[[t]][[n]]$tool = t
+  }
+}
+```
+
+```{r fig.width=10,echo=FALSE,message=FALSE,results="asis"}
+cat("  \n#", params$ref_name , "{.tabset} \n")
+
+cat("  \n## Summary \n")
+cat("<h3>Average F1 score per tool and class</h3>") 
+
+plot_mean_tool(list, 'F1')
+
+cat("\n")
+
+for(t in tools) {
+  cat("  \n##",  t, "{.tabset} \n")
+  
+  print(plot_stat_boxplot(list, t, 'F1'))
+  
+  cat("\n")
+  
+  for(n in 1:fold){
+    cat("  \n###",  paste0('Fold ', n), " \n")
+    
+    cat("<h3>Confusion Matrix</h3>")
+    
+    draw(plot_cm(list[[t]][[n]]$table))
+  
+    cat("<h3>F1</h3>")
+    
+    print(plot_stat(list[[t]][[n]]$byClass, 'F1'))
+    
+    cat("\n")
+  }
+}
+```
+
+# Report Info 
+
+## Parameters
+```{r echo=FALSE,message=FALSE,results="asis"}
+for(p in names(params)){
+  cat(" \n -",p,": ", params[[p]], " \n")
+}
+```
+
+
+## Session  
+
+```{r}
+sessionInfo()
+```
+
+
+
+

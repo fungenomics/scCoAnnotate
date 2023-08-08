@@ -206,3 +206,18 @@ Normal parameters were used in both the training and prediction functions, with 
 
 singleCellNet workflow was generated following the tutorial below:
 https://pcahan1.github.io/singleCellNet/
+
+## Tangram
+
+Documentation written by: Tomas Vega Waichman
+Date written: 2023-08-08
+Tangram maps a single cell that is used as a reference to a spatial dataset. It cannot be separated into training and test sets.
+It is necessary to explore whether parallelization is possible.
+* The spatial dataset needs to be in a .h5ad format with the .X matrix normalized and log-transformed.
+* The mode could be set to `cells` if you want to map cells to spots, and the output matrix will be cell x spot probabilities. Alternatively, set it to `clusters` if the goal is to map whole clusters to the spatial data.
+* The output is the highest scored cell type for each spot, determined by the cell type projection (using the `tg.project_cell_annotations` function from the Tangram package).
+* Other outputs include: a score matrix for spot vs label, a cell x spot probability matrix, and the Tangram output map object in .h5ad format containing all the relevant information.
+* It runs using the whole transcriptome, none gene markers are selected.
+* All parameters are the default.
+The Tangram workflow was generated following the tutorial provided below:
+https://tangram-sc.readthedocs.io/en/latest/tutorial_sq_link.html

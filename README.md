@@ -11,7 +11,7 @@ Tested with [R](https://www.r-project.org/) Version 4.2.2 and Python 3.11.2.
 
 **R packages CRAN**
 
-```ymal
+```
 - Seurat
 - tidyverse
 - MetBrewer
@@ -32,7 +32,7 @@ devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r
 
 **R packages bioconductor**
 
-```ymal
+```
 - SingleCellExperiment
 - SummarizedExperiment
 - ComplexHeatmap
@@ -48,13 +48,12 @@ BiocManager::install(<pkg>)
 ```
 
 **R packages github
-```ymal
+```
 - singleCellNet (pcahan1/singleCellNet)
 - scPred (powellgenomicslab/scPred)
 - scibet (PaulingLiu/scibet)
 - scLearn (bm2-lab/scLearn)
 ```
-  
 ```
 devtools::install_github(<pkg>)
 ```

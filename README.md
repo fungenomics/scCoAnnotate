@@ -11,17 +11,10 @@ Tested with [R](https://www.r-project.org/) Version 4.2.2 and Python 3.11.2.
 
 **R packages CRAN**
 
-```
-- Seurat
-- tidyverse
-- MetBrewer
-- plotly
-- caret
-- Matrix
-```
+```R
+pkg = c("Seurat", "tidyverse", "MetBrewer", "plotly", "caret", "Matrix") 
 
-```
-install.packages(<pkg>)
+install.packages(pkg)
 ```
 
 Older version of Matrix package needs to be installed for Seurat to work: https://github.com/satijalab/seurat/issues/6746
@@ -33,18 +26,9 @@ devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r
 **R packages bioconductor**
 
 ```
-- SingleCellExperiment
-- SummarizedExperiment
-- ComplexHeatmap
-- WGCNA
-- SingleR
-- scClassify
-- scuttle
-- scran
-- M3Drop
-```
-```
-BiocManager::install(<pkg>)
+pkg = c("SingleCellExperiment", "SummarizedExperiment", "ComplexHeatmap", "WGCNA", "SingleR", "scClassify", "scuttle", "scran", "M3Drop")
+
+BiocManager::install(pkg)
 ```
 
 **R packages github**

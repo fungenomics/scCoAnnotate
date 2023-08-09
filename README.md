@@ -96,24 +96,25 @@ UPDATE
 # Tools Available 
 
 **Single cell RNA reference + single RNA cell query** 
- ```
-      - scPred
-      - SingleR
-      - scClassify
-      - SciBet
-      - singleCellNet
-      - scHPL 
-      - SVMlinear
-      - SVC
-      - scLearn
-      - ACTINN
-      - Correlation
+ 
+```ymal
+- scPred
+- SingleR
+- scClassify
+- SciBet
+- singleCellNet
+- scHPL 
+- SVMlinear
+- SVC
+- scLearn
+- ACTINN
+- Correlation
 ```
 
 
 **Single cell RNA reference + spatial RNA cell query**
-```
-      - Tangram
+```yaml
+- Tangram
 ```
 # Adding New Tools:
 

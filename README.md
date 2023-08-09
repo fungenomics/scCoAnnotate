@@ -88,7 +88,7 @@ UPDATE
 
 # Tools Available 
 
-**Single cell RNA reference + single cellRNA query** 
+**Single cell RNA reference + single cell RNA query** 
  
 ```ymal
 - scPred

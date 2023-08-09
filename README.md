@@ -21,7 +21,7 @@ Tested with [R](https://www.r-project.org/) Version 4.2.2 and Python 3.11.2.
 ```
 
 ```
-install.package(<pkg>)
+install.packages(<pkg>)
 ```
 
 Older version of Matrix package needs to be installed for Seurat to work: https://github.com/satijalab/seurat/issues/6746

@@ -64,7 +64,11 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 
 # Quickstart 
 
-UPDATE 
+1. Clone repository and install dependencies  
+2. Prepare reference
+3. Prepare query samples
+4. Prepare config file
+5. Prepare submission script (HPC) 
 
 ##  Config File:
 

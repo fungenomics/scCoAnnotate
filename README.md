@@ -47,7 +47,8 @@ devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r
 BiocManager::install(<pkg>)
 ```
 
-**R packages github
+**R packages github**
+
 ```
 - singleCellNet (pcahan1/singleCellNet)
 - scPred (powellgenomicslab/scPred)
@@ -73,7 +74,6 @@ devtools::install_github(<pkg>)
 - tables
 - snakemake
 ```
-
 ```
 pip install <pkg>
 ```

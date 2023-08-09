@@ -93,7 +93,9 @@ UPDATE
 # UPDATE 
 ```
 
-# Tools Available
+# Tools Available 
+
+Single cell RNA reference + single RNA cell query 
       - scPred
       - SingleR
       - scClassify
@@ -101,8 +103,13 @@ UPDATE
       - singleCellNet
       - scHPL 
       - SVMlinear
+      - SVC
       - scLearn
+      - ACTINN
       - Correlation
+
+Single cell RNA reference + spatial RNA cell query 
+      - Tangram
 
 # Adding New Tools:
 

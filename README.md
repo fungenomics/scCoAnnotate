@@ -10,12 +10,15 @@ Reference based prediction of cell-types using a fast and efficient Snakemake pi
 Tested with [R](https://www.r-project.org/) Version 4.2.2 and Python 3.11.2.
 
 **R packages CRAN**
+
+```ymal
 - Seurat
 - tidyverse
 - MetBrewer
 - plotly
 - caret
 - Matrix
+```
 
 ```
 install.package(<pkg>)
@@ -28,6 +31,8 @@ devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r
 ```
 
 **R packages bioconductor**
+
+```ymal
 - SingleCellExperiment
 - SummarizedExperiment
 - ComplexHeatmap
@@ -37,22 +42,26 @@ devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r
 - scuttle
 - scran
 - M3Drop
-
+```
 ```
 BiocManager::install(<pkg>)
 ```
 
-**R packages github**
+**R packages github
+```ymal
 - singleCellNet (pcahan1/singleCellNet)
 - scPred (powellgenomicslab/scPred)
 - scibet (PaulingLiu/scibet)
 - scLearn (bm2-lab/scLearn)
+```
   
 ```
 devtools::install_github(<pkg>)
 ```
 
 **Python modules**
+
+```ymal
 - numpy
 - pandas
 - scHPL
@@ -64,6 +73,7 @@ devtools::install_github(<pkg>)
 - tensorflow
 - tables
 - snakemake
+```
 
 ```
 pip install <pkg>
@@ -95,7 +105,7 @@ UPDATE
 
 # Tools Available 
 
-**Single cell RNA reference + single RNA cell query** 
+**Single cell RNA reference + single cellRNA query** 
  
 ```ymal
 - scPred
@@ -112,7 +122,7 @@ UPDATE
 ```
 
 
-**Single cell RNA reference + spatial RNA cell query**
+**Single cell RNA reference + spatial RNA query**
 ```yaml
 - Tangram
 ```

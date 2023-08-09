@@ -1,3 +1,8 @@
+
+#----------------------------------------------------
+#  Setup
+#----------------------------------------------------
+
 # import libraries
 import os
 from datetime import datetime
@@ -8,15 +13,10 @@ samples = [os.path.basename(os.path.dirname(query_path)) for query_path in confi
 now = datetime.now()
 dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-# Create subdirectories for each query sample 
-for sample in samples:
-  path = "{output_dir}/{sample}".format(output_dir = config["output_dir"], sample = sample)
-  if not os.path.exists(path):
-    os.mkdir(path)
+#----------------------------------------------------
+#  Final rule all 
+#----------------------------------------------------
 
-"""
-One rule that directs the DAG which is represented in the rulegraph
-"""
 rule all:
   input:
     expand(config["output_dir"] + "/{sample}/Prediction_Summary.tsv", 
@@ -24,10 +24,11 @@ rule all:
     expand(config['output_dir'] + '/{sample}/report/{sample}.prediction_report.' + dt_string + '.html',
            sample = samples)
 
-"""
-rule that gets the gets the interesction in genes between samples and reference
-It outputs temporary reference and query datasets based on the common genes
-"""
+
+#----------------------------------------------------
+#  Preprocess
+#----------------------------------------------------
+
 rule preprocess:
   input:
     reference = config['training_reference'],
@@ -36,19 +37,18 @@ rule preprocess:
     reference = config['output_dir'] + "/expression.csv",
     query = expand(config['output_dir'] + "/{sample}/expression.csv", sample = samples)
   params:
-    check_genes = bool(config['check_genes']),
-    genes_required = config['genes_required']
+    basedir = {workflow.basedir},
+    out_path = config['output_dir']
   log: config['output_dir'] + "/preprocess.log"
   priority: 50
   shell:
-    "Rscript {workflow.basedir}/Scripts/preprocess.R "
-    "--ref {input.reference} "
-    "--query {input.query} "
-    "--output_dir {config[output_dir]} "
-    "--check_genes {params.check_genes} "
-    "--genes_required {params.genes_required} "
-    "&> {log} "
-
+    """
+    Rscript {params.basedir}/Scripts/preprocess.R \
+    {input.reference} \
+    "{input.query}" \
+    {params.out_path} \
+    &> {log} 
+    """
 #----------------------------------------------------
 #  Consensus 
 #----------------------------------------------------

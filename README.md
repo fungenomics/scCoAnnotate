@@ -12,54 +12,54 @@ Tested with [R](https://www.r-project.org/) Version 4.2.2 and Python 3.11.2.
 **R packages CRAN**
 
 ```R
-pkg = c("Seurat", "tidyverse", "MetBrewer", "plotly", "caret", "Matrix") 
+pkg = c("Seurat",
+        "tidyverse",
+        "MetBrewer",
+        "plotly",
+        "caret",
+        "Matrix") 
 
 install.packages(pkg)
 ```
 
 Older version of Matrix package needs to be installed for Seurat to work: https://github.com/satijalab/seurat/issues/6746
 
-```
+```R
 devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r-project.org")
 ```
 
 **R packages bioconductor**
 
-```
-pkg = c("SingleCellExperiment", "SummarizedExperiment", "ComplexHeatmap", "WGCNA", "SingleR", "scClassify", "scuttle", "scran", "M3Drop")
+```R
+pkg = c("SingleCellExperiment",
+        "SummarizedExperiment",
+        "ComplexHeatmap",
+        "WGCNA",
+        "SingleR",
+        "scClassify",
+        "scuttle",
+        "scran",
+        "M3Drop")
 
 BiocManager::install(pkg)
 ```
 
 **R packages github**
 
-```
-- singleCellNet (pcahan1/singleCellNet)
-- scPred (powellgenomicslab/scPred)
-- scibet (PaulingLiu/scibet)
-- scLearn (bm2-lab/scLearn)
-```
-```
-devtools::install_github(<pkg>)
+
+```R
+pkg = c("pcahan1/singleCellNet",
+        "powellgenomicslab/scPred",
+        "PaulingLiu/scibet",
+        "bm2-lab/scLearn")
+
+devtools::install_github(pkg)
 ```
 
 **Python modules**
 
-```ymal
-- numpy
-- pandas
-- scHPL
-- sklearn
-- anndata
-- matplotlib
-- scanpy
-- datetime
-- tensorflow
-- tables
-- snakemake
-```
-```
-pip install <pkg>
+```bash 
+pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensorflow tables snakemake
 ```
 
 # Quickstart 

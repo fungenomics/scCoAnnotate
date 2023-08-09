@@ -120,11 +120,15 @@ UPDATE
 - Correlation
 ```
 
-
 **Single cell RNA reference + spatial RNA query**
 ```yaml
 - Tangram
 ```
+
+# Resources  
+
+TABLE WITH TOOL, N CELLS, N LABELS, TIME, MEM 
+
 # Adding New Tools:
 
 ``` R

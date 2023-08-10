@@ -70,13 +70,19 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 4. Prepare config file
 5. Prepare submission script (HPC) 
 
-##  Config File:
+## 1. Clone repository and install dependencies
+
+## 2. Prepare reference
+
+## 3. Prepare query 
+
+## 4. Prepare config file
 
 ```yaml 
 # UPDATE 
 ```
 
-## Submission File
+## 5. Prepare submission script
 
 ### Annotate
 

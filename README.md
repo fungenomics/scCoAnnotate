@@ -238,7 +238,7 @@ Date written: 2023-08-08
 
 ACTINN code based on actinn_format.py and actinn_predict.py originally found here: https://github.com/mafeiyang/ACTINN
 
-ACTINN has been spit into testing and predicting. To do this filtering of outlier genes based on expression across query and reference samples had to be removed. The rest of the code has not been changed from the original ACTINN implementation, just rearanged and some parts related to processing multiple samples at the same time removed.
+ACTINN has been spit into testing and predicting. To do this, filtering of outlier genes based on expression across all query samples and reference had to be removed. The rest of the code has not been changed from the original ACTINN implementation, just rearanged and some parts related to processing multiple samples at the same time removed.
 
 ACTINN is run with default parameters from original implementation. 
 Normalization is based on original implementation and paper (cells scaled to total expression value, times 10 000, log2(x+1) normalized)

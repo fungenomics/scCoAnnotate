@@ -1,13 +1,17 @@
 # import libraries
 import os
+from datetime import datetime
 
 n_folds = list(range(1, config['benchmark']['n_folds']+1)) 
+
+now = datetime.now()
+dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
 """
 One rule that directs the DAG which is represented in the rulegraph
 """
 rule all:
-  input: report_path = config['output_dir'] + '/report/benchmark_report.html'
+  input: report_path = config['output_dir'] + '/report/' + dt_string + '.benchmark_report.html'
 
 #----------------------------------------------------
 #  Subset Folds 
@@ -50,7 +54,7 @@ rule knit_report:
                   folds_index = n_folds, 
                   tool = config['tools_to_run'])
   output: 
-    report_path = config['output_dir'] + '/report/benchmark_report.html'
+    report_path = config['output_dir'] + '/report/' + dt_string + '.benchmark_report.html'
   log:
     config['output_dir'] + "/report/report.log"
   params:
@@ -605,6 +609,55 @@ rule predict_scHPL:
     {output.pred} \
     {params.threshold} \
     &> {log}
+    """
+
+#----------------------------------------------------
+#   ACTINN
+#----------------------------------------------------
+
+rule train_ACTINN:
+  input:
+    reference = config['output_dir'] + "/fold{folds_index}/train.csv",
+    labfile = config['output_dir'] + "/fold{folds_index}/train_labels.csv"
+  output:
+    model = config['output_dir'] + "/fold{folds_index}/ACTINN/ACTINN_model.pkl"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/fold{folds_index}/ACTINN/ACTINN.log"
+  benchmark:
+    config['output_dir'] + "/fold{folds_index}/ACTINN/ACTINN_predict_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/ACTINN/train_ACTINN.py \
+           -trs {input.reference} \
+           -trl {input.labfile} \
+                 -mp {output.model} \
+    &> {log}
+    """
+
+rule predict_ACTINN:
+  input:
+    query = config['output_dir'] + "/fold{folds_index}/test.csv",
+    model = config['output_dir'] + "/fold{folds_index}/ACTINN/ACTINN_model.pkl"
+  output:
+    pred = config['output_dir'] + "/fold{folds_index}/ACTINN/ACTINN_pred.csv"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/fold{folds_index}/ACTINN/ACTINN.log"
+  benchmark:
+    config['output_dir'] + "/fold{folds_index}/ACTINN/ACTINN_predict_benchmark.txt"
+  threads: 1
+  resources:
+  shell:
+    """
+    python {params.basedir}/Scripts/ACTINN/predict_ACTINN.py \
+           -ts {input.query} \
+           -mp {input.model} \
+           -pp {output.pred} \
+    &> {log}
+
     """
 
 #----------------------------------------------------

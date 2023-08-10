@@ -9,44 +9,26 @@ import argparse
 import timeit
 run_time = timeit.default_timer()
 from tensorflow.python.framework import ops
+import pickle
+import os
 
 
 def get_parser(parser=None):
     if parser == None:
         parser = argparse.ArgumentParser()
-    parser.add_argument("-trs", "--train_set", type=str, help="Training set file path.")
-    parser.add_argument("-trl", "--train_label", type=str, help="Training label file path.")
     parser.add_argument("-ts", "--test_set", type=str, help="Training set file path.")
-    parser.add_argument("-lr", "--learning_rate", type=float, help="Learning rate (default: 0.0001)", default=0.0001)
-    parser.add_argument("-ne", "--num_epochs", type=int, help="Number of epochs (default: 50)", default=50)
-    parser.add_argument("-ms", "--minibatch_size", type=int, help="Minibatch size (default: 128)", default=128)
-    parser.add_argument("-pc", "--print_cost", type=bool, help="Print cost when training (default: True)", default=True)
-    parser.add_argument("-op", "--output_probability", type=bool, help="Output the probabilities for each cell being the cell types in the training data (default: False)", default=False)
+    parser.add_argument("-mp", "--model_path", type=str, help="Model file path.")
+    parser.add_argument("-pp", "--pred_path", type=str, help="Output prediction file path.")
     return parser
-
 
 
 # Get common genes, normalize  and scale the sets
 def scale_sets(sets):
-    # input -- a list of all the sets to be scaled
-    # output -- scaled sets
-    common_genes = set(sets[0].index)
-    for i in range(1, len(sets)):
-        common_genes = set.intersection(set(sets[i].index),common_genes)
-    common_genes = sorted(list(common_genes))
-    sep_point = [0]
-    for i in range(len(sets)):
-        sets[i] = sets[i].loc[common_genes,]
-        sep_point.append(sets[i].shape[1])
-    total_set = np.array(pd.concat(sets, axis=1, sort=False), dtype=np.float32)
-    total_set = np.divide(total_set, np.sum(total_set, axis=0, keepdims=True)) * 10000
-    total_set = np.log2(total_set+1)
-    expr = np.sum(total_set, axis=1)
-    total_set = total_set[np.logical_and(expr >= np.percentile(expr, 1), expr <= np.percentile(expr, 99)),]
-    cv = np.std(total_set, axis=1) / np.mean(total_set, axis=1)
-    total_set = total_set[np.logical_and(cv >= np.percentile(cv, 1), cv <= np.percentile(cv, 99)),]
-    for i in range(len(sets)):
-        sets[i] = total_set[:, sum(sep_point[:(i+1)]):sum(sep_point[:(i+2)])]
+    # input -- set to be scaled
+    # output -- scaled set
+    sets = sets.to_numpy()
+    sets = np.divide(sets, np.sum(sets, axis=0, keepdims=True)) * 10000
+    sets = np.log2(sets+1)
     return sets
 
 
@@ -284,30 +266,38 @@ def model(X_train, Y_train, X_test, starting_learning_rate = 0.0001, num_epochs 
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
-    # Read in the files
-    train_set = pd.read_hdf(args.train_set, key="dge")
-    train_set.index = [s.upper() for s in train_set.index]
-    train_set = train_set.loc[~train_set.index.duplicated(keep='first')]
-    train_label = pd.read_csv(args.train_label, header=None, sep="\t")
-    test_set = pd.read_hdf(args.test_set, key="dge")
-    test_set.index = [s.upper() for s in test_set.index]
-    test_set = test_set.loc[~test_set.index.duplicated(keep='first')]
-    barcode = list(test_set.columns)
-    nt = len(set(train_label.iloc[:,1]))
-    train_set, test_set = scale_sets([train_set, test_set])
-    type_to_label_dict = type_to_label_dict(train_label.iloc[:,1])
-    label_to_type_dict = {v: k for k, v in type_to_label_dict.items()}
-    print("Cell Types in training set:", type_to_label_dict)
-    print("# Trainng cells:", train_label.shape[0])
-    train_label = convert_type_to_label(train_label.iloc[:,1], type_to_label_dict)
-    train_label = one_hot_matrix(train_label, nt)
-    parameters = model(train_set, train_label, test_set, \
-    args.learning_rate, args.num_epochs, args.minibatch_size, args.print_cost)
-    test_predict = predict(test_set, parameters)
+
+    # load model 
+    print('@ LOAD MODEL')
+    model = pickle.load(open(args.model_path, 'rb'))
+    
+    dict_path = os.path.dirname(os.path.abspath(args.model_path))
+    label_to_type_dict = pickle.load(open(dict_path + '/label_to_type_dict.pkl', 'rb'))
+
+    print('@ DONE')
+
+    # Read query 
+    query = pd.read_csv(args.test_set, index_col=0)
+
+    # transpose query
+    query = query.transpose()
+    
+    # save barcodes
+    barcode = list(query.columns)
+    
+    print("Dimension of the matrix after removing all-zero rows:", query.shape)
+    
+    # noramlize query 
+    query = scale_sets(query)
+    
+    # predict 
+    test_predict = predict(query, model)
     predicted_label = []
     
     for i in range(len(test_predict)):
         predicted_label.append(label_to_type_dict[test_predict[i]])
-    predicted_label = pd.DataFrame({"cellname":barcode, "celltype":predicted_label})
-    predicted_label.to_csv("predicted_label.txt", sep="\t", index=False)
+    
+    predicted_label = pd.DataFrame({"cell":barcode, "ACTINN":predicted_label})
+    predicted_label.to_csv(args.pred_path, sep=",", index=False)
+
 print("Run time:", timeit.default_timer() - run_time)

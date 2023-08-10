@@ -334,7 +334,7 @@ rule train_scHPL:
     reference = config['output_dir'] + "/expression.csv",
     labfile = config['reference_annotations']
   output:
-    model = config['output_dir'] + "/scHPL/scHPL_model.Rda"
+    model = config['output_dir'] + "/scHPL/scHPL_model.pkl"
   params:
     basedir = {workflow.basedir},
     classifier = 'svm',
@@ -359,7 +359,7 @@ rule train_scHPL:
 rule predict_scHPL:
   input:
     query = config['output_dir'] + "/{sample}/expression.csv",
-    model = config['output_dir'] + "/scHPL/scHPL_model.Rda"
+    model = config['output_dir'] + "/scHPL/scHPL_model.pkl"
   output:
     pred = config['output_dir'] + "/{sample}/scHPL/scHPL_pred.csv"
   params:
@@ -390,7 +390,7 @@ rule train_SVMlinear:
     reference = config['output_dir'] + "/expression.csv",
     labfile = config['reference_annotations']
   output:
-    model = config['output_dir'] + "/SVMlinear/SVMlinear_model.Rda"
+    model = config['output_dir'] + "/SVMlinear/SVMlinear_model.pkl"
   params:
     basedir = {workflow.basedir}
   log:
@@ -412,7 +412,7 @@ rule train_SVMlinear:
 rule predict_SVMlinear:
   input:
     query = config['output_dir'] + "/{sample}/expression.csv",
-    model = config['output_dir'] + "/SVMlinear/SVMlinear_model.Rda"
+    model = config['output_dir'] + "/SVMlinear/SVMlinear_model.pkl"
   output:
     pred = config['output_dir'] + "/{sample}/SVMlinear/SVMlinear_pred.csv"
   params:
@@ -638,7 +638,7 @@ rule predict_scLearn:
   log:
     config['output_dir'] + "/{sample}/scLearn/scLearn.log"
   benchmark:
-    config['output_dir'] + "/{sample}/scLearn/scLearn_predict_benchmark.txt"
+    config['output_dir'] + "/{sample}/scLearn/scLearn_train_benchmark.txt"
   threads: 1
   resources:
   shell:
@@ -655,26 +655,50 @@ rule predict_scLearn:
 #   ACTINN
 #----------------------------------------------------
 
-rule ACTINN:
+rule train_ACTINN:
   input:
     reference = config['output_dir'] + "/expression.csv",
-    labfile = config['reference_annotations'],
-    query = expand("{output_dir}/{sample}/expression.csv",sample = samples,output_dir=config['output_dir']),
-    output_dir =  expand("{output_dir}/{sample}",sample = samples,output_dir=config['output_dir'])
+    labfile = config['reference_annotations']
   output:
-    pred = expand("{output_dir}/{sample}/ACTINN/ACTINN_pred.csv", sample  = samples,output_dir=config["output_dir"]),
-    query_time = expand("{output_dir}/{sample}/ACTINN/ACTINN_query_time.csv",sample  = samples,output_dir=config["output_dir"]),
-    training_time = expand("{output_dir}/{sample}/ACTINN/ACTINN_training_time.csv",sample  = samples,output_dir=config["output_dir"])
-  log: expand("{output_dir}/{sample}/ACTINN/ACTINN.log", sample = samples,output_dir=config["output_dir"])
+    model = config['output_dir'] + "/ACTINN/ACTINN_model.pkl"
   params:
-      basedir = {workflow.basedir}
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/ACTINN/ACTINN.log"
+  benchmark:
+    config['output_dir'] + "/ACTINN/ACTINN_predict_benchmark.txt"
   shell:
-    "python3 {params.basedir}/Scripts/run_ACTINN.py "
-    "--ref {input.reference} "
-    "--labs {input.labfile} "
-    "--query {input.query} "
-    "--output_dir {input.output_dir} "
-    "&> {log}" 
+    """
+    python {params.basedir}/Scripts/ACTINN/train_ACTINN.py \
+           -trs {input.reference} \
+           -trl {input.labfile} \
+	         -mp {output.model} \
+    &> {log}
+    """
+
+rule predict_ACTINN:
+  input:
+    query = config['output_dir'] + "/{sample}/expression.csv",
+    model = config['output_dir'] + "/ACTINN/ACTINN_model.pkl"
+  output:
+    pred = config['output_dir'] + "/{sample}/ACTINN/ACTINN_pred.csv"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/{sample}/ACTINN/ACTINN.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/ACTINN/ACTINN_predict_benchmark.txt"
+  threads: 1
+  resources:
+  shell:
+    """
+    python {params.basedir}/Scripts/ACTINN/predict_ACTINN.py \
+           -ts {input.query} \
+           -mp {input.model} \
+           -pp {output.pred} \
+    &> {log}
+    
+    """
 
 #----------------------------------------------------
 #   The End 

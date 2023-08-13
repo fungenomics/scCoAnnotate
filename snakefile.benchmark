@@ -52,7 +52,9 @@ rule knit_report:
   input: 
     pred = expand(config['output_dir'] + "/fold{folds_index}/{tool}/{tool}_pred.csv", 
                   folds_index = n_folds, 
-                  tool = config['tools_to_run'])
+                  tool = config['tools_to_run']),
+    consensus = expand(config["output_dir"] + "/fold{folds_index}/Prediction_Summary.tsv",
+                folds_index = n_folds)
   output: 
     report_path = config['output_dir'] + '/report/' + dt_string + '.benchmark_report.html'
   log:
@@ -73,6 +75,35 @@ rule knit_report:
                           pred_path = '{params.pred_path}',
                           fold = '{params.n_folds}'),
             output_file = '{output.report_path}')" \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#  Consensus
+#----------------------------------------------------
+
+rule consensus:
+  input:
+    results = expand(config["output_dir"] + "/fold{{folds_index}}/{tool}/{tool}_pred.csv",
+                     tool=config['tools_to_run']),
+    sample = config["output_dir"] + "/fold{folds_index}"
+  output:
+    prediction_summary = config["output_dir"] + "/fold{folds_index}/Prediction_Summary.tsv"
+  log:
+    config["output_dir"] + "/fold{folds_index}/Gatherpreds.log"
+  params:
+    basedir = {workflow.basedir},
+    tools = config['tools_to_run'],
+    conesnsus_tools = config['consensus_tools'],
+    labfile = config['reference_annotations']
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/calculate_consensus.R \
+    {input.sample} \
+    {output.prediction_summary} \
+    "{params.tools}" \
+    "{params.conesnsus_tools}" \
+    {params.labfile} \
     &> {log}
     """
 

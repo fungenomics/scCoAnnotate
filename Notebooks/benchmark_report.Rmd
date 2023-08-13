@@ -27,26 +27,13 @@ library(ComplexHeatmap)
 ```
 
 ```{r}
-# Function to read true and predicted labels
-# Returns a list object with 'pred' and 'true'
-read_results = function(path, tool, fold){
-
-  # set up path to predicted and true labels 
-  pred_path = paste0(path, '/fold', fold, '/', tool, '/', tool, '_pred.csv') 
-  true_path = paste0(path, '/fold', fold, '/test_labels.csv') 
-  
-  list = list()
-  list$true = data.table::fread(true_path, header = T) %>% 
-              column_to_rownames('V1') %>%
-              mutate(label = factor(label, ordered = TRUE)) 
-
-  list$pred = data.table::fread(pred_path, header = T) %>% 
-              column_to_rownames('cell') %>%
-              mutate(label = .data[[tool]],
-                     label = ifelse(!label %in% list$true$label, NA, label),
-                     label = factor(label, ordered = TRUE))
-  
-  return(list)
+get_pred = function(pred, tool, true){
+  pred %>%
+     select(tool) %>%
+     mutate(label = .data[[tool]],
+            label = ifelse(!label %in% true$label, NA, label),
+            label = factor(label, ordered = TRUE)) %>%
+  return()
 }
 
 # Plot confusion matrix as a heatmap 
@@ -115,12 +102,13 @@ bind_rows(df) %>%
                                    vjust = 1, 
                                    hjust=1),
         aspect.ratio = 0.5) +
-  scale_y_continuous(expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0, 1),
+                     expand = c(0, 0)) +
   geom_hline(yintercept = c(1, 0.5), linetype = 'dotted', color = 'red')
 }
 
 # plot average stat for all tools 
-plot_mean_tool = function(list, stat){
+plot_mean_tool = function(list, stat, tools){
 
 df = lapply(list, function(x){lapply(x, get_stat, stat = stat) %>% bind_rows()})
 
@@ -137,16 +125,21 @@ col_fun = circlize::colorRamp2(c(0,
                                 range(df)[2]/2, 
                                 range(df)[2]), 
                                  c("#3B5B91", "#F2EFC7", "#CC0007")) 
-  
+
+split = c('Consensus', rep('tools', length(tools)-1))
+
 h = Heatmap(df,
-              name = paste('Mean ', stat),
-              col = col_fun,
-              width = ncol(df)*unit(4, "mm"),
-              height = nrow(df)*unit(6, "mm"),
-              row_names_side = 'left',
-              row_names_gp = gpar(fontsize = 12),
-              show_column_dend = F,
-              show_row_dend = F)
+            name = paste('Mean ', stat),
+            col = col_fun,
+            width = ncol(df)*unit(4, "mm"),
+            height = nrow(df)*unit(6, "mm"),
+            row_names_side = 'left',
+            row_names_gp = gpar(fontsize = 12),
+            show_column_dend = F,
+            show_row_dend = F, 
+	    row_split = split,
+	    cluster_row_slices = F, 
+	    row_title = NULL)
 
 return(h)
 }
@@ -167,7 +160,7 @@ get_stat = function(x, stat){
 ```
 
 ```{r}
-tools = strsplit(params$tools, split = ' ')[[1]]
+tools = c('Consensus', strsplit(params$tools, split = ' ')[[1]])
 fold = as.numeric(params$fold)
 ```
 
@@ -175,12 +168,24 @@ fold = as.numeric(params$fold)
 # Read prediction and true labels for each tool and each fold and calculate confusion matrix and stats 
 # Save everything in a list object with hierarchy TOOL > FOLD > STATS 
 list = list()
-for(t in tools) {
-  for(n in 1:fold){
-    tmp = read_results(params$pred_path, t, n)
-    list[[t]][[n]] = confusionMatrix(data = tmp$pred$label, reference = tmp$true$label, mode = 'everything')
-    list[[t]][[n]]$fold = paste0('fold', n)
-    list[[t]][[n]]$tool = t
+for(n in 1:fold){
+   
+   # read tru lables 
+   true = data.table::fread(paste0(params$pred_path, '/fold', n, '/test_labels.csv'), header = T) %>%
+           column_to_rownames('V1') %>%
+           mutate(label = factor(label, ordered = TRUE))
+
+   # read prediction summary for fold
+   pred = data.table::fread(paste0(params$pred_path, '/fold', n, '/Prediction_Summary.tsv'), header = T)%>%
+           column_to_rownames('cellname')
+
+   for(t in tools){
+    
+     tmp = get_pred(pred, t, true)
+    
+     list[[t]][[n]] = confusionMatrix(data = tmp$label, reference = true$label, mode = 'everything')
+     list[[t]][[n]]$fold = paste0('fold', n)
+     list[[t]][[n]]$tool = t
   }
 }
 ```
@@ -191,7 +196,7 @@ cat("  \n#", params$ref_name , "{.tabset} \n")
 cat("  \n## Summary \n")
 cat("<h3>Average F1 score per tool and class</h3>") 
 
-plot_mean_tool(list, 'F1')
+plot_mean_tool(list, 'F1', tools)
 
 cat("\n")
 

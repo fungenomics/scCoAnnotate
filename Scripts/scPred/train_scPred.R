@@ -63,14 +63,14 @@ stopCluster(cl)
 # print model info 
 get_scpred(scpred)
 
+# save trained model
+message('@ SAVE MODEL')
+save(scpred, file = model_path)
+message('@ DONE')
+
 # Plot prob 
 pdf(paste0(out_path, '/qc_plots.pdf'), width=10, height=10)
 plot_probabilities(scpred)
 dev.off()
-
-# save trained model 
-message('@ SAVE MODEL')
-save(scpred, file = model_path)
-message('@ DONE')
 
 #---------------------------------------------

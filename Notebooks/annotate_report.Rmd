@@ -20,16 +20,16 @@ params:
 ---
 
 ```{r setup, knitr_options, echo=F}
-knitr::opts_chunk$set(message = FALSE, warning=FALSE, cache = T)
-set.seed(12345)
+knitr::opts_chunk$set(message = FALSE, warning=FALSE)
 ```
 
-```{r fig.show='hide'}
+```{r fig.show='hide', include=F}
 library(tidyverse)
 library(ComplexHeatmap)
 library(Seurat)
 library(MetBrewer)
 library(plotly)
+library(kableExtra)
 
 #empty plotly plot to make sure the other plotly plots get printed later 
 plotly_empty() 
@@ -203,6 +203,41 @@ umap_plotly = function(seurat, meta_column, pal){
   return(p2)
 }
 
+calculate_percentage_unsure = function(pred, order){
+  warn = pred %>% 
+    select(order) %>%
+    pivot_longer(order) %>% 
+    mutate(value = factor(value)) %>%
+    group_by(name) %>%
+    count(value, .drop = F) %>%
+    mutate(frac = n/sum(n)*100) %>%
+    filter(!(!name == 'Consensus'  & value == 'No Consensus')) %>%
+    filter(value %in% c('No Consensus', 'Unsure')) %>%
+    mutate(warn = case_when(frac >= 70 ~ 'HIGH', 
+                            frac < 70 & frac > 30 ~ 'MEDIUM',
+                            frac <= 30 ~ 'LOW'))
+
+   warn = data.frame(TOOL = warn$name, 
+                     LABEL = warn$value, 
+                     PERCENTAGE = warn$frac, 
+                     FLAG = warn$warn) %>%
+          mutate(TOOL = factor(TOOL, levels = order)) 
+
+   warn = warn[order(warn$TOOL),]
+
+   warn$FLAG = cell_spec(warn$FLAG, 
+                         bold = T,
+                         background = case_when(warn$FLAG == 'HIGH' ~ "red",
+                                                warn$FLAG == 'MEDIUM' ~ "yellow",
+                                                warn$FLAG == 'LOW' ~ "green"))
+   
+   warn$TOOL = cell_spec(warn$TOOL,
+                         bold = ifelse(warn$TOOL == 'Consensus', T, F),
+			 background = ifelse(warn$TOOL == 'Consensus', 'black', 'white'),
+			 color = ifelse(warn$TOOL == 'Consensus', 'white', 'black'))
+   return(warn)
+}
+
 umap_theme = theme(aspect.ratio = 1,
         text = element_text(size = 10), 
         axis.title = element_blank(),
@@ -217,7 +252,7 @@ umap_theme = theme(aspect.ratio = 1,
 ```
 
 
-```{r}
+```{r, results='hide'}
 # read labels from refrence (used to harmonize 'usure' call)
 ref_labels = data.table::fread(params$ref_anno, header = T) %>% column_to_rownames('V1')
 
@@ -226,6 +261,7 @@ list = list()
 for(r in refs){
  list[[r]] = data.table::fread(paste0(params$pred_path, '/', params$sample, '/Prediction_Summary.tsv')) %>% 
              harmonize_unsure(., ref_labels) 
+ 
 }
 
 # read expression matrix for sample  
@@ -234,10 +270,14 @@ query = data.table::fread(paste0(params$pred_path, '/', params$sample, '/express
                                  header=T, 
                                  data.table=F) %>%
         column_to_rownames('V1') 
+
+
+
 ```
 
-```{r}
+```{r, results='hide'}
 # create seurat object from expression matrix 
+set.seed(12345)
 query = t(query)
 query = CreateSeuratObject(query, row.names = colnames(query))
 
@@ -252,13 +292,14 @@ query = query %>%
 ```
 
 ```{r fig.width=8,fig.height=8,echo=FALSE,message=FALSE,results="asis"}
+set.seed(12345)
 cat("\n")
 
 # create reference pal
 pal = create_color_pal(ref_labels$label)
 save(pal, file = paste0(params$pred_path, '/', params$sample, '/report/class_pal.Rda'))
 
-for(r in refs) {
+for(r in refs){
   
   query = AddMetaData(query, list[[r]])
   
@@ -290,10 +331,21 @@ for(r in refs) {
   
   cat("  \n## Prediction QC \n")
   
+  cat("<h3>Percentage Unsure</h3>")
+  
+  calculate_percentage_unsure(list[[r]], order = tools) %>% 
+  kbl(escape = FALSE, row.names = F) %>% 
+  kable_styling(position = "center") %>%
+  print()
+  
+  cat("\n")
+  
   cat("<h3>Correlation between tools</h3>")
   
   h = plot_tool_correlation_heatmap(query, tools = tools)
   draw(h)
+  
+  cat("\n")
   
   cat("<h3>Percentage overlap between tools and consensus</h3>")
   

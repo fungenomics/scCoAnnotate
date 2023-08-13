@@ -46,12 +46,12 @@ BiocManager::install(pkg)
 
 **R packages github**
 
-
 ```R
 pkg = c("pcahan1/singleCellNet",
         "powellgenomicslab/scPred",
         "PaulingLiu/scibet",
-        "bm2-lab/scLearn")
+        "bm2-lab/scLearn",
+        "BatadaLab/scID")
 
 devtools::install_github(pkg)
 ```

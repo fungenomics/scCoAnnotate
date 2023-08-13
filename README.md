@@ -259,4 +259,35 @@ It is necessary to explore whether parallelization is possible.
 The Tangram workflow was generated following the tutorial provided below:
 https://tangram-sc.readthedocs.io/en/latest/tutorial_sq_link.html
 
+## scAnnotate
+Documentation written by: Tomas Vega Waichman    
+Date written: 2023-08-11     
 
+scAnnotate cannot be separated between training and test.
+Genes in references and query should match.
+It allows to do the normalization inside their function using the parameter `lognormalized = F` but I normalized in the same way as they do on their script (using the NormalizeData function from the Seurat package, via the “LogNormalize” method and a scale factor of 10,000) since if we changed the input it would be easier to change. That's why I use `lognormalized = T`.
+scAnnotate has two separate workflows with different batch effect removal steps based on the size of the training data.  The `correction ="auto"` allows to automatically detect the needed for the dataset. They suggest using Seurat for dataset with at most one rare cell population
+(at most one cell population less than 100 cells) and using Harmony for dataset with at least two rare cell populations (at least two cell populations less than 100 cells).
+The `threshold` value goes between 0-1 and the cell with lower probability than the threshold are assing as "unassigned"
+
+The scAnnotate workflow was generated following the tutorial provided below:
+* https://cran.r-project.org/web/packages/scAnnotate/vignettes/Introduction.html
+
+## scAnnotate
+Documentation written by: Tomas Vega Waichman    
+Date written: 2023-08-12     
+
+scID has some installing isues: 
+ * Needs gdal/3.5.1 to install it.
+ * MAST is needed… if you are not able to install it use this approach:
+```
+wget https://bioconductor.org/packages/release/bioc/src/contrib/MAST_1.26.0.tar.gz
+R CMD INSTALL MAST_1.26.0.tar.gz
+```
+scID cannot be separated between training and test.
+I used their `scID:::counts_to_cpm(counts_gem = query)` function that they provided (hidden, code in their github). Could be replaced with any normalization without log-transformation (they said this in the tutorial below: Any library-depth normalization (e.g. TPM, CPM) is compatible with scID, but not log-transformed data.)
+* All parameters are the default except the normalization that is set in F since I normalized outside the function. But there exist some parameters that would be nice to explore as the `estimate_weights_from_target`.
+* It's very slow (takes ~ 2hs for the 5k cells query and 5k cell reference), but we have to test if it's related with the number of labels (number of comparison) or the size of the dataset.
+The scID workflow was generated following the tutorials provided below:
+* https://github.com/BatadaLab/scID/blob/master/vignettes/Mapping_example.md
+* https://github.com/BatadaLab/scID

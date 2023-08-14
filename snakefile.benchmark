@@ -750,5 +750,34 @@ rule run_scAnnotate:
     """
 
 #----------------------------------------------------
+#   scNym
+#----------------------------------------------------
+
+rule run_scNym:
+  input:
+    reference = config['output_dir'] + "/fold{folds_index}/train.csv",
+    labfile = config['output_dir'] + "/fold{folds_index}/train_labels.csv",
+    query = config['output_dir'] + "/fold{folds_index}/test.csv"
+  output:
+    pred = config['output_dir'] + "/fold{folds_index}/scNym/scNym_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = 0.5
+  log:
+    config['output_dir'] + "/fold{folds_index}/scNym/scNym.log"
+  benchmark:
+    config['output_dir'] + "/fold{folds_index}/scNym/scNym_predict_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scNym/run_scNym.py \
+            {input.reference} \
+            {input.labfile} \
+            {input.query} \
+            {output.pred} \
+            {params.threshold} \
+    &> {log}
+    """
+
+#----------------------------------------------------
 #   The End 
 #----------------------------------------------------

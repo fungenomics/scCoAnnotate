@@ -56,8 +56,7 @@ rule preprocess:
 rule consensus:
   input:
     results = expand(config["output_dir"] + "/{{sample}}/{tool}/{tool}_pred.csv",
-                     tool=config['tools_to_run']),
-    sample = config["output_dir"] + "/{sample}"
+                     tool=config['tools_to_run'])
   output:
     prediction_summary = config["output_dir"] + "/{sample}/Prediction_Summary.tsv"
   log: 
@@ -66,11 +65,12 @@ rule consensus:
     basedir = {workflow.basedir}, 
     tools = config['tools_to_run'],
     conesnsus_tools = config['consensus_tools'],
-    labfile = config['reference_annotations']
+    labfile = config['reference_annotations'],
+    sample = config["output_dir"] + "/{sample}"
   shell:
     """
     Rscript {params.basedir}/Scripts/calculate_consensus.R \
-    {input.sample} \
+    {params.sample} \
     {output.prediction_summary} \
     "{params.tools}" \
     "{params.conesnsus_tools}" \
@@ -755,6 +755,35 @@ rule run_scAnnotate:
             {output.pred} \
             {threads} \
 	    {params.threshold} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   scNym
+#----------------------------------------------------
+
+rule run_scNym:
+  input:
+    reference = config['output_dir'] + "/expression.csv",
+    labfile = config['reference_annotations'],
+    query = config['output_dir'] + "/{sample}/expression.csv"
+  output:
+    pred = config['output_dir'] + "/{sample}/scNym/scNym_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = 0.5
+  log:
+    config['output_dir'] + "/{sample}/scNym/scNym.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/scNym/scNym_predict_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scNym/run_scNym.py \
+            {input.reference} \
+            {input.labfile} \
+            {input.query} \
+            {output.pred} \
+            {params.threshold} \
     &> {log}
     """
 

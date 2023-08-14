@@ -12,10 +12,10 @@ random.seed(123456)
 #--------------- Parameters -------------------
 ref_path = str(sys.argv[1])
 lab_path = str(sys.argv[2])
-out_path = str(sys.argv[3])
-sample_path = str(sys.argv[4])
+sample_path = str(sys.argv[3])
+out_path = str(sys.argv[4])
 threshold = float(sys.argv[5])
-out_other_path = os.path.dirname(str(sys.argv[3]))
+out_other_path = os.path.dirname(str(sys.argv[4]))
 
 #--------------- Data -------------------------
 # read the data
@@ -81,7 +81,7 @@ ad_query.obs["label"] = "Unlabeled"
 #------------- Train scNym -------------
 ## Contatenate
 adata = ad_ref.concatenate(ad_query)
-file_model = out_other_path + '/model
+file_model = out_other_path + '/model'
 scnym_api(
     adata=adata,
     task='train',
@@ -90,7 +90,7 @@ scnym_api(
     config='new_identity_discovery',
 )
 
-file_pred = out_other_path + '/predict
+file_pred = out_other_path + '/predict'
 scnym_api(
     adata=adata,
     task='predict',
@@ -101,10 +101,15 @@ scnym_api(
 )
 
 adata.obs['pred_label_reject'] = adata.obs.apply(lambda row: 'Unknown' if row['scNym_confidence'] < threshold else row['scNym'], axis=1)
+def remove_batch(cell_id, batch):
+    return cell_id.replace(f'-{batch}', '')
+
+adata.obs['cell_id'] = adata.obs.index.map(lambda cell_id: remove_batch(cell_id, adata.obs.loc[cell_id, 'batch']))
+
 ## Get only the query 
 df = adata.obs[adata.obs["label"] == "Unlabeled"]
 print('@ WRITTING PREDICTIONS')
-pred_df = pd.DataFrame({'cell': df.index, "scNym": df.pred_label_reject})
+pred_df = pd.DataFrame({'cell': df.cell_id, "scNym": df.pred_label_reject})
 pred_df.to_csv(out_path, index = False)
 print('@ DONE')
 

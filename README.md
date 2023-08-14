@@ -40,7 +40,8 @@ pkg = c("SingleCellExperiment",
         "scClassify",
         "scuttle",
         "scran",
-        "M3Drop")
+        "M3Drop",
+        "scAnnotate")
 
 BiocManager::install(pkg)
 ```
@@ -113,6 +114,8 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 - scLearn
 - ACTINN
 - Correlation
+- scID
+- scAnnotate
 ```
 
 **Single cell RNA reference + spatial RNA query**

@@ -17,7 +17,8 @@ pkg = c("Seurat",
         "MetBrewer",
         "plotly",
         "caret",
-        "Matrix") 
+        "Matrix",
+        "scAnnotate") 
 
 install.packages(pkg)
 ```
@@ -46,12 +47,12 @@ BiocManager::install(pkg)
 
 **R packages github**
 
-
 ```R
 pkg = c("pcahan1/singleCellNet",
         "powellgenomicslab/scPred",
         "PaulingLiu/scibet",
-        "bm2-lab/scLearn")
+        "bm2-lab/scLearn",
+        "BatadaLab/scID")
 
 devtools::install_github(pkg)
 ```
@@ -273,7 +274,7 @@ The `threshold` value goes between 0-1 and the cell with lower probability than 
 The scAnnotate workflow was generated following the tutorial provided below:
 * https://cran.r-project.org/web/packages/scAnnotate/vignettes/Introduction.html
 
-## scAnnotate
+## scID
 Documentation written by: Tomas Vega Waichman    
 Date written: 2023-08-12     
 

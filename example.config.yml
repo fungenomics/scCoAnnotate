@@ -19,6 +19,8 @@ query_datasets:
 check_genes: False
 genes_required: Null
 
+# convert mouse genes of reference to human genes
+convert_ref_mm_to_hg: False
 
 # classifiers to run
 tools_to_run:

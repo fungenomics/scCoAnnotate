@@ -38,7 +38,8 @@ rule preprocess:
     query = expand(config['output_dir'] + "/{sample}/expression.csv", sample = samples)
   params:
     basedir = {workflow.basedir},
-    out_path = config['output_dir']
+    out_path = config['output_dir'],
+    convert_genes = config['convert_ref_mm_to_hg']
   log: config['output_dir'] + "/preprocess.log"
   priority: 50
   shell:
@@ -47,8 +48,10 @@ rule preprocess:
     {input.reference} \
     "{input.query}" \
     {params.out_path} \
+    {params.convert_genes} \
     &> {log} 
     """
+
 #----------------------------------------------------
 #  Consensus 
 #----------------------------------------------------
@@ -65,7 +68,7 @@ rule consensus:
   params:
     basedir = {workflow.basedir}, 
     tools = config['tools_to_run'],
-    conesnsus_tools = config['consensus_tools'],
+    consensus_tools = config['consensus_tools'],
     labfile = config['reference_annotations']
   shell:
     """
@@ -73,7 +76,7 @@ rule consensus:
     {input.sample} \
     {output.prediction_summary} \
     "{params.tools}" \
-    "{params.conesnsus_tools}" \
+    "{params.consensus_tools}" \
     {params.labfile} \
     &> {log}
     """  

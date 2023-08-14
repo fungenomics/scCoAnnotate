@@ -41,7 +41,10 @@ pkg = c("SingleCellExperiment",
         "scuttle",
         "scran",
         "M3Drop",
-        "scAnnotate")
+        "scAnnotate",
+        "Orthology.eg.db",
+        "org.Mm.eg.db",
+        "org.Hg.eg.db")
 
 BiocManager::install(pkg)
 ```

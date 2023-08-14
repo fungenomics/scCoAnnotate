@@ -71,13 +71,13 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 4. Prepare config file
 5. Prepare submission script (HPC) 
 
-## 1. Clone repository and install dependencies
+### 1. Clone repository and install dependencies
 
-## 2. Prepare reference
+### 2. Prepare reference
 
-## 3. Prepare query 
+### 3. Prepare query 
 
-## 4. Prepare config file
+### 4. Prepare config file
 
 ```yaml 
 # UPDATE 
@@ -85,13 +85,13 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 
 ## 5. Prepare submission script
 
-### Annotate
+#### Annotate
 
 ```bash 
 # UPDATE 
 ```
 
-### Benchmark
+#### Benchmark
 
 ```bash 
 # UPDATE 
@@ -126,8 +126,30 @@ TABLE WITH TOOL, N CELLS, N LABELS, TIME, MEM
 
 # Adding New Tools:
 
-``` R
+```
 # UPDATE 
+```
+
+# Tips and Tricks 
+
+- Dryrun before submitting job
+```bash
+snakemake -s ${snakefile} --configfile ${config} -n
+```
+
+- Unlock working directory before running (in case previous run crashed) by adding this to your script
+```bash
+snakemake -s ${snakefile} --configfile ${config} --unlock 
+```
+
+- Add `--rerun-incomplete` if snakemake finds incomplete files from a previous run that was not successfully removed 
+```bash
+snakemake -s ${snakefile} --configfile ${config} --rerun-incomplete 
+```
+
+- Update time stamp on files to avoid reruning rules if code has changed 
+```bash
+snakemake -s ${snakefile} --configfile ${config} -c1 -R $(snakemake -s ${snakefile} --configfile ${config} -c1 --list-code-changes) --touch 
 ```
 
 # Tools 

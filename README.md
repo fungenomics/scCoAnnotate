@@ -304,6 +304,7 @@ The `threshold` value goes between 0-1 and the cell with lower probability than 
 The scAnnotate workflow was generated following the tutorial provided below:
 * https://cran.r-project.org/web/packages/scAnnotate/vignettes/Introduction.html
 
+
 ## scID
 Documentation written by: Tomas Vega Waichman    
 Date written: 2023-08-12     
@@ -322,3 +323,21 @@ I used their `scID:::counts_to_cpm(counts_gem = query)` function that they provi
 The scID workflow was generated following the tutorials provided below:
 * https://github.com/BatadaLab/scID/blob/master/vignettes/Mapping_example.md
 * https://github.com/BatadaLab/scID
+
+## scNym
+Documentation written by: Tomas Vega Waichman    
+Date written: 2023-08-14     
+scNym takes advantage of the query to train the model, so... even if we are able to separated, it needs the query to train the model.
+* Query and training are concatenate in the same object and Any cell with the annotation "Unlabeled" will be treated as part of the target dataset and used for semi-supervised and adversarial training. It uses part of the query dataset to train the model.
+* Data inputs for scNym should be log(CPM + 1) normalized counts, where CPM is Counts Per Million and log is the natural logarithm.
+* They added the step of filtering no expressed genes so I added it but I ignored the step of filtering cells.
+* Threashold to assing cells lower than that value as “Unknown”.
+* It needs more research in multi-domain.
+* whole_df_output.csv has the entire dataframe output with the score for the query test (mark as label == “Unlabeled”).
+* I used the configuration as `new_identity_discovery` since: This configuration is useful for experiments where new cell type discoveries may occur. It uses
+pseudolabel thresholding to avoid the assumption above. If new cell
+types are present in the target data, they correctly receive low
+confidence scores.
+
+The scNym workflow was generated following the tutorials provided below:
+* https://github.com/calico/scnym/tree/master

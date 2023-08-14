@@ -108,9 +108,9 @@ df.to_csv(filename,
 print('@ DONE ')
 
 #### Save map object that contains the cell x spot prob
-print('@ WRITTING PROB MATRIX ')
+print('@ WRITTING OUTPUT OBJECT ')
 filename = out_other_path + '/Tangram_mapped_object.h5ad'
-ad_map.write_h5ad(filename= outputFile_map,
+ad_map.write_h5ad(filename= filename,
                   compression='gzip')
 print('@ DONE ')
 

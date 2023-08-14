@@ -152,6 +152,11 @@ snakemake -s ${snakefile} --configfile ${config} --rerun-incomplete
 snakemake -s ${snakefile} --configfile ${config} -c1 -R $(snakemake -s ${snakefile} --configfile ${config} -c1 --list-code-changes) --touch 
 ```
 
+- Generate a report with information about the snakemake workflow 
+```bash
+snakemake -s ${snakefile} --configfile ${config} --report ${report}
+```
+
 # Tools 
 
 ## scClassify

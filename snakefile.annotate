@@ -701,5 +701,63 @@ rule predict_ACTINN:
     """
 
 #----------------------------------------------------
+#   scID 
+#----------------------------------------------------
+
+rule run_scID:
+  input:
+    reference = config['output_dir'] + "/expression.csv",
+    labfile = config['reference_annotations'],
+    query = config['output_dir'] + "/{sample}/expression.csv"
+  output:
+    pred = config['output_dir'] + "/{sample}/scID/scID_pred.csv"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/{sample}/scID/scID.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/scID/scID_predict_benchmark.txt"
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scID/run_scID.R \
+            {input.reference} \
+	    {input.labfile} \
+	    {input.query} \
+	    {output.pred} \
+	    {threads} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   scAnnotate
+#----------------------------------------------------
+
+rule run_scAnnotate:
+  input:
+    reference = config['output_dir'] + "/expression.csv",
+    labfile = config['reference_annotations'],
+    query = config['output_dir'] + "/{sample}/expression.csv"
+  output:
+    pred = config['output_dir'] + "/{sample}/scAnnotate/scAnnotate_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = 0.5
+  log:
+    config['output_dir'] + "/{sample}/scAnnotate/scAnnotate.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/scAnnotate/scAnnotate_predict_benchmark.txt"
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scAnnotate/run_scAnnotate.R \
+            {input.reference} \
+            {input.labfile} \
+            {input.query} \
+            {output.pred} \
+            {threads} \
+	    {params.threshold} \
+    &> {log}
+    """
+
+#----------------------------------------------------
 #   The End 
 #----------------------------------------------------

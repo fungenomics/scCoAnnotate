@@ -17,7 +17,6 @@ threads = as.numeric(args[5])
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)
 
-
 #--------------- Data -------------------
 
 # read reference matrix and transpose 

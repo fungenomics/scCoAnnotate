@@ -692,5 +692,63 @@ rule predict_ACTINN:
     """
 
 #----------------------------------------------------
+#   scID
+#----------------------------------------------------
+
+rule run_scID:
+  input:
+    reference = config['output_dir'] + "/fold{folds_index}/train.csv",
+    labfile = config['output_dir'] + "/fold{folds_index}/train_labels.csv",
+    query = config['output_dir'] + "/fold{folds_index}/test.csv"
+  output:
+    pred = config['output_dir'] + "/fold{folds_index}/scID/scID_pred.csv"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/fold{folds_index}/scID/scID.log"
+  benchmark:
+    config['output_dir'] + "/fold{folds_index}/scID/scID_predict_benchmark.txt"
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scID/run_scID.R \
+            {input.reference} \
+            {input.labfile} \
+            {input.query} \
+            {output.pred} \
+            {threads} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   scAnnotate
+#----------------------------------------------------
+
+rule run_scAnnotate:
+  input:
+    reference = config['output_dir'] + "/fold{folds_index}/train.csv",
+    labfile = config['output_dir'] + "/fold{folds_index}/train_labels.csv",
+    query = config['output_dir'] + "/fold{folds_index}/test.csv"
+  output:
+    pred = config['output_dir'] + "/fold{folds_index}/scAnnotate/scAnnotate_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = 0.5
+  log:
+    config['output_dir'] + "/fold{folds_index}/scAnnotate/scAnnotate.log"
+  benchmark:
+    config['output_dir'] + "/fold{folds_index}/scAnnotate/scAnnotate_predict_benchmark.txt"
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/scAnnotate/run_scAnnotate.R \
+            {input.reference} \
+            {input.labfile} \
+            {input.query} \
+            {output.pred} \
+            {threads} \
+            {params.threshold} \
+    &> {log}
+    """
+
+#----------------------------------------------------
 #   The End 
 #----------------------------------------------------

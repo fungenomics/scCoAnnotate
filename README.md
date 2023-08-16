@@ -344,3 +344,34 @@ confidence scores.
 
 The scNym workflow was generated following the tutorials provided below:
 * https://github.com/calico/scnym/tree/master
+
+## CellTypist
+Documentation written by: Tomas Vega Waichman    
+Date written: 2023-08-16
+
+CellTypist allows to separate between training and reference.
+It Allows parallelization.
+It has their own pre-trained models.
+CellTypist requires a logarithmised and normalised expression matrix stored in the `AnnData` (log1p normalised expression to 10,000 counts per cell) [link](https://github.com/Teichlab/celltypist#supplemental-guidance-generate-a-custom-model)
+Training:
+* I use `check_expression = True` to check that the expression is okay.
+* celltypist.train has the option `(feature_selection = True)` in order to do a feature_selection, but it is not implemented.
+* The output is the model and and from the model we get the top markers for each cell type using the function `model.extract_top_markers()`. A table with the top 10 genes per cell-type is returned too (top10_model_markers_per_celltype.csv).
+Predicting:
+* "By default, CellTypist will only do the prediction jobs to infer the identities of input cells, which renders the prediction of each cell independent. To combine the cell type predictions with the cell-cell transcriptomic relationships, CellTypist offers a majority voting approach based on the idea that similar cell subtypes are more likely to form a (sub)cluster regardless of their individual prediction outcomes. To turn on the majority voting classifier in addition to the CellTypist predictions, pass in `majority_voting = True`.
+If `majority_voting = True` all the predict column will be the majority_voting results otherwise it use the predicted_labels where each query cell gets its inferred label by choosing the most probable cell type among all possible cell types in the given model." [link](https://celltypist.readthedocs.io/en/latest/notebook/celltypist_tutorial_ml.html)
+* majority_voting parameter should be specified in the configfile.
+* I use the multilabel prediction… since we want to know if a cell cannot be classified very clearly… Description: For the built-in models, we have collected a large number of cell types; yet, the presence of unexpected (e.g., low-quality or novel cell types) and ambiguous cell states (e.g., doublets) in the query data is beyond the prediction that CellTypist can achieve with a 'find-a-best-match' mode. To overcome this, CellTypist provides the option of multi-label cell type classification, which assigns 0 (i.e., unassigned), 1, or >=2 cell type labels to each query cell. It allows the use of a `threshold` to label cells that are below that probability as "Unnasigned". It allows to have intermediate labels as combination in the format of `celltype1|celltype2`.
+* Output: 4 .csv, the prediction for each cell (depending if we choose majority_voting or not will be the majority_voting or not), 
+  * decision_matrix.csv : Decision matrix with the decision score of each cell     belonging to a given cell type.
+  * probability_matrix.csv: Probability matrix representing the probability each cell belongs to a given cell type (transformed from decision matrix by the sigmoid function).
+  * predicted_labels.csv: The prediction for each cell, if majority_voting was true it has the information of the majority_voting labels AND the predicted_labels.
+  * Generates some embedding plots.
+  * An .h5ad object that has all the previous information (with the embeddings too) in a h5ad object.
+
+The CellTypist workflow was generated following the tutorials provided below:
+Training:
+* https://celltypist.readthedocs.io/en/latest/celltypist.train.html
+* https://github.com/Teichlab/celltypist#supplemental-guidance-generate-a-custom-model
+Predicting:
+* https://celltypist.readthedocs.io/en/latest/notebook/celltypist_tutorial_ml.html

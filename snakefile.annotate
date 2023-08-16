@@ -67,7 +67,7 @@ rule consensus:
   params:
     basedir = {workflow.basedir}, 
     tools = config['tools_to_run'],
-    conesnsus_tools = config['consensus_tools'],
+    consensus_tools = config['consensus_tools'],
     labfile = config['reference_annotations'],
     sample = config["output_dir"] + "/{sample}"
   shell:

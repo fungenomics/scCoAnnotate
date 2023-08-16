@@ -1,6 +1,5 @@
 
 library(tidyverse)
-library(WGCNA)
 
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
@@ -28,6 +27,7 @@ if(convert_genes){
   library(org.Mm.eg.db)
   library(org.Hs.eg.db)
   library(WGCNA)
+
   mapfun = function(mousegenes){
     gns    = mapIds(org.Mm.eg.db, mousegenes, "ENTREZID", "SYMBOL")
     mapped = AnnotationDbi::select(Orthology.eg.db, gns, "Homo_sapiens","Mus_musculus")
@@ -52,7 +52,6 @@ if(convert_genes){
   }
 
   # modify reference matrix to contain converted genes
- 
   l[['ref']] = l[['ref']] %>%
     transposeBigData() %>%
     rownames_to_column('Mouse_symbol') %>%
@@ -68,13 +67,22 @@ if(convert_genes){
 genes = lapply(l, function(x){(colnames(x))})
 
 # reduce set of genes to the intersect 
-genes = Reduce(intersect, genes)
+common_genes = Reduce(intersect,genes)
+
+# throw error if number of common genes below % threshold of genes in any of provided datasets (ref or query) 
+threshold = 0.5
+if(any(length(common_genes) < threshold*length(genes))){
+  frac = lapply(genes, function(x){length(common_genes)/length(x)})
+  names(frac) = names(l)
+  print(frac)
+  stop(paste0("@ In at least one provided dataset (ref or query), less than ",threshold*100,"% of genes appear in common gene set. See above for the fraction of genes from each dataset appearing in common gene set (note: samples with few genes will have higher fractions)"))
+}
 
 # save common genes 
-data.table::fwrite(data.frame('common_genes' = genes), paste0(out_path, '/common_genes.csv'))
+data.table::fwrite(data.frame('common_genes' = common_genes), paste0(out_path, '/common_genes.csv'))
 
 # filter each data set for common genes
-l = lapply(l, function(x){x[,genes]})
+l = lapply(l, function(x){x[,common_genes]})
 
 # save reference 
 tmp = l[['ref']] %>% rownames_to_column()

@@ -25,6 +25,7 @@ convert_ref_mm_to_hg: False
 # classifiers to run
 tools_to_run:
       - scPred
+            - model: ['SVMradial', 'glm']
       - SingleR
       - scClassify
       - SciBet

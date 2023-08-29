@@ -266,7 +266,6 @@ def model(X_train, Y_train, starting_learning_rate = 0.0001, num_epochs = 1500, 
         return parameters
 
 
-
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()

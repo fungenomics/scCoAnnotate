@@ -10,13 +10,13 @@ output:
     code_folding: hide
 params: 
     refs: ''
-    ref_anno: ''
     tools: ''
     consensus: ''
-    pred_path: ''
+    output_dir: ''
     sample: ''
     threads: ''
     marker_genes: ''
+    query: ''
 ---
 
 ```{r setup, knitr_options, echo=F}
@@ -101,7 +101,7 @@ create_color_pal = function(class, mb = 'Juarez'){
   return(pal)
 }
 
-plot_bar_largest_group = function(seurat, meta_column = '', palet = pal, fr = 0.1){
+plot_bar_largest_group = function(seurat, meta_column = '', pal = pal, fr = 0.1){
   
 df = seurat@meta.data %>%
   count(seurat_clusters, .data[[meta_column]]) %>%
@@ -131,7 +131,7 @@ p1 = df %>%
         strip.background = element_blank(), 
         aspect.ratio = 0.5) 
 
- p2 = ggplotly(p1, tooltip = c('text'))
+ p2 = ggplotly(p1, tooltip = c('text')) %>% toWebGL()
  
  return(p2)
 }
@@ -198,7 +198,7 @@ umap_plotly = function(seurat, meta_column, pal){
   scale_color_manual(values = pal) +
   theme_bw() + umap_theme + theme(legend.position = 'right') 
 
-  p2 = ggplotly(plot = p1, tooltip = c('text')) %>% layout(autosize = F, width = 550, height = 450)
+  p2 = ggplotly(plot = p1, tooltip = c('text')) %>% layout(autosize = F, width = 550, height = 450) %>% toWebGL()
 
   return(p2)
 }
@@ -233,8 +233,8 @@ calculate_percentage_unsure = function(pred, order){
    
    warn$TOOL = cell_spec(warn$TOOL,
                          bold = ifelse(warn$TOOL == 'Consensus', T, F),
-			 background = ifelse(warn$TOOL == 'Consensus', 'black', 'white'),
-			 color = ifelse(warn$TOOL == 'Consensus', 'white', 'black'))
+             background = ifelse(warn$TOOL == 'Consensus', 'black', 'white'),
+             color = ifelse(warn$TOOL == 'Consensus', 'white', 'black'))
    return(warn)
 }
 
@@ -252,27 +252,28 @@ umap_theme = theme(aspect.ratio = 1,
 ```
 
 
-```{r, results='hide'}
-# read labels from refrence (used to harmonize 'usure' call)
-ref_labels = data.table::fread(params$ref_anno, header = T) %>% column_to_rownames('V1')
-
+```{r}
 # read prediction summary for each reference 
 list = list()
+
 for(r in refs){
- list[[r]] = data.table::fread(paste0(params$pred_path, '/', params$sample, '/Prediction_Summary.tsv')) %>% 
-             harmonize_unsure(., ref_labels) 
+  list[[r]]$lab = data.table::fread(paste0(params$output_dir, '/model/', r, '/labels.csv'), header = T)
  
+  list[[r]]$pred = data.table::fread(paste0(params$output_dir, '/', params$sample, '/', r, '/Prediction_Summary.tsv')) %>% 
+                       harmonize_unsure(., list[[r]]$lab) 
+
+  # create reference pal
+  list[[r]]$pal = create_color_pal(list[[r]]$lab$label)
+
+  #save(list[[r]]$pal, file = paste0(params$output_dir, '/model/', r, '/class_pal.Rda'))
 }
 
 # read expression matrix for sample  
-query = data.table::fread(paste0(params$pred_path, '/', params$sample, '/expression.csv'), 
+query = data.table::fread(paste0(params$query), 
                                  nThread=threads, 
                                  header=T, 
                                  data.table=F) %>%
         column_to_rownames('V1') 
-
-
-
 ```
 
 ```{r, results='hide'}
@@ -295,13 +296,9 @@ query = query %>%
 set.seed(12345)
 cat("\n")
 
-# create reference pal
-pal = create_color_pal(ref_labels$label)
-save(pal, file = paste0(params$pred_path, '/', params$sample, '/report/class_pal.Rda'))
-
 for(r in refs){
   
-  query = AddMetaData(query, list[[r]])
+  query = AddMetaData(query, list[[r]]$pred)
   
   cat("  \n#",  r, "{.tabset} \n")
   
@@ -309,7 +306,7 @@ for(r in refs){
   
   cat("<h3>Clusters</h3>")
   
-  p = umap_plotly(query, 'seurat_clusters', unname(pal))
+  p = umap_plotly(query, 'seurat_clusters', unname(list[[r]]$pal))
   print(htmltools::tagList(p))
 
   cat("\n")
@@ -333,7 +330,7 @@ for(r in refs){
   
   cat("<h3>Percentage Unsure</h3>")
   
-  calculate_percentage_unsure(list[[r]], order = tools) %>% 
+  calculate_percentage_unsure(list[[r]]$pred, order = tools) %>% 
   kbl(escape = FALSE, row.names = F) %>% 
   kable_styling(position = "center") %>%
   print()
@@ -361,21 +358,21 @@ for(r in refs){
     
     cat("<h3>Top class per cluster</h3>")
   
-    p = plot_bar_largest_group(query, t, fr = 0.1)
+    p = plot_bar_largest_group(query, t, fr = 0.1, pal = list[[r]]$pal)
     print(htmltools::tagList(p))
     
     cat("<h3>UMAP</h3>")
     
     cat("\n")
 
-    p = umap_plotly(query, t, pal)
+    p = umap_plotly(query, t, list[[r]]$pal)
     print(htmltools::tagList(p))
 
     cat("\n")
     
     cat("<h3>UMAP per class</h3>")
     
-    l = color_class_seurat(query, t, pal)
+    l = color_class_seurat(query, t, list[[r]]$pal)
     if(length(l)< 9){
       cowplot::plot_grid(plotlist = l[1:9], ncol = 3) %>% print()
     }else{

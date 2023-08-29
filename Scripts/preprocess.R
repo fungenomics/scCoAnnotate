@@ -4,8 +4,10 @@ library(tidyverse)
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 query_paths = strsplit(args[2], split = ' ')[[1]]
-out_path = args[3]
+out = args[3]
 convert_genes = as.logical(args[4])
+lab_path = args[5]
+reference_name = args[6]
 
 l = list()
 
@@ -43,7 +45,7 @@ if(convert_genes){
   
   # output list of mouse genes that were not converted
   not_converted = hg %>% filter(is.na(Human_symbol)) %>% .$Mouse_symbol
-  data.table::fwrite(as.list(not_converted), file = paste0(out_path, '/genes_not_converted.csv'), sep = ',')
+  data.table::fwrite(as.list(not_converted), file = paste0(reference_out, '/genes_not_converted.csv'), sep = ',')
 
   # throw error if more than threshold % genes not converted
   threshold = 0.5
@@ -79,7 +81,7 @@ if(any(length(common_genes) < threshold*length(genes))){
 }
 
 # save common genes 
-data.table::fwrite(data.frame('common_genes' = common_genes), paste0(out_path, '/common_genes.csv'))
+data.table::fwrite(data.frame('common_genes' = genes), paste0(out, '/model/', reference_name, '/common_genes.csv'))
 
 # filter each data set for common genes
 l = lapply(l, function(x){x[,common_genes]})
@@ -87,7 +89,7 @@ l = lapply(l, function(x){x[,common_genes]})
 # save reference 
 tmp = l[['ref']] %>% rownames_to_column()
 colnames(tmp)[1] = " "
-data.table::fwrite(tmp, file = paste0(out_path, '/expression.csv'), sep = ',')
+data.table::fwrite(tmp, file = paste0(out, '/model/', reference_name, '/expression.csv'), sep = ',')
 
 # save query 
 query_names = names(l)[!names(l) == 'ref']
@@ -95,5 +97,13 @@ for(q in query_names){
   print(q)
   tmp = l[[q]] %>% rownames_to_column()
   colnames(tmp)[1] = " "
-  data.table::fwrite(tmp, file = paste0(out_path, '/', q, '/expression.csv'), sep = ',')
+  data.table::fwrite(tmp, file = paste0(out, '/', q, '/', reference_name, '/expression.csv'), sep = ',')
 }
+
+# save unique labels (for downstream report color pal)
+lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
+lab = data.frame(label = unique(lab$label))
+data.table::fwrite(lab, file = paste0(out, '/model/', reference_name, '/labels.csv'), sep = ',')
+
+
+

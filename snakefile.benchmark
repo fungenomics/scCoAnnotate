@@ -402,7 +402,7 @@ rule train_SVC:
     reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
     labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_model.Rda"
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_model.pkl"
   params:
     basedir = {workflow.basedir}
   log:
@@ -426,7 +426,7 @@ rule train_SVC:
 rule predict_SVC:
   input:
     query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_model.Rda"
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_model.pkl"
   output:
     pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_pred.csv"
   params:
@@ -813,6 +813,66 @@ rule run_scNym:
             {input.query} \
             {output.pred} \
             {params.threshold} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   CellTypist
+#----------------------------------------------------
+
+rule train_CellTypist:
+  input:
+    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
+    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+  output:
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_model.pkl"
+  params:
+    basedir = {workflow.basedir},
+    feature_selection = config['CellTypist']['feature_selection']
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_train_benchmark.txt"
+  threads: 
+    config['CellTypist']['threads']
+  resources:
+  shell:
+    """
+    python {params.basedir}/Scripts/CellTypist/train_CellTypist.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.feature_selection} \
+    &> {log}
+    """
+
+rule predict_CellTypist:
+  input:
+    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_model.pkl"
+  output:
+    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = config['CellTypist']['threshold'],
+    majority_voting = config['CellTypist']['majority_voting']
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_predict_benchmark.txt"
+  threads: 
+    config['CellTypist']['threads']
+  resources:
+  shell:
+    """
+    python {params.basedir}/Scripts/CellTypist/predict_CellTypist.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {params.threshold} \
+    {threads} \
+    {params.majority_voting} \
     &> {log}
     """
 

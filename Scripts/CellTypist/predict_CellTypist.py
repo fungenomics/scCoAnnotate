@@ -45,18 +45,18 @@ sc.pp.log1p(query)
 
 
 # load model 
-print('@ LOAD MODEL'))
-CellTypist_model = pickle.load(open(model_path, 'rb'))
+print('@ LOAD MODEL')
+model = pickle.load(open(model_path, 'rb'))
 print('@ DONE')
 
 ### If the trained model was generated with a diff number of threads and the
 ## prediction is done with other number
-CellTypist_model.classifier.n_jobs = threads
+model["Model"].n_jobs = threads
 
 #------------- Predict CellTypist -------------
 
 predictions = celltypist.annotate(query,
-                                  model = CellTypist_model,
+                                  model = model_path,
                                   majority_voting = majority_voting,
                                   mode = 'prob match',
                                   p_thres = threshold)
@@ -80,7 +80,7 @@ predictions.to_table(out_other_path)
 print('@ DONE')
 ## Save the output plots
 print('@ GENERATING OUTPUT PLOTS')
-prediction.to_plot(out_other_path)
+predictions.to_plots(out_other_path)
 print('@ DONE')
 
 ### Save the prob matrix

@@ -63,15 +63,15 @@ model = celltypist.train(adata,
 
 #Save the model to disk
 print('@ SAVE MODEL')                             
-new_model.write(out_path)
+model.write(out_path)
 print('@ DONE')
 
 #------------- Other outputs --------------
 #We can extract the top markers, I get the top 10 for each cell-type applying the
 # function extract_top_markers
 dataframes = []
-for cell_type in CellTypist_model.cell_types:
-    top_markers = CellTypist_model.extract_top_markers(cell_type, 10)
+for cell_type in model.cell_types:
+    top_markers = model.extract_top_markers(cell_type, 10)
     
     # Create a DataFrame for the current cell type's top markers
     df = pd.DataFrame(top_markers, columns=['Marker'])

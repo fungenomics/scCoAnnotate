@@ -50,3 +50,9 @@ scAnnotate:
 scNym:
   threads: 1
   threshold: 0.5
+
+CellTypist:
+  threads: 1 
+  feature_selection: 'True'
+  majority_voting: 'True'
+  threshold: 0.5

@@ -21,9 +21,6 @@ dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
 rule all:
   input:
-    expand(config["output_dir"] + "/{sample}/{reference}/Prediction_Summary.tsv", 
-           sample  = samples,
-           reference = config['references']),
     expand(config['output_dir'] + '/{sample}/report/{sample}.prediction_report.' + dt_string + '.html',
            sample = samples)
 
@@ -467,14 +464,14 @@ rule train_SVC:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
   output:
-    model = config['output_dir'] + "/model/{reference}/SVCrbf/SVCrbf_model.Rda"
+    model = config['output_dir'] + "/model/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + "_model.pkl"
   params:
     basedir = {workflow.basedir},
     classifier = config['SVC']['classifier']
   log:
-    config['output_dir'] + "/model/{reference}/SVCrbf/SVCrbf.log"
+    config['output_dir'] + "/model/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + ".log"
   benchmark:
-    config['output_dir'] + "/model/{reference}/SVCrbf/SVCrbf_train_benchmark.txt"
+    config['output_dir'] + "/model/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + "_train_benchmark.txt"
   threads: 
     config['SVC']['threads']
   resources:
@@ -492,17 +489,17 @@ rule train_SVC:
 rule predict_SVC:
   input:
     query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
-    model = config['output_dir'] + "/{reference}/SVCrbf/SVCrbf_model.Rda"
+    model = config['output_dir'] + "/model/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + "_model.pkl"
   output:
-    pred = config['output_dir'] + "/{sample}/{reference}/SVCrbf/SVCrbf_pred.csv"
+    pred = config['output_dir'] + "/{sample}/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + "_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = config['SVC']['threshold'],
     tool_name = config['SVC']['classifier']
   log:
-    config['output_dir'] + "/{sample}/{reference}/SVCrbf/SVCrbf.log"
+    config['output_dir'] + "/{sample}/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + ".log"
   benchmark:
-    config['output_dir'] + "/{sample}/{reference}/SVCrbf/SVCrbf_predict_benchmark.txt"
+    config['output_dir'] + "/{sample}/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + "_predict_benchmark.txt"
   threads: 
     config['SVC']['threads']
   resources:
@@ -729,7 +726,6 @@ rule predict_ACTINN:
            -mp {input.model} \
            -pp {output.pred} \
     &> {log}
-    
     """
 
 #----------------------------------------------------
@@ -822,6 +818,66 @@ rule run_scNym:
             {input.query} \
             {output.pred} \
             {params.threshold} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   CellTypist 
+#----------------------------------------------------
+
+rule train_CellTypist:
+  input:
+    reference = config['output_dir'] + "/model/{reference}/expression.csv",
+    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+  output:
+    model = config['output_dir'] + "/model/{reference}/CellTypist/CellTypist_model.pkl"
+  params:
+    basedir = {workflow.basedir},
+    feature_selection = config['CellTypist']['feature_selection']
+  log:
+    config['output_dir'] + "/model/{reference}/CellTypist/CellTypist.log"
+  benchmark:
+    config['output_dir'] + "/model/{reference}/CellTypist/CellTypist_train_benchmark.txt"
+  threads: 
+    config['CellTypist']['threads']
+  resources:
+  shell:
+    """
+    python {params.basedir}/Scripts/CellTypist/train_CellTypist.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.feature_selection} \
+    &> {log}
+    """
+
+rule predict_CellTypist:
+  input:
+    query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
+    model = config['output_dir'] + "/model/{reference}/CellTypist/CellTypist_model.pkl"
+  output:
+    pred = config['output_dir'] + "/{sample}/{reference}/CellTypist/CellTypist_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = config['CellTypist']['threshold'],
+    majority_voting = config['CellTypist']['majority_voting']
+  log:
+    config['output_dir'] + "/{sample}/{reference}/CellTypist/CellTypist.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/{reference}/CellTypist/CellTypist_predict_benchmark.txt"
+  threads: 
+    config['CellTypist']['threads']
+  resources:
+  shell:
+    """
+    python {params.basedir}/Scripts/CellTypist/predict_CellTypist.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {params.threshold} \
+    {threads} \
+    {params.majority_voting} \
     &> {log}
     """
 

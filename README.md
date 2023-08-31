@@ -70,13 +70,13 @@ devtools::install_github(pkg)
 pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensorflow tables snakemake
 ```
 
-# Quickstart 
+# Quickstart tutorial
 
-1. [Clone repository and install dependencies](#clone-repository-and-install-dependencies)  
-2. [Prepare reference](#prepare-reference)
-3. [Prepare query samples](#prepare-query-samples)
-4. [Prepare config file](#prepare-config-file)
-5. [Prepare HPC submission script](#prepare-hpc-submission-script) 
+1. [Clone repository and install dependencies](#1-clone-repository-and-install-dependencies)  
+2. [Prepare reference](#2-prepare-reference)
+3. [Prepare query samples](#3-prepare-query-samples)
+4. [Prepare config file](#4-prepare-config-file)
+5. [Prepare HPC submission script](#5-prepare-hpc-submission-script) 
 
 ### 1. Clone repository and install dependencies
 

@@ -6,7 +6,7 @@ Snakemake pipeline for consensus prediction of cell types in single-cell RNA seq
 
 The pipeline is automated and running it does not require prior knowledge of machine learning. It also features parallelization options to exploit available computational resources for maximal efficiency. This pipeline trains classifiers on genes common to the reference and all query datasets. 
 
-[Rule Graph](rulegraph.annotation.pdf)
+[Annotation Workflow](rulegraph.annotation.pdf)
 
 # Installation and Dependencies
 

@@ -124,6 +124,8 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 - Correlation
 - scID
 - scAnnotate
+- scNym
+- CellTypist
 ```
 
 ## Single cell RNA reference + spatial RNA query

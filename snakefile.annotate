@@ -709,7 +709,7 @@ rule predict_ACTINN:
     query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
     model = config['output_dir'] + "/model/{reference}/ACTINN/ACTINN_model.pkl"
   output:
-    pred = config['output_dir'] + "/{reference}/{sample}/ACTINN/ACTINN_pred.csv"
+    pred = config['output_dir'] + "/{sample}/{reference}/ACTINN/ACTINN_pred.csv"
   params:
     basedir = {workflow.basedir}
   log:

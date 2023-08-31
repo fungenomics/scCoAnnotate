@@ -90,7 +90,7 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 # UPDATE 
 ```
 
-## 5. Prepare HPC submission script
+### 5. Prepare HPC submission script
 
 #### Annotate
 

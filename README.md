@@ -2,14 +2,17 @@
 
 # Summary
 
-Reference based prediction of cell-types using a fast and efficient Snakemake pipeline to increase automation and reduce the need to run several scripts and experiments. The pipeline allows the user to select what single-cell annotation tools they want to run on a selected reference to annotate a list of query datasets. It then outputs a consensus of the predictions across tools selected. This pipeline trains classifiers on genes common to the reference and all query datasets. 
+Snakemake pipeline for consensus prediction of cell types in single-cell RNA sequencing (scRNA-seq) data. The pipeline allows users to run up to 15 different reference-based annotation tools (statistical models and machine learning approaches) to predict cell type labels of multiple scRNA-seq samples. It then outputs a consensus of the predictions, which has been found to have increased accuracy in benchmarking experiments compared to the individual predictions alone, by combining the strengths of the different approaches.
 
+The pipeline is automated and running it does not require prior knowledge of machine learning. It also features parallelization options to exploit available computational resources for maximal efficiency. This pipeline trains classifiers on genes common to the reference and all query datasets. 
 
 # Installation and Dependencies
 
-Tested with [R](https://www.r-project.org/) Version 4.2.2 and Python 3.11.2.
+This tool has been designed and tested for use on a high-performance computing cluster (HPC) with a SLURM workload manager.
 
-**R packages CRAN**
+It has been tested with [R](https://www.r-project.org/) version 4.2.2 and Python version 3.11.2.
+
+## R packages - CRAN
 
 ```R
 pkg = c("Seurat",
@@ -29,7 +32,7 @@ Older version of Matrix package needs to be installed for Seurat to work: https:
 devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r-project.org")
 ```
 
-**R packages bioconductor**
+## R packages - Bioconductor
 
 ```R
 pkg = c("SingleCellExperiment",
@@ -49,7 +52,7 @@ pkg = c("SingleCellExperiment",
 BiocManager::install(pkg)
 ```
 
-**R packages github**
+## R packages - Github
 
 ```R
 pkg = c("pcahan1/singleCellNet",
@@ -61,7 +64,7 @@ pkg = c("pcahan1/singleCellNet",
 devtools::install_github(pkg)
 ```
 
-**Python modules**
+## Python modules
 
 ```bash 
 pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensorflow tables snakemake
@@ -69,17 +72,17 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 
 # Quickstart 
 
-1. Clone repository and install dependencies  
-2. Prepare reference
-3. Prepare query samples
-4. Prepare config file
-5. Prepare submission script (HPC) 
+1. [Clone repository and install dependencies](#clone-repository-and-install-dependencies)  
+2. [Prepare reference](#prepare-reference)
+3. [Prepare query samples](#prepare-query-samples)
+4. [Prepare config file](#prepare-config-file)
+5. [Prepare HPC submission script](#prepare-hpc-submission-script) 
 
 ### 1. Clone repository and install dependencies
 
 ### 2. Prepare reference
 
-### 3. Prepare query 
+### 3. Prepare query samples
 
 ### 4. Prepare config file
 
@@ -87,7 +90,7 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 # UPDATE 
 ```
 
-## 5. Prepare submission script
+## 5. Prepare HPC submission script
 
 #### Annotate
 
@@ -101,11 +104,11 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 # UPDATE 
 ```
 
-# Tools Available 
+# Available tools
 
-**Single cell RNA reference + single cell RNA query** 
+## Single cell RNA reference + single cell RNA query
  
-```ymal
+```yaml
 - scPred
 - SingleR
 - scClassify
@@ -121,7 +124,7 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 - scAnnotate
 ```
 
-**Single cell RNA reference + spatial RNA query**
+## Single cell RNA reference + spatial RNA query
 ```yaml
 - Tangram
 ```
@@ -130,15 +133,15 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 
 TABLE WITH TOOL, N CELLS, N LABELS, TIME, MEM 
 
-# Adding New Tools:
+# Adding new tools:
 
 ```
 # UPDATE 
 ```
 
-# Tips and Tricks 
+# Snakemake Tips and Tricks 
 
-- Dryrun before submitting job
+- Dryrun snakemake pipeline before submitting job
 ```bash
 snakemake -s ${snakefile} --configfile ${config} -n
 ```
@@ -153,7 +156,7 @@ snakemake -s ${snakefile} --configfile ${config} --unlock
 snakemake -s ${snakefile} --configfile ${config} --rerun-incomplete 
 ```
 
-- Update time stamp on files to avoid reruning rules if code has changed 
+- Update time stamp on files to avoid rerunning rules if code has changed 
 ```bash
 snakemake -s ${snakefile} --configfile ${config} -c1 -R $(snakemake -s ${snakefile} --configfile ${config} -c1 --list-code-changes) --touch 
 ```
@@ -163,11 +166,15 @@ snakemake -s ${snakefile} --configfile ${config} -c1 -R $(snakemake -s ${snakefi
 snakemake -s ${snakefile} --configfile ${config} --report ${report}
 ```
 
-# Tools 
+# Detailed documentation on tool wrapper scripts
 
 ## scClassify
 
-Detailed documentation for scClassify train and predict scripts, written July 2023 by Bhavyaa Chandarana
+Documentation written by: Bhavyaa Chandarana
+Date written: 2023-07
+
+scClassify workflow was generated using the tutorial below:
+https://www.bioconductor.org/packages/release/bioc/vignettes/scClassify/inst/doc/scClassify.html
 
 * scCoAnnotate input reference and query have cells as the rows, genes as columns. scClassify (and the Seurat function used for normalization, see below) requires genes on the rows and cells on the columns. Therefore, I used `WGCNA::transposeBigData()` (function optimized for large sparse matrices) to transpose the inputs before normalization and training/prediction.
 
@@ -180,33 +187,37 @@ Detailed documentation for scClassify train and predict scripts, written July 20
 * `scClassify::plotCellTypeTree()` produces a ggplot object. Therefore, I am using `ggplot2::ggsave()` to save it as a png file. (Function documentation [source](https://www.bioconductor.org/packages/release/bioc/manuals/scClassify/man/scClassify.pdf))
 
 ## scPred
-Documentation written by: Alva Annett    
-Date written: July 2023   
 
-Both reference and query is normaluzed using `Seurat::NormalizeData()`.     
-Needs computed PCA space. Dims set to 1:30 according to tutorial.    
-Default model `SVMradial`. Option to switch model should be set up in snakemake.   
+Documentation written by: Alva Annett    
+Date written: 2023-07   
 
 Normalization and parameters based on this tutorial:   
 https://powellgenomicslab.github.io/scPred/articles/introduction.html
 
+* Both reference and query is normalized using `Seurat::NormalizeData()`.     
+Needs computed PCA space. Dims set to 1:30 according to tutorial.
+
+* Default model `SVMradial`. Option to switch model should be set up in snakemake.   
+
 ## SingleR 
+
 Documentation written by: Alva Annett    
-Date written: July 2023    
-
-Both reference and query is normaluzed using `scuttle::logNormCounts()`. Both reference and query is converted to SingleCellExperiment objects before normalization.   
-
-Deviation from default parameters: 
-* `de.method = de.method="wilcox"`
-Method for generating marker genes for each class in reference. Wilcox is recomended when single cell data is used as reference
+Date written: 2023-07  
 
 Normalization and parameters based on this tutorial:
 http://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html#3_Using_single-cell_references
+
+* Both reference and query is normalized using `scuttle::logNormCounts()`. Both reference and query is converted to SingleCellExperiment objects before normalization.   
+
+* Deviation from default parameters: `de.method = de.method="wilcox"` Method for generating marker genes for each class in reference. Wilcox is recomended when single cell data is used as reference
 
 ## singleCellNet
 
 Documentation written by: Rodrigo Lopez Gutierrez
 Date written: 2023-08-01
+
+singleCellNet workflow was generated following the tutorial below:
+https://pcahan1.github.io/singleCellNet/
 
 Input for `singleCellNet` is raw counts for both reference and query. The reference is normalized within the `scn_train()` function. The query is currently not normalized. In the tutorial example they used raw query data. Furthermore, according to the tutorial, the classification step is robust to the normalization and transformation steps of the query data sets. They claim that one can even directly use raw data to query and still obtains accurate classification. This could be tested in the future with our data to see if normalized queries perform better.
 
@@ -214,17 +225,14 @@ Normal parameters were used in both the training and prediction functions, with 
 * In `scn_train()`, we used parameter `nTrees = 500` compared to the default `nTrees = 1000`. This parameter changes the number of trees for the random forest classifier. The value selected is based on Hussein's thesis and is changed to improve the speed of `singleCellNet`. It is mentioned that additional training parameters may need to be adjusted depending on the quality of the reference data. Additionally, tutorial mentions that classifier performance may increase if the values for `nTopGenes` and `nTopGenePairs` are increased.
 * In `scn_predict()`, we used parameter `nrand = 0` compared to the default `nrand = 50`. This parameter changes the number of randomized single cell RNA-seq profiles which serve as positive controls that should be mostly classified as `rand` (unknown) category. If left at default value, then this would generate extra cells that might complicate downstream consolidation of the consensus predictions for each cell. Therefore, the selected value is used to avoid complication. 
 
-singleCellNet workflow was generated following the tutorial below:
-https://pcahan1.github.io/singleCellNet/
-
 ## Correlation
 
 Documentation written by: Rodrigo Lopez Gutierrez   
 Date written: 2023-08-02   
 
 The Correlation tool runs a correlation-based cell type prediction on a sample of interest, given the mean gene expression per label for a reference.
-The function to label by Spearman correlation was originally generated by Selin Jessa and Marie Coutlier
-Path to original file: `/lustre06/project/6004736/sjessa/from_narval/HGG-oncohistones/stable/code/scripts/predict_celltype_cor.R`
+The function to label by Spearman correlation was originally generated by Selin Jessa and Marie Coutelier.
+Path to original file on Narval compute cluster: `/lustre06/project/6004736/sjessa/from_narval/HGG-oncohistones/stable/code/scripts/predict_celltype_cor.R`
 
 Input for `Correlation` is raw counts for both reference and query. Both the reference and the query are normalized using `Seurat::NormalizeData()`.
 
@@ -236,25 +244,28 @@ Currently only outputting a table with each cell, the most highly correlated lab
 
 ## scLearn
 
-Detailed documentation for scLearn train and predict scripts, written August 2023 by Bhavyaa Chandarana.   
-Added information Tomas Vega Waichman in 2023-08-04.   
+Documentation written by: Bhavyaa Chandarana, updated by Tomas Vega Waichman
+Date written: 2023-08-04 
 
-Preprocessing performed in the same way as scLearn documentation tutorial [source](https://github.com/bm2-lab/scLearn#tutorial) for `Single-label single cell assignment`
+scLearn workflow was generated using the following tutorial: https://github.com/bm2-lab/scLearn#single-label-single-cell-assignment
 
 * scCoAnnotate input reference and query have cells as the rows, genes as columns. scLearn requires genes on the rows and cells on the columns. Therefore, I used `WGCNA::transposeBigData()` (function optimized for large sparse matrices) to transpose the inputs before normalization and training/prediction.
 
-* In order to avoid cell filtering, the reference and query matrix were normalized using Seurat::NormalizeData since the authors make the logNormalization in this way but manually (using a scale.factor = 10000 and then log(ref + 1)). Because of this the arguments of 'species' is not used and this allows to use this methods in order species different to the Human and Mouse.
+* In order to avoid cell filtering, the reference and query matrix were normalized using Seurat::NormalizeData. The authors original log normalized in this way in this way but with a custom function (using a scale.factor = 10000 and then log(ref + 1)). Because of this, the scLearn function argument for `species` is not used. This allows us to use this method with species other than human or mouse (only two arguments accepted)
 
 * Used default value `10` for argument `bootstrap_times` in training function. According to tool documentation, this can be increased to improve accuracy for unassigned cells(?) but increase train time.
 
 * Default parameters were used for tool prediction 
 
-*  Added some outputs, for prediction added a table with the selected genes for the model. In prediction added and output with the whole data.frame with the probabilities for each cell.
+* Added some outputs: for training, added a table with the genes selected for the model. For prediction, added an output with the whole data frame containing the probabilities for each cell.
 
 ## singleCellNet
 
 Documentation written by: Rodrigo Lopez Gutierrez   
-Date written: 2023-08-01     
+Date written: 2023-08-01  
+
+singleCellNet workflow was generated following the tutorial below:
+https://pcahan1.github.io/singleCellNet/
 
 Input for `singleCellNet` is raw counts for both reference and query. The reference is normalized within the `scn_train()` function. The query is currently not normalized. In the tutorial example they used raw query data. Furthermore, according to the tutorial, the classification step is robust to the normalization and transformation steps of the query data sets. They claim that one can even directly use raw data to query and still obtains accurate classification. This could be tested in the future with our data to see if normalized queries perform better.
 
@@ -262,112 +273,94 @@ Normal parameters were used in both the training and prediction functions, with 
 * In `scn_train()`, we used parameter `nTrees = 500` compared to the default `nTrees = 1000`. This parameter changes the number of trees for the random forest classifier. The value selected is based on Hussein's thesis and is changed to improve the speed of `singleCellNet`. It is mentioned that additional training parameters may need to be adjusted depending on the quality of the reference data. Additionally, tutorial mentions that classifier performance may increase if the values for `nTopGenes` and `nTopGenePairs` are increased.
 * In `scn_predict()`, we used parameter `nrand = 0` compared to the default `nrand = 50`. This parameter changes the number of randomized single cell RNA-seq profiles which serve as positive controls that should be mostly classified as `rand` (unknown) category. If left at default value, then this would generate extra cells that might complicate downstream consolidation of the consensus predictions for each cell. Therefore, the selected value is used to avoid complication. 
 
-singleCellNet workflow was generated following the tutorial below:
-https://pcahan1.github.io/singleCellNet/
-
 ## ACTINN
 
 Documentation written by: Alva Annett    
 Date written: 2023-08-08    
 
-ACTINN code based on actinn_format.py and actinn_predict.py originally found here: https://github.com/mafeiyang/ACTINN
+ACTINN code is based on `actinn_format.py` and `actinn_predict.py` originally found here: https://github.com/mafeiyang/ACTINN
 
-ACTINN has been spit into testing and predicting. To do this, filtering of outlier genes based on expression across all query samples and reference had to be removed. The rest of the code has not been changed from the original ACTINN implementation, just rearanged and some parts related to processing multiple samples at the same time removed.
+* ACTINN has been split into testing and predicting. To do this, filtering of outlier genes based on expression across all query samples and reference had to be removed. The rest of the code has not been changed from the original ACTINN implementation, other than rearrangements and removal of some parts related to processing multiple samples at the same time.
 
-ACTINN is run with default parameters from original implementation. 
-Normalization is based on original implementation and paper (cells scaled to total expression value, times 10 000, log2(x+1) normalized)
+* ACTINN is run with default parameters from original implementation. Normalization is based on original implementation and paper (cells scaled to total expression value, times 10 000, log2(x+1) normalized)
 
 ## Tangram
 
 Documentation written by: Tomas Vega Waichman    
 Date written: 2023-08-08     
 
-Tangram maps a single cell that is used as a reference to a spatial dataset. It cannot be separated into training and test sets.
-It is necessary to explore whether parallelization is possible.
-* The spatial dataset needs to be in a .h5ad format with the .X matrix normalized and log-transformed.
-* The mode could be set to `cells` if you want to map cells to spots, and the output matrix will be cell x spot probabilities. Alternatively, set it to `clusters` if the goal is to map whole clusters to the spatial data.
-* The output is the highest scored cell type for each spot, determined by the cell type projection (using the `tg.project_cell_annotations` function from the Tangram package).
-* Other outputs include: a score matrix for spot vs label, a cell x spot probability matrix, and the Tangram output map object in .h5ad format containing all the relevant information.
-* It runs using the whole transcriptome, none gene markers are selected.
-* All parameters are the default.
 The Tangram workflow was generated following the tutorial provided below:
 https://tangram-sc.readthedocs.io/en/latest/tutorial_sq_link.html
 
-## scAnnotate
-Documentation written by: Tomas Vega Waichman    
-Date written: 2023-08-11     
+Tangram maps cells of a single cell reference to a spatial dataset. It cannot be separated into training and test steps.
+It is necessary to explore whether parallelization is possible.
 
-scAnnotate cannot be separated between training and test.
-Genes in references and query should match.
-It allows to do the normalization inside their function using the parameter `lognormalized = F` but I normalized in the same way as they do on their script (using the NormalizeData function from the Seurat package, via the “LogNormalize” method and a scale factor of 10,000) since if we changed the input it would be easier to change. That's why I use `lognormalized = T`.
-scAnnotate has two separate workflows with different batch effect removal steps based on the size of the training data.  The `correction ="auto"` allows to automatically detect the needed for the dataset. They suggest using Seurat for dataset with at most one rare cell population
-(at most one cell population less than 100 cells) and using Harmony for dataset with at least two rare cell populations (at least two cell populations less than 100 cells).
-The `threshold` value goes between 0-1 and the cell with lower probability than the threshold are assing as "unassigned"
+* The spatial dataset needs to be in a `.h5ad` format with the `.X` matrix normalized and log-transformed.
+* The mode could be set to `cells` if you want to map cells to spots, and the output matrix will be cell x spot probabilities. Alternatively, set it to `clusters` if the goal is to map whole clusters to the spatial data.
+* The output is the highest scoring cell type for each spot, determined by the cell type projection (using the `tg.project_cell_annotations` function from the Tangram package).
+* Other outputs include: a score matrix for spot vs label, a cell x spot probability matrix, and the Tangram output map object in `.h5ad` format containing all the relevant information.
+* It runs using the whole transcriptome, no gene markers are selected.
+* All parameters are the default.
+
+## scAnnotate
+
+Documentation written by: Tomas Vega Waichman    
+Date written: 2023-08-11   
 
 The scAnnotate workflow was generated following the tutorial provided below:
-* https://cran.r-project.org/web/packages/scAnnotate/vignettes/Introduction.html
+https://cran.r-project.org/web/packages/scAnnotate/vignettes/Introduction.html
 
+* Training and test steps of scAnnotate cannot be separated.
+* Genes in references and query should match.
+* The tool allows normalization inside their function using the parameter `lognormalized = F`. I normalized in the same way as they do on their script, but using the NormalizeData function from the Seurat package, via the “LogNormalize” method and a scale factor of 10,000. This is to allow the script to be easier to modify in the future (e.g. in case we allow an option for pre-normalized data). Since the data is normalized already by Seurat I set `lognormalized = T`.
+* scAnnotate has two separate workflows with different batch effect removal steps based on the size of the training data.  The `correction ="auto"` allows to automatically detect the needed for the dataset. They suggest using Seurat for dataset with at most one rare cell population (at most one cell population less than 100 cells) and using Harmony for dataset with at least two rare cell populations (at least two cell populations less than 100 cells).
+* The `threshold` value goes between 0-1 and the cell with lower probability than the threshold are set to "unassigned"
 
 ## scID
-Documentation written by: Tomas Vega Waichman    
-Date written: 2023-08-12     
 
-scID has some installing isues: 
- * Needs gdal/3.5.1 to install it.
- * MAST is needed… if you are not able to install it use this approach:
-```
-wget https://bioconductor.org/packages/release/bioc/src/contrib/MAST_1.26.0.tar.gz
-R CMD INSTALL MAST_1.26.0.tar.gz
-```
-scID cannot be separated between training and test.
-I used their `scID:::counts_to_cpm(counts_gem = query)` function that they provided (hidden, code in their github). Could be replaced with any normalization without log-transformation (they said this in the tutorial below: Any library-depth normalization (e.g. TPM, CPM) is compatible with scID, but not log-transformed data.)
-* All parameters are the default except the normalization that is set in F since I normalized outside the function. But there exist some parameters that would be nice to explore as the `estimate_weights_from_target`.
-* It's very slow (takes ~ 2hs for the 5k cells query and 5k cell reference), but we have to test if it's related with the number of labels (number of comparison) or the size of the dataset.
+Documentation written by: Tomas Vega Waichman    
+Date written: 2023-08-12    
+
 The scID workflow was generated following the tutorials provided below:
 * https://github.com/BatadaLab/scID/blob/master/vignettes/Mapping_example.md
 * https://github.com/BatadaLab/scID
 
-## scNym
-Documentation written by: Tomas Vega Waichman    
-Date written: 2023-08-14     
-scNym takes advantage of the query to train the model, so... even if we are able to separated, it needs the query to train the model.
-* Query and training are concatenate in the same object and Any cell with the annotation "Unlabeled" will be treated as part of the target dataset and used for semi-supervised and adversarial training. It uses part of the query dataset to train the model.
-* Data inputs for scNym should be log(CPM + 1) normalized counts, where CPM is Counts Per Million and log is the natural logarithm.
-* They added the step of filtering no expressed genes so I added it but I ignored the step of filtering cells.
-* Threashold to assing cells lower than that value as “Unknown”.
-* It needs more research in multi-domain.
-* whole_df_output.csv has the entire dataframe output with the score for the query test (mark as label == “Unlabeled”).
-* I used the configuration as `new_identity_discovery` since: This configuration is useful for experiments where new cell type discoveries may occur. It uses
-pseudolabel thresholding to avoid the assumption above. If new cell
-types are present in the target data, they correctly receive low
-confidence scores.
+scID has some issues for installation: 
+ * Needs module `gdal/3.5.1` 
+ * MAST is needed. If you are not able to install it, use this approach:
+```
+wget https://bioconductor.org/packages/release/bioc/src/contrib/MAST_1.26.0.tar.gz
+R CMD INSTALL MAST_1.26.0.tar.gz
+```
 
-The scNym workflow was generated following the tutorials provided below:
-* https://github.com/calico/scnym/tree/master
+* Training and test steps of scID cannot be separated.
+* I used their `scID:::counts_to_cpm(counts_gem = query)` function that they provided (hidden, code in their github). Could be replaced with any normalization without log-transformation (they said this in the tutorial below: Any library-depth normalization (e.g. TPM, CPM) is compatible with scID, but not log-transformed data.)
+* All parameters are the default except the normalization that is set in F since I normalized outside the function. But there exist some parameters that would be nice to explore as the `estimate_weights_from_target`.
+* It's very slow (takes ~ 2hs for the 5k cells query and 5k cell reference), but we have to test if it's related with the number of labels (number of comparison) or the size of the dataset.
+
+## scNym
+
+Documentation written by: Tomas Vega Waichman    
+Date written: 2023-08-14 
+
+The scNym workflow was generated following the tutorial provided below:
+https://github.com/calico/scnym/tree/master
+  
+scNym takes advantage of the query to train the model, so the training and test steps should not be separated.
+
+* Query and training are concatenated into the same object. Any cell with the annotation "Unlabeled" will be treated as part of the target dataset and used for semi-supervised and adversarial training. It uses part of the query dataset to train the model.
+* Data inputs for scNym should be log(CPM + 1) normalized counts, where CPM is Counts Per Million and log is the natural logarithm.
+* They added the step of filtering genes that are not expressed, so I added it, but I ignored the step of filtering cells.
+* This tool uses a threshold to assign labels to cells, and cells not passing this threshold have value “Unknown”.
+* It needs more research in multi-domain.
+* Additional output: `whole_df_output.csv` has the entire dataframe output with the score for the query test (mark as label == “Unlabeled”).
+* I used the configuration as `new_identity_discovery` since: "This configuration is useful for experiments where new cell type discoveries may occur. It uses pseudolabel thresholding to avoid the assumption above. If new cell types are present in the target data, they correctly receive low
+confidence scores."
 
 ## CellTypist
+
 Documentation written by: Tomas Vega Waichman    
 Date written: 2023-08-16
-
-CellTypist allows to separate between training and reference.
-It Allows parallelization.
-It has their own pre-trained models.
-CellTypist requires a logarithmised and normalised expression matrix stored in the `AnnData` (log1p normalised expression to 10,000 counts per cell) [link](https://github.com/Teichlab/celltypist#supplemental-guidance-generate-a-custom-model)
-Training:
-* I use `check_expression = True` to check that the expression is okay.
-* celltypist.train has the option `(feature_selection = True)` in order to do a feature_selection, but it is not implemented.
-* The output is the model and and from the model we get the top markers for each cell type using the function `model.extract_top_markers()`. A table with the top 10 genes per cell-type is returned too (top10_model_markers_per_celltype.csv).
-Predicting:
-* "By default, CellTypist will only do the prediction jobs to infer the identities of input cells, which renders the prediction of each cell independent. To combine the cell type predictions with the cell-cell transcriptomic relationships, CellTypist offers a majority voting approach based on the idea that similar cell subtypes are more likely to form a (sub)cluster regardless of their individual prediction outcomes. To turn on the majority voting classifier in addition to the CellTypist predictions, pass in `majority_voting = True`.
-If `majority_voting = True` all the predict column will be the majority_voting results otherwise it use the predicted_labels where each query cell gets its inferred label by choosing the most probable cell type among all possible cell types in the given model." [link](https://celltypist.readthedocs.io/en/latest/notebook/celltypist_tutorial_ml.html)
-* majority_voting parameter should be specified in the configfile.
-* I use the multilabel prediction… since we want to know if a cell cannot be classified very clearly… Description: For the built-in models, we have collected a large number of cell types; yet, the presence of unexpected (e.g., low-quality or novel cell types) and ambiguous cell states (e.g., doublets) in the query data is beyond the prediction that CellTypist can achieve with a 'find-a-best-match' mode. To overcome this, CellTypist provides the option of multi-label cell type classification, which assigns 0 (i.e., unassigned), 1, or >=2 cell type labels to each query cell. It allows the use of a `threshold` to label cells that are below that probability as "Unnasigned". It allows to have intermediate labels as combination in the format of `celltype1|celltype2`.
-* Output: 4 .csv, the prediction for each cell (depending if we choose majority_voting or not will be the majority_voting or not), 
-  * decision_matrix.csv : Decision matrix with the decision score of each cell     belonging to a given cell type.
-  * probability_matrix.csv: Probability matrix representing the probability each cell belongs to a given cell type (transformed from decision matrix by the sigmoid function).
-  * predicted_labels.csv: The prediction for each cell, if majority_voting was true it has the information of the majority_voting labels AND the predicted_labels.
-  * Generates some embedding plots.
-  * An .h5ad object that has all the previous information (with the embeddings too) in a h5ad object.
 
 The CellTypist workflow was generated following the tutorials provided below:
 Training:
@@ -375,3 +368,24 @@ Training:
 * https://github.com/Teichlab/celltypist#supplemental-guidance-generate-a-custom-model
 Predicting:
 * https://celltypist.readthedocs.io/en/latest/notebook/celltypist_tutorial_ml.html
+
+CellTypist allows separation between training and reference, and allows parallelization.
+They provide their own pre-trained models.
+CellTypist requires a logarithmised and normalised expression matrix stored in the `AnnData` (log1p normalised expression to 10,000 counts per cell) [link](https://github.com/Teichlab/celltypist#supplemental-guidance-generate-a-custom-model)
+
+Training:
+* I use `check_expression = True` to check that the expression is okay.
+* `celltypist.train` has the option `(feature_selection = True)` in order to do a feature_selection, but it is not implemented.
+* The output is the model and and from the model we get the top markers for each cell type using the function `model.extract_top_markers()`. A table with the top 10 genes per cell-type is returned too (top10_model_markers_per_celltype.csv).
+
+Predicting:
+* From tutorial: "By default, CellTypist will only do the prediction jobs to infer the identities of input cells, which renders the prediction of each cell independent. To combine the cell type predictions with the cell-cell transcriptomic relationships, CellTypist offers a majority voting approach based on the idea that similar cell subtypes are more likely to form a (sub)cluster regardless of their individual prediction outcomes. To turn on the majority voting classifier in addition to the CellTypist predictions, pass in `majority_voting = True`. If `majority_voting = True` all the predict column will be the majority_voting results otherwise it use the predicted_labels where each query cell gets its inferred label by choosing the most probable cell type among all possible cell types in the given model." [link](https://celltypist.readthedocs.io/en/latest/notebook/celltypist_tutorial_ml.html)
+* `majority_voting parameter` should be specified in the configfile.
+* I use the multilabel prediction, since we want to know if a cell cannot be classified very clearly… Description: "For the built-in models, we have collected a large number of cell types; yet, the presence of unexpected (e.g., low-quality or novel cell types) and ambiguous cell states (e.g., doublets) in the query data is beyond the prediction that CellTypist can achieve with a 'find-a-best-match' mode. To overcome this, CellTypist provides the option of multi-label cell type classification, which assigns 0 (i.e., unassigned), 1, or >=2 cell type labels to each query cell. It allows the use of a `threshold` to label cells that are below that probability as "Unnasigned". It allows to have intermediate labels as combination in the format of `celltype1|celltype2`."
+  
+* Output: 4 `.csv`, the prediction for each cell (depending if we choose majority_voting or not will be the majority_voting or not), 
+  * `decision_matrix.csv`: Decision matrix with the decision score of each cell     belonging to a given cell type.
+  * `probability_matrix.csv`: Probability matrix representing the probability each cell belongs to a given cell type (transformed from decision matrix by the sigmoid function).
+  * `predicted_labels.csv`: The prediction for each cell, if majority_voting was true it has the information of the majority_voting labels AND the predicted_labels.
+  * Generates some embedding plots.
+  * An `.h5ad` object that has all the previous information (with the embeddings too) in a `.h5ad` object.

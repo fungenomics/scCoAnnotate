@@ -31,12 +31,18 @@ install.packages(pkg)
 Older version of Matrix package needs to be installed for Seurat to work: https://github.com/satijalab/seurat/issues/6746
 
 ```R
+if (!require("devtools", quietly = TRUE))
+    install.packages("devtools")
+
 devtools::install_version("Matrix", version = "1.5.3", repos = "http://cran.us.r-project.org")
 ```
 
 ## R packages - Bioconductor
 
 ```R
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
 pkg = c("SingleCellExperiment",
         "SummarizedExperiment",
         "ComplexHeatmap",
@@ -57,6 +63,9 @@ BiocManager::install(pkg)
 ## R packages - Github
 
 ```R
+if (!require("devtools", quietly = TRUE))
+    install.packages("devtools")
+
 pkg = c("pcahan1/singleCellNet",
         "powellgenomicslab/scPred",
         "PaulingLiu/scibet",

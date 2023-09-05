@@ -88,7 +88,7 @@ Make sure that the names of the selected tools have the same capitalization and 
 
 The consensus method selected in **consensus_tools** can either be 'all' (which uses all the tools in **tools_to_run**) or a list of tools to include. 
 
-See [Example Config](example.config.yml)
+See: [Example Config](example.config.yml)
 
 ```yaml 
 # target directory 
@@ -125,14 +125,13 @@ consensus_tools:
 benchmark:
   n_folds: <number of folds to use in the benchmarking>
 ```
-
-See  [Example Bash Script](example.submit.sh)
+See: [Changing Default Parameters](##changing-default-parameters)
 
 ### 5. Prepare HPC submission script
 
 To run the snakemake pipeline on a HPC a submission script needs to be prepared 
 
-See: [Changing Default Parameters](##changing-default-parameters)
+See: [Example Bash Script](example.submit.sh)
 
 ```bash 
 #!/bin/sh

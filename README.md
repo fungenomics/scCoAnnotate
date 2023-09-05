@@ -122,13 +122,13 @@ benchmark:
   n_folds: <number of folds to use in the benchmarking>
 ```
 
-How 
+See  [Example Bash Script](example.submit.sh)
 
 ### 5. Prepare HPC submission script
 
 To run the snakemake pipeline on a HPC a submission script needs to be prepared 
 
-See: [Example Bash Script](example.submit.sh)
+See: [Example Bash Script](## changing-default-parameters )
 
 ```bash 
 #!/bin/sh
@@ -160,7 +160,7 @@ OBS!! Make sure that the number of cores requested match the number of cores in 
 
 ## Changing default parameters 
 
-The pipeline uses a default config file to specify tool parameters as well as cluster options. For full list of parameters you can change see: [Default Config](Config/config.default.yml)
+The pipeline uses a default config file in addition to the user defined one to specify tool parameters as well as cluster options. For full list of parameters you can change see: [Default Config](Config/config.default.yml)
 
 To over ride these values you can either add a corresponding section in your config file or copy the whole default config to your run folder, change the values and add it as an extra config in the submission script. The second option may be preferable if you are changing many of the default parameters. 
 

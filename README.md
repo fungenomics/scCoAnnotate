@@ -156,7 +156,7 @@ snakemake -s ${snakefile} --configfile ${config} --cores 5
 
 Depending on if you want to run the annotation workflow or the benchmarking workflow the snakefile needs to be path to either [snakefile.annotate](snakefile.annotate) or [snakefile.benchmark](snakefile.benchmark) 
 
-OBS!! Make sure that the number of cores requested match the number of cores in the snakemake command for optimal use of resources
+**OBS!!** Make sure that the number of cores requested match the number of cores in the snakemake command for optimal use of resources
 
 ## Changing Default Parameters 
 
@@ -309,7 +309,7 @@ devtools::install_github(pkg)
 ## Python modules
 
 ```bash 
-pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensorflow tables snakemake
+pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensorflow tables celltypist snakemake
 ```
 
 # :hammer_and_wrench: Available tools

@@ -128,7 +128,7 @@ See  [Example Bash Script](example.submit.sh)
 
 To run the snakemake pipeline on a HPC a submission script needs to be prepared 
 
-See: [Example Bash Script](## changing-default-parameters )
+See: [Changing Default Parameters](## changing-default-parameters)
 
 ```bash 
 #!/bin/sh
@@ -158,7 +158,7 @@ Depending on if you want to run the annotation workflow or the benchmarking work
 
 OBS!! Make sure that the number of cores requested match the number of cores in the snakemake command for optimal use of resources
 
-## Changing default parameters 
+## Changing Default Parameters 
 
 The pipeline uses a default config file in addition to the user defined one to specify tool parameters as well as cluster options. For full list of parameters you can change see: [Default Config](Config/config.default.yml)
 
@@ -167,6 +167,7 @@ To over ride these values you can either add a corresponding section in your con
 The order of overwriting parameters are as follows: 
 1. Config specified in the snakefile (in this case the default config)
 2. Config specified as snakemake argument with `--configfile` (in the order they are added)
+3. Parameters specified directly in snakemake argument with `--config`
 
 ## Option 1: Add corresponding section to your own config file 
 

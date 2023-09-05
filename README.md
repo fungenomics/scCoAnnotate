@@ -9,6 +9,40 @@ The pipeline is automated and running it does not require prior knowledge of mac
 
 [Annotation Workflow](rulegraph.annotation.pdf)
 
+# :running_woman: Quickstart tutorial
+
+1. [Clone repository and install dependencies](#1-clone-repository-and-install-dependencies)  
+2. [Prepare reference](#2-prepare-reference)
+3. [Prepare query samples](#3-prepare-query-samples)
+4. [Prepare config file](#4-prepare-config-file)
+5. [Prepare HPC submission script](#5-prepare-hpc-submission-script) 
+
+### 1. Clone repository and install dependencies
+
+### 2. Prepare reference
+
+### 3. Prepare query samples
+
+### 4. Prepare config file
+
+```yaml 
+# UPDATE 
+```
+
+### 5. Prepare HPC submission script
+
+#### Annotate
+
+```bash 
+# UPDATE 
+```
+
+#### Benchmark
+
+```bash 
+# UPDATE 
+```
+
 # :gear: Installation and Dependencies
 
 This tool has been designed and tested for use on a high-performance computing cluster (HPC) with a SLURM workload manager.
@@ -82,40 +116,6 @@ devtools::install_github(pkg)
 pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensorflow tables snakemake
 ```
 
-# :running_woman: Quickstart tutorial
-
-1. [Clone repository and install dependencies](#1-clone-repository-and-install-dependencies)  
-2. [Prepare reference](#2-prepare-reference)
-3. [Prepare query samples](#3-prepare-query-samples)
-4. [Prepare config file](#4-prepare-config-file)
-5. [Prepare HPC submission script](#5-prepare-hpc-submission-script) 
-
-### 1. Clone repository and install dependencies
-
-### 2. Prepare reference
-
-### 3. Prepare query samples
-
-### 4. Prepare config file
-
-```yaml 
-# UPDATE 
-```
-
-### 5. Prepare HPC submission script
-
-#### Annotate
-
-```bash 
-# UPDATE 
-```
-
-#### Benchmark
-
-```bash 
-# UPDATE 
-```
-
 # :hammer_and_wrench: Available tools
 
 ## Single cell RNA reference + single cell RNA query
@@ -142,6 +142,7 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 ```yaml
 - Tangram
 ```
+
 
 # Resources  
 

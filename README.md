@@ -124,17 +124,37 @@ benchmark:
 
 ### 5. Prepare HPC submission script
 
-#### Annotate
+To run the snakemake pipeline on a HPC a submission script needs to be prepared 
+
+See: [Example Bash Script](example.submit.sh)
 
 ```bash 
-# UPDATE 
+#!/bin/sh
+#SBATCH --job-name=scCoAnnotate
+#SBATCH --account=rrg-kleinman 
+#SBATCH --output=logs/%x.out
+#SBATCH --error=logs/%x.err
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=5
+#SBATCH --time=24:00:00
+#SBATCH --mem-per-cpu=60GB 
+
+module load scCoAnnotate/2.0
+
+# path to snakefile and config 
+snakefile=<path to snakefile>
+config=<path to configfile>
+
+# unlock directory incase of previous errors
+snakemake -s ${snakefile} --configfile ${config} --unlock 
+
+# run workflow 
+snakemake -s ${snakefile} --configfile ${config} --cores 5
 ```
 
-#### Benchmark
+Depending on if you want to run the annotation workflow or the benchmarking workflow the snakefile needs to be path to either [snakefile.annotate](snakefile.annotate) or [snakefile.benchmark](snakefile.benchmark) 
 
-```bash 
-# UPDATE 
-```
+OBS!! Make sure that the number of cores requested match the number of cores in the snakemake command for optimal use of resources
 
 # :gear: Installation and Dependencies
 
@@ -232,15 +252,16 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 ```
 
 ## Single cell RNA reference + spatial RNA query
+
 ```yaml
 - Tangram
 ```
 
-# Resources  
+# :floppy_disk: Resources  
 
-TABLE WITH TOOL, N CELLS, N LABELS, TIME, MEM 
+Add table with resource usage for different sice references and queries 
 
-#  Adding new tools
+# :woman_mechanic: Adding new tools
 
 ```
 # UPDATE 

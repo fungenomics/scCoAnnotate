@@ -1,5 +1,4 @@
-# scCoAnnotate <img src ="https://user-images.githubusercontent.com/59002771/130340419-3d1eff0b-ecb2-4104-9bf4-1bb968aff433.png" width="50" height="50">
-
+# scCoAnnotate <img src ="https://user-images.githubusercontent.com/59002771/130340419-3d1eff0b-ecb2-4104-9bf4-1bb968aff433.png" width="50" height="50"
 
 # Summary
 
@@ -7,6 +6,11 @@ Snakemake pipeline for consensus prediction of cell types in single-cell RNA seq
 
 The pipeline is automated and running it does not require prior knowledge of machine learning. It also features parallelization options to exploit available computational resources for maximal efficiency. This pipeline trains classifiers on genes common to the reference and all query datasets. 
 
+Two different workflows can be run as part of scCoAnnotate. The annotation workflow takes both a references data set and query samples with the aim of annotating the query samples. The benchmarking workflow takes only the reference and preforms a M fold cross validation. 
+
+<img src="https://github.com/fungenomics/scCoAnnotate-dev/blob/dev/scCoAnnotate_workflow.drawio.png" width="300">
+
+See the snakemake rule graph for a more detailed description of the annotation workflow: 
 [Annotation Workflow](rulegraph.annotation.pdf)
 
 # :running_woman: Quickstart tutorial

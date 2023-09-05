@@ -81,7 +81,7 @@ cell4,54,20,61
 
 For each set of query samples a config file needs to be prepared with information about the samples, the reference, the tools you want to run and how to calculate the consensus. 
 
-Multiple references can be specified with a unique **reference name**. 
+Multiple references can be specified with an unique **reference name**. 
 
 Full list of available tools can be found here: [Available tools](#hammer-and-wrench-available-tools)
 Make sure that the names of the selected tools have the same capitalization and format as this list. 

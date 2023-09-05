@@ -153,7 +153,6 @@ snakemake -s ${snakefile} --configfile ${config} --unlock
 # run workflow 
 snakemake -s ${snakefile} --configfile ${config} --cores 5
 ```
-
 Depending on if you want to run the annotation workflow or the benchmarking workflow the snakefile needs to be path to either [snakefile.annotate](snakefile.annotate) or [snakefile.benchmark](snakefile.benchmark) 
 
 **OBS!!** Make sure that the number of cores requested match the number of cores in the snakemake command for optimal use of resources
@@ -171,7 +170,7 @@ The order of overwriting parameters are as follows:
 
 ## Option 1: Add corresponding section to your own config file 
 
-Case: You want to change the probbability cut off threshold from 0.5 to 0.25 for **scHPL**
+**Case:** You want to change the probbability cut off threshold from 0.5 to 0.25 for **scHPL**
 
 This section is found in the default config: 
 
@@ -225,7 +224,7 @@ scHPL:
   threshold: 0.25 
 ```
 
-## Option 2: Copy the whole default config and provide it as an additional config file in the submission 
+## Option 2: Copy the whole default config and add it as an extra config file in the snakemake command  
 
 In this case your submission script would look like this:
 

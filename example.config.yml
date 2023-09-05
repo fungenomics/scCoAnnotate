@@ -1,44 +1,42 @@
-# target directory
-output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/out/
-
-references: 'Braindex'
-marker_genes: 'PDGFRA OLIG2 PTPRC'
+# target directory 
+output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev
+output_dir_benchmark: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/benchmark
 
 # path to reference to train classifiers on (cell x gene raw counts)
-training_reference: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
-
-# path to annotations for the reference (csv file with cellname and label headers)
-reference_annotations: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
+references: 
+      braindex1:
+            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
+            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
+      braindex2:
+            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
+            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
 
 # path to query datasets (cell x gene raw counts)
 query_datasets:
-      - /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
-      - /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
-
-# step to check if some genes are kept in the common gene space between ref and query
-check_genes: False
-genes_required: Null
-
-# convert mouse genes of reference to human genes
-convert_ref_mm_to_hg: False
+      ct_p3: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
+      ct_p0: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
 
 # classifiers to run
 tools_to_run:
       - scPred
-            - model: ['SVMradial', 'glm']
       - SingleR
       - scClassify
       - SciBet
       - singleCellNet
-      - scHPL 
+      - scHPL
       - SVMlinear
-      - scLearn
       - Correlation
+      - scLearn
+      - ACTINN
+      - scID
+      - scAnnotate
+      - scNym
+      - CellTypist
 
 consensus_tools:
-      - all 
-
-# benchmark tools on reference
+      - all
+      
+# Benchmark parameters 
 benchmark:
-  n_folds: 3
+  n_folds: 10 
 

@@ -172,7 +172,7 @@ The order of overwriting parameters are as follows:
 2. Config specified as snakemake argument with `--configfile` (in the order they are added)
 3. Parameters specified directly in snakemake argument with `--config`
 
-## Option 1: Add corresponding section to your own config file 
+### Option 1: Add corresponding section to your own config file 
 
 **Case:** You want to change the probbability cut off threshold from 0.5 to 0.25 for **scHPL**
 
@@ -228,7 +228,7 @@ scHPL:
   threshold: 0.25 
 ```
 
-## Option 2: Copy the whole default config and add it as an extra config file in the snakemake command  
+### Option 2: Copy the whole default config and add it as an extra config file in the snakemake command  
 
 In this case your submission script would look like this:
 

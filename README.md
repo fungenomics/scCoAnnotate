@@ -1,5 +1,6 @@
 # scCoAnnotate <img src ="https://user-images.githubusercontent.com/59002771/130340419-3d1eff0b-ecb2-4104-9bf4-1bb968aff433.png" width="50" height="50">
 
+
 # Summary
 
 Snakemake pipeline for consensus prediction of cell types in single-cell RNA sequencing (scRNA-seq) data. The pipeline allows users to run up to 15 different reference-based annotation tools (statistical models and machine learning approaches) to predict cell type labels of multiple scRNA-seq samples. It then outputs a consensus of the predictions, which has been found to have increased accuracy in benchmarking experiments compared to the individual predictions alone, by combining the strengths of the different approaches.
@@ -8,7 +9,7 @@ The pipeline is automated and running it does not require prior knowledge of mac
 
 [Annotation Workflow](rulegraph.annotation.pdf)
 
-# Installation and Dependencies
+# :gear: Installation and Dependencies
 
 This tool has been designed and tested for use on a high-performance computing cluster (HPC) with a SLURM workload manager.
 
@@ -81,7 +82,7 @@ devtools::install_github(pkg)
 pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensorflow tables snakemake
 ```
 
-# Quickstart tutorial
+# :running_woman: Quickstart tutorial
 
 1. [Clone repository and install dependencies](#1-clone-repository-and-install-dependencies)  
 2. [Prepare reference](#2-prepare-reference)
@@ -115,7 +116,7 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 # UPDATE 
 ```
 
-# Available tools
+# :hammer_and_wrench: Available tools
 
 ## Single cell RNA reference + single cell RNA query
  
@@ -146,13 +147,13 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 
 TABLE WITH TOOL, N CELLS, N LABELS, TIME, MEM 
 
-# Adding new tools:
+#  Adding new tools
 
 ```
 # UPDATE 
 ```
 
-# Snakemake Tips and Tricks 
+# :sanke: Snakemake Tips and Tricks 
 
 - Dryrun snakemake pipeline before submitting job
 ```bash

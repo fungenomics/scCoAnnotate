@@ -180,7 +180,7 @@ snakemake -s ${snakefile} --configfile ${config} -c1 -R $(snakemake -s ${snakefi
 snakemake -s ${snakefile} --configfile ${config} --report ${report}
 ```
 
-# Detailed documentation on tool wrapper scripts
+# :female_detective: Detailed documentation on tool wrapper scripts
 
 ## scClassify
 

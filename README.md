@@ -36,9 +36,9 @@ module load scCoAnnotate/2.0
 
 ### 2. Prepare reference
 
-The input format for the references is a **cell x gene matrix** (.csv) and a **cell x label matrix** (.csv).   
+The input format for the references is a **cell x gene matrix** (.csv) of raw counts and a **cell x label matrix** (.csv).   
 
-Both the **cell x gene matrix** and **cell x label matrix** need the first column to be the cell names in the same order with an empty column name.
+Both the **cell x gene matrix** and **cell x label matrix** need the first column to be the cell names in matching order with an empty column name.
 
 **cell x gene matrix**
 ```bash
@@ -60,10 +60,59 @@ cell4,label2
 
 ### 3. Prepare query samples
 
+The input format for the query samples is a **cell x gene matrix** (.csv) of raw counts. 
+
+The first column needs to be the cell names with an empty column name.
+
+**cell x gene matrix**
+```bash
+'',gene1,gene2,gene3
+cell1,27,1,34
+cell2,0,12,56
+cell3,0,17,12
+cell4,54,20,61
+```
+
 ### 4. Prepare config file
 
+For each set of query samples a config file needs to be prepared with information about the samples, the reference, the tools you want to run and how to calculate the consensus. 
+
+See [Example Config](example.config.yml)
+
 ```yaml 
-# UPDATE 
+# target directory 
+output_dir: <output directory for the annotation workflow>
+output_dir_benchmark: <output directory for the benchmarking workflow>
+
+# path to reference to train classifiers on (cell x gene raw counts)
+references: 
+      <reference name>:
+            expression: <path to cell x gene matrix>
+            labels: <pth to cell x label matrix>
+      <reference name>:
+            expression: <path to cell x gene matrix>
+            labels: <pth to cell x label matrix>
+
+# path to query datasets (cell x gene raw counts)
+query_datasets:
+      <sample1>: <path to sample1 cell x gene matrix>
+      <sample2>: <path to sample2 cell x gene matrix>
+
+# convert gene symbols in reference from mouse to human 
+convert_ref_mm_to_hg: False 
+
+# classifiers to run
+tools_to_run:
+      - tool1
+      - tool2
+
+# consensus method
+consensus_tools:
+      - all 
+      
+# benchmark parameters 
+benchmark:
+  n_folds: <number of folds to use in the benchmarking>
 ```
 
 ### 5. Prepare HPC submission script

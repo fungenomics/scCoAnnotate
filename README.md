@@ -132,7 +132,7 @@ See  [Example Bash Script](example.submit.sh)
 
 To run the snakemake pipeline on a HPC a submission script needs to be prepared 
 
-See: [Changing Default Parameters](## changing-default-parameters)
+See: [Changing Default Parameters](##changing-default-parameters)
 
 ```bash 
 #!/bin/sh

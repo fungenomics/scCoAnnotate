@@ -19,7 +19,44 @@ The pipeline is automated and running it does not require prior knowledge of mac
 
 ### 1. Clone repository and install dependencies
 
+This step is only nessesary if you are not part of the Kleinman group! 
+
+Clone git repository in appropriate location:
+
+```bash
+git clone https://github.com/fungenomics/scCoAnnotate.git
+```
+Install R packages and python modules as specified in [Installation and Dependencies](#gear-installation-and-dependencies)
+
+If you are part of the Kleinman group you only need to load the module on Narval or Hydra:
+
+```bash
+module load scCoAnnotate/2.0
+```
+
 ### 2. Prepare reference
+
+The input format for the references is a **cell x gene matrix** (.csv) and a **cell x label matrix** (.csv).   
+
+Both the **cell x gene matrix** and **cell x label matrix** need the first column to be the cell names in the same order with an empty column name.
+
+**cell x gene matrix**
+```bash
+'',gene1,gene2,gene3
+cell1,1,24,30
+cell2,54,20,61
+cell3,0,12,0
+cell4,1,13,17
+```
+
+ **cell x label matrix**
+```bash
+'',label 
+cell1,label1
+cell2,label1
+cell3,label3
+cell4,label2
+```
 
 ### 3. Prepare query samples
 

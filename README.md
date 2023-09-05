@@ -77,6 +77,13 @@ cell4,54,20,61
 
 For each set of query samples a config file needs to be prepared with information about the samples, the reference, the tools you want to run and how to calculate the consensus. 
 
+Multiple references can be specified with a unique **reference name**. 
+
+Full list of available tools can be found here: [Available tools](#hammer-and-wrench-available-tools)
+Make sure that the names of the selected tools have the same capitalization and format as this list. 
+
+The consensus method selected in **consensus_tools** can either be 'all' (which uses all the tools in **tools_to_run**) or a list of tools to include. 
+
 See [Example Config](example.config.yml)
 
 ```yaml 
@@ -228,7 +235,6 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 ```yaml
 - Tangram
 ```
-
 
 # Resources  
 

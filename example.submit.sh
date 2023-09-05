@@ -18,5 +18,5 @@ config=<path to configfile>
 snakemake -s ${snakefile} --configfile ${config} --unlock 
 
 # run workflow 
-snakemake -s ${snakefile} --configfile ${config} --cores 2
+snakemake -s ${snakefile} --configfile ${config} --cores 5
 

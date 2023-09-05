@@ -1,3 +1,5 @@
+# Example config for scCoAnnotate annotation and benchmarking workflow 
+
 # target directory 
 output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev
 output_dir_benchmark: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/benchmark
@@ -15,6 +17,8 @@ references:
 query_datasets:
       ct_p3: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
       ct_p0: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
+
+
 
 # classifiers to run
 tools_to_run:

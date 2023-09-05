@@ -156,6 +156,86 @@ Depending on if you want to run the annotation workflow or the benchmarking work
 
 OBS!! Make sure that the number of cores requested match the number of cores in the snakemake command for optimal use of resources
 
+# Chaning default parameters 
+
+The pipeline uses a default config file to specify tool parameters as well as cluster options. For full list of parameters you can change see: [Default Config](Config/config.default.yml)
+
+To over ride these values you can either add a corresponding section in your config file or copy the whole default config to your run folder, change the values and add it as an extra config in the submission script. The second option may be preferable if you are changing many of the default parameters. 
+
+The order of overwriting parameters are as follows: 
+1. Config specified in the snakefile (in this case the default config)
+2. Config specified as snakemake argument with `--configfile` (in the order they are added)
+
+## Option 1: Add corresponding section to your own config file 
+
+Case: You want to change the probbability cut off threshold from 0.5 to 0.25 for **scHPL**
+
+This section is found in the default config: 
+
+```ymal
+scHPL:
+  threads: 1
+  classifier: 'svm'
+  dimred: 'False'
+  threshold: 0.5
+```
+
+Create a corresponding section in your config and change the threshold value to 0.25: 
+
+```yaml 
+# target directory 
+output_dir: <output directory for the annotation workflow>
+output_dir_benchmark: <output directory for the benchmarking workflow>
+
+# path to reference to train classifiers on (cell x gene raw counts)
+references: 
+      <reference name>:
+            expression: <path to cell x gene matrix>
+            labels: <pth to cell x label matrix>
+      <reference name>:
+            expression: <path to cell x gene matrix>
+            labels: <pth to cell x label matrix>
+
+# path to query datasets (cell x gene raw counts)
+query_datasets:
+      <sample1>: <path to sample1 cell x gene matrix>
+      <sample2>: <path to sample2 cell x gene matrix>
+
+# convert gene symbols in reference from mouse to human 
+convert_ref_mm_to_hg: False 
+
+# classifiers to run
+tools_to_run:
+      - tool1
+      - tool2
+
+# consensus method
+consensus_tools:
+      - all 
+      
+# benchmark parameters 
+benchmark:
+  n_folds: <number of folds to use in the benchmarking>
+
+# additional parameters
+scHPL:
+  threshold: 0.25 
+```
+
+## Option 2: Copy the whole default config and provide it as an additional config file in the submission 
+
+In this case your submission script would look like this:
+
+```bash 
+# path to snakefile and config 
+snakefile=<path to snakefile>
+config=<path to configfile>
+extra_config=<path to your new default config file>
+
+# run workflow 
+snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
+```
+
 # :gear: Installation and Dependencies
 
 This tool has been designed and tested for use on a high-performance computing cluster (HPC) with a SLURM workload manager.

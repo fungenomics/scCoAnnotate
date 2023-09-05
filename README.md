@@ -122,6 +122,8 @@ benchmark:
   n_folds: <number of folds to use in the benchmarking>
 ```
 
+How 
+
 ### 5. Prepare HPC submission script
 
 To run the snakemake pipeline on a HPC a submission script needs to be prepared 
@@ -156,7 +158,7 @@ Depending on if you want to run the annotation workflow or the benchmarking work
 
 OBS!! Make sure that the number of cores requested match the number of cores in the snakemake command for optimal use of resources
 
-# Chaning default parameters 
+## Changing default parameters 
 
 The pipeline uses a default config file to specify tool parameters as well as cluster options. For full list of parameters you can change see: [Default Config](Config/config.default.yml)
 

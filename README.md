@@ -8,8 +8,6 @@ The pipeline is automated and running it does not require prior knowledge of mac
 
 Two different workflows can be run as part of scCoAnnotate. The annotation workflow takes both a references data set and query samples with the aim of annotating the query samples. The benchmarking workflow takes only the reference and preforms a M fold cross validation. 
 
-<img src="https://github.com/fungenomics/scCoAnnotate-dev/blob/dev/scCoAnnotate_workflow.drawio.png" width="300">
-
 See the snakemake rule graph for a more detailed description of the annotation workflow: 
 [Annotation Workflow](rulegraph.annotation.pdf)
 

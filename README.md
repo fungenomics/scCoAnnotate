@@ -153,7 +153,7 @@ TABLE WITH TOOL, N CELLS, N LABELS, TIME, MEM
 # UPDATE 
 ```
 
-# :sanke: Snakemake Tips and Tricks 
+# 🐍 Snakemake Tips and Tricks 
 
 - Dryrun snakemake pipeline before submitting job
 ```bash

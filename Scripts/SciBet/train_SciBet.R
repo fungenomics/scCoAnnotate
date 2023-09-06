@@ -5,20 +5,24 @@ library(tidyverse)
 library(WGCNA)
 library(Seurat)
 library(glue)
+
 set.seed(1234)
 
+#---------- Parameters -------------------
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
 model_path = args[3]
 threads = as.numeric(args[4])
 out_path = dirname(model_path)
+
 #--------------- Data -------------------
 
 # read reference matrix and transpose 
 message('@ READ REF')
-### The matrix of the references is transpose since it needs to be normalize 
-### with Seurat that expect a genes x cell.
+
+# The matrix of the references is transpose since it needs to be normalize 
+# with Seurat that expect a genes x cell.
 ref <- data.table::fread(ref_path,
                          data.table=F,
                          header=T,
@@ -43,10 +47,9 @@ if(!order){
   stop("@ Order of cells in reference and labels do not match")
 }
 
-### The matrix here is transposed since SciBet expect a cell x gene matrix and
-### converted to data.frame since labels need to be add.
+# The matrix here is transposed since SciBet expect a cell x gene matrix and
+# converted to data.frame since labels need to be add.
 ref <- NormalizeData(ref) %>% as.data.frame() %>% transposeBigData()
-
 ref$label <- labels$label
 
 #------------- Train SciBet -------------
@@ -63,7 +66,7 @@ message('@ DONE')
 
 #------------- Other outputs --------------
 
-### Transforming the model into a matrix
+# Transforming the model into a matrix
 Scibet_matrix <- scibet::ExportModel(Scibet_model) %>% as.data.frame() %>% tibble::rownames_to_column(" ")
 
 message('@ SAVE MODEL MATRIX')
@@ -76,9 +79,10 @@ data.table::fwrite(Scibet_matrix,
 )
 message('@ DONE')
 
-### Taking the selected genes used in the model
+# Taking the selected genes used in the model
 selected_genes <- Scibet_matrix[,1,drop=T]
-### Plotting in a marker heatmap
+
+# Plotting in a marker heatmap
 message('@ PLOTTING MARKER HEATMAP MATRIX')
 pdf(glue('{out_path}/selected_markers_per_label.pdf',
          width = 12,
@@ -91,6 +95,7 @@ dev.off()
 message('@ DONE')
 
 df_markers  <- marker_plot %>% .$data %>% filter(group == cell_type) %>% select(c('gene','cell_type','zscore'))
+
 # write df_markers 
 message('@ SAVE MARKERS')
 data.table::fwrite(df_markers,

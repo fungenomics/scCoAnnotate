@@ -17,7 +17,7 @@ if(consensus_tools[1] == 'all'){
 
 print(consensus_tools)
 
-harmonize_unsure = function(pred, ref_labels){
+harmonize_unresolved = function(pred, ref_labels){
   pred %>%
   column_to_rownames('cellname') %>%
   mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label), ., 'Unresolved'))) %>%
@@ -53,7 +53,7 @@ for(f in files){
 consensus = l %>% reduce(left_join, by = "cell") %>% rename('cellname' = 'cell')
 rm(l)
 
-tmp = harmonize_unsure(consensus, ref_labels)
+tmp = harmonize_unresolved(consensus, ref_labels)
 tmp = tmp %>% select(all_of(consensus_tools))
 consensus$Consensus = apply(tmp, 1, getmode)
 rm(tmp)

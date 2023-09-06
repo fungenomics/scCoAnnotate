@@ -8,12 +8,14 @@ library(scID)
 library(MAST)
 set.seed(1234)
 
+#---------- Parameters -------------------
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
 query_path = args[3]
 pred_path = args[4]
 threads = as.numeric(args[5])
+
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)
 
@@ -21,8 +23,9 @@ out_path = dirname(pred_path)
 
 # read reference matrix and transpose 
 message('@ READ REF')
-### The matrix of the references is transpose since it needs to be normalize 
-### with Seurat that expect a genes x cell.
+
+# The matrix of the references is transpose since it needs to be normalize 
+# with Seurat that expect a genes x cell.
 ref <- data.table::fread(ref_path,
                          data.table=F,
                          header=T,
@@ -50,8 +53,9 @@ if(!order){
 
 # read query matrix and transpose 
 message('@ READ QUERY')
-### The matrix of the references is transpose since it needs to be normalize 
-### with Seurat that expect a genes x cell.
+
+# The matrix of the references is transpose since it needs to be normalize 
+# with Seurat that expect a genes x cell.
 query <- data.table::fread(query_path,
                            data.table=F,
                            header=T,
@@ -61,14 +65,13 @@ query <- data.table::fread(query_path,
 
 message('@ DONE')
 
-### Prepare the reference
-## Normalization
+# Prepare the reference: Normalization
 ref <- scID:::counts_to_cpm(counts_gem = ref)
 
-## Labels as named vector
+# Labels as named vector
 label <- setNames(object = labels$label,nm = rownames(labels))
-## Prepare the query
-## Normalization
+
+# Prepare the query: Normalization
 query <- scID:::counts_to_cpm(counts_gem = query)
 
 
@@ -96,7 +99,7 @@ data.table::fwrite(pred_labels,
 message('@ DONE')
 
 #------------- Other outputs --------------
-#Save the entire output
+# Save the entire output
 message('@ SAVE scID OUTPUT')
 save(pred,
      file =  glue('{out_path}/scID_output.Rdata')

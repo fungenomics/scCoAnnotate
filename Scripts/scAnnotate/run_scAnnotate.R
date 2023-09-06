@@ -7,6 +7,7 @@ library(glue)
 library(scAnnotate)
 set.seed(1234)
 
+#---------- Parameters -------------------
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
@@ -14,6 +15,7 @@ query_path = args[3]
 pred_path = args[4]
 threads = as.numeric(args[5])
 threshold = as.numeric(args[6])
+
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)
 
@@ -21,8 +23,9 @@ out_path = dirname(pred_path)
 
 # read reference matrix and transpose 
 message('@ READ REF')
-### The matrix of the references is transpose since it needs to be normalize 
-### with Seurat that expect a genes x cell.
+
+# The matrix of the references is transpose since it needs to be normalize 
+# with Seurat that expect a genes x cell.
 ref <- data.table::fread(ref_path,
                          data.table=F,
                          header=T,
@@ -50,8 +53,9 @@ if(!order){
 
 # read query matrix and transpose 
 message('@ READ QUERY')
-### The matrix of the references is transpose since it needs to be normalize 
-### with Seurat that expect a genes x cell.
+
+# The matrix of the references is transpose since it needs to be normalize 
+# with Seurat that expect a genes x cell.
 query <- data.table::fread(query_path,
                            data.table=F,
                            header=T,
@@ -61,22 +65,23 @@ query <- data.table::fread(query_path,
 
 message('@ DONE')
 
-### Query and References should have the same gene features
+# Query and References should have the same gene features
 common.genes <- intersect(rownames(query),rownames(ref))
 query <- query[common.genes,]
 ref   <- ref[common.genes,]
-### Prepare the reference
-## Normalization
+
+# Prepare the reference: Normalization
 ref <- NormalizeData(ref) %>% as.data.frame() %>% transposeBigData()
-## The label should be in the first column
+
+# The label should be in the first column
 ref <- cbind(labels,ref)
 
-## Prepare the query
-## Normalization
+# Prepare the query: Normalization
 query <- NormalizeData(query) %>% as.data.frame() %>% transposeBigData()
 
 #------------- Train + Predict scAnnotate -------------
-## Auto to automaticly define the correction method needed.
+
+# Auto to automaticly define the correction method needed.
 pred <- scAnnotate(train=ref,
                    test=query,
                    distribution="normal", #Default

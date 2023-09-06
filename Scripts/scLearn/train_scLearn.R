@@ -6,12 +6,12 @@ library(Seurat)
 library(glue)
 set.seed(1234)
 
+#---------- Parameters -------------------
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
 model_path = args[3]
 threads = as.numeric(args[4])
-#species = args[5] # species="Hs" for homo sapiens or species="Mm" for mus musculus.
 
 # path for other outputs (depends on tools)
 out_path = dirname(model_path)
@@ -44,14 +44,10 @@ labels <- setNames(nm=rownames(labels),
 
 # Preprocessing 
 # transpose reference so cells are on columns
-## Because we don't want to filter any cell, we will do only the normalization as they do it.
-### They do manually the Seurat normalization.
-# ref <-apply(ref,2,function(x){x/(sum(x)/10000)})
-# ref <- log(ref+1)
-
+# Because we don't want to filter any cell, we will do only the normalization as they do it.
 ref <- ref %>% WGCNA::transposeBigData() %>% Seurat::NormalizeData()
 
-### Select genes
+# Select genes
 high_varGene_names <- Feature_selection_M3Drop(expression_profile = ref,
                                                log_normalized = T #True because it was previously normalized
                                                )

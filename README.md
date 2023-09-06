@@ -241,7 +241,27 @@ snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
 
 #  Outputs 
 
-ADD DESCRIPTION OF OUTPUTS 
+## Output folder structure 
+
+In each output folder there will be one folder per sample as well as a folder for the models. In each sample folder and in the model folder there will be subfolders for each reference specified in the config file. Each sample folder will also contain a reports folder with a `.html` report with the prediction results. Each refrence folder contains sub folders for the individual tools model and prediction results. 
+
+```
+out/
+├── sample1
+│   ├── reference1
+│   ├── reference2
+│   └── report
+├── sample1
+│   ├── reference1
+│   ├── reference2
+│   └── report
+└── model
+    ├── reference1
+    └── reference2
+```
+
+## Output files 
+
 
 # :gear: Installation and Dependencies
 

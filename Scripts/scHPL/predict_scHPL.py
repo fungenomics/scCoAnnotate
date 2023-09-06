@@ -15,7 +15,8 @@ import os
 import scanpy as sc
 import pickle
 import random
-### Set seed
+
+# Set seed
 random.seed(123456) 
 
 #--------------- Parameters -------------------
@@ -42,20 +43,20 @@ print('@ LOAD MODEL')
 scHPL_model = pickle.load(open(model_path, 'rb'))
 print('@ DONE')
 
-### Query preprocessing
-
+# Query preprocessing
 query = ad.AnnData(X = query,
                    obs = dict(obs_names=query.index.astype(str)),
                    var = dict(var_names=query.columns.astype(str))
                    )
 
-## Now I normalize the matrix with scanpy:
-#Normalize each cell by total counts over all genes,
-#so that every cell has the same total count after normalization.
-#If choosing `target_sum=1e6`, this is CPM normalization
-#1e4 similar as Seurat
+# Now I normalize the matrix with scanpy:
+# Normalize each cell by total counts over all genes,
+# so that every cell has the same total count after normalization.
+# If choosing `target_sum=1e6`, this is CPM normalization
+# 1e4 similar as Seurat
 sc.pp.normalize_total(query, target_sum=1e4)
-#Logarithmize the data:
+
+# Logarithmize the data:
 sc.pp.log1p(query)
 
 #----------- Predict scHPL --------

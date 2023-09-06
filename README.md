@@ -23,7 +23,7 @@ See the snakemake rule graph for a more detailed description of the annotation w
 
 ### 1. Clone repository and install dependencies
 
-This step is only nessesary if you are not part of the Kleinman group! 
+This step is not nessesary if you are part of the Kleinman group! 
 
 Clone git repository in appropriate location:
 

@@ -239,7 +239,7 @@ extra_config=<path to your new default config file>
 snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
 ```
 
-#  Outputs 
+# :hatching_chick: Outputs 
 
 ## Output folder structure 
 
@@ -260,7 +260,7 @@ out/
     └── reference2
 ```
 
-## Output files 
+<!--- ## Output files --->
 
 
 # :gear: Installation and Dependencies
@@ -364,9 +364,9 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 - Tangram
 ```
 
-# :floppy_disk: Resources  
+<!--- # :floppy_disk: Resources  --->
 
-Add table with resource usage for different sice references and queries 
+<!--- Add table with resource usage for different size references and queries --->
 
 # :woman_mechanic: Adding new tools
 
@@ -433,6 +433,7 @@ snakemake -s ${snakefile} --configfile ${config} --report ${report}
 ## scClassify
 
 Documentation written by: Bhavyaa Chandarana
+
 Date written: 2023-07
 
 scClassify workflow was generated using the tutorial below:
@@ -451,6 +452,7 @@ https://www.bioconductor.org/packages/release/bioc/vignettes/scClassify/inst/doc
 ## scPred
 
 Documentation written by: Alva Annett    
+
 Date written: 2023-07   
 
 Normalization and parameters based on this tutorial:   
@@ -476,6 +478,7 @@ http://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/Singl
 ## singleCellNet
 
 Documentation written by: Rodrigo Lopez Gutierrez
+
 Date written: 2023-08-01
 
 singleCellNet workflow was generated following the tutorial below:
@@ -490,6 +493,7 @@ Normal parameters were used in both the training and prediction functions, with 
 ## Correlation
 
 Documentation written by: Rodrigo Lopez Gutierrez   
+
 Date written: 2023-08-02   
 
 The Correlation tool runs a correlation-based cell type prediction on a sample of interest, given the mean gene expression per label for a reference.
@@ -507,6 +511,7 @@ Currently only outputting a table with each cell, the most highly correlated lab
 ## scLearn
 
 Documentation written by: Bhavyaa Chandarana, updated by Tomas Vega Waichman
+
 Date written: 2023-08-04 
 
 scLearn workflow was generated using the following tutorial: https://github.com/bm2-lab/scLearn#single-label-single-cell-assignment
@@ -524,6 +529,7 @@ scLearn workflow was generated using the following tutorial: https://github.com/
 ## singleCellNet
 
 Documentation written by: Rodrigo Lopez Gutierrez   
+
 Date written: 2023-08-01  
 
 singleCellNet workflow was generated following the tutorial below:
@@ -538,6 +544,7 @@ Normal parameters were used in both the training and prediction functions, with 
 ## ACTINN
 
 Documentation written by: Alva Annett    
+
 Date written: 2023-08-08    
 
 ACTINN code is based on `actinn_format.py` and `actinn_predict.py` originally found here: https://github.com/mafeiyang/ACTINN
@@ -549,6 +556,7 @@ ACTINN code is based on `actinn_format.py` and `actinn_predict.py` originally fo
 ## Tangram
 
 Documentation written by: Tomas Vega Waichman    
+
 Date written: 2023-08-08     
 
 The Tangram workflow was generated following the tutorial provided below:
@@ -567,6 +575,7 @@ It is necessary to explore whether parallelization is possible.
 ## scAnnotate
 
 Documentation written by: Tomas Vega Waichman    
+
 Date written: 2023-08-11   
 
 The scAnnotate workflow was generated following the tutorial provided below:
@@ -581,6 +590,7 @@ https://cran.r-project.org/web/packages/scAnnotate/vignettes/Introduction.html
 ## scID
 
 Documentation written by: Tomas Vega Waichman    
+
 Date written: 2023-08-12    
 
 The scID workflow was generated following the tutorials provided below:
@@ -603,6 +613,7 @@ R CMD INSTALL MAST_1.26.0.tar.gz
 ## scNym
 
 Documentation written by: Tomas Vega Waichman    
+
 Date written: 2023-08-14 
 
 The scNym workflow was generated following the tutorial provided below:
@@ -622,12 +633,15 @@ confidence scores."
 ## CellTypist
 
 Documentation written by: Tomas Vega Waichman    
+
 Date written: 2023-08-16
 
 The CellTypist workflow was generated following the tutorials provided below:
+
 Training:
 * https://celltypist.readthedocs.io/en/latest/celltypist.train.html
 * https://github.com/Teichlab/celltypist#supplemental-guidance-generate-a-custom-model
+
 Predicting:
 * https://celltypist.readthedocs.io/en/latest/notebook/celltypist_tutorial_ml.html
 

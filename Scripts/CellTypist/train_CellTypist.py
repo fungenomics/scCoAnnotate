@@ -9,17 +9,21 @@ import scanpy as sc
 import pickle
 import os
 import random
+
 ### Set seed
 random.seed(123456) 
 
 #--------------- Parameters -------------------
+
 ref_path = str(sys.argv[1])
 lab_path = str(sys.argv[2])
 out_path = str(sys.argv[3])
 out_other_path = os.path.dirname(str(sys.argv[3]))
 threads = int(sys.argv[4])
 feature_selection = bool(sys.argv[5])
+
 #--------------- Data -------------------------
+
 # read the data
 ref = pd.read_csv(ref_path,
                   index_col=0,
@@ -32,22 +36,25 @@ labels = pd.read_csv(lab_path,
 
 # check if cell names are in the same order in labels and ref
 order = all(labels.index == ref.index)
+
 # throw error if order is not the same 
 if not order:
   sys.exit("@ Order of cells in reference and labels do not match")
 
+# create AnnData object 
 adata = ad.AnnData(X = ref,
                   obs = dict(obs_names=ref.index.astype(str),
                              label = labels['label']),
                   var = dict(var_names=ref.columns.astype(str))
                   )
 
-## Now I normalize the matrix with scanpy:
-#Normalize each cell by total counts over all genes,
-#so that every cell has the same total count after normalization.
-#If choosing `target_sum=1e6`, this is CPM normalization
-#1e4 similar as Seurat
+# normalize the matrix with scanpy:
+# normalize each cell by total counts over all genes,
+# so that every cell has the same total count after normalization.
+# If choosing `target_sum=1e6`, this is CPM normalization
+# 1e4 similar as Seurat
 sc.pp.normalize_total(adata, target_sum=1e4)
+
 #Logarithmize the data:
 sc.pp.log1p(adata)
 
@@ -67,7 +74,8 @@ model.write(out_path)
 print('@ DONE')
 
 #------------- Other outputs --------------
-#We can extract the top markers, I get the top 10 for each cell-type applying the
+
+# We can extract the top markers, I get the top 10 for each cell-type applying the
 # function extract_top_markers
 dataframes = []
 for cell_type in model.cell_types:

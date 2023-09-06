@@ -241,6 +241,10 @@ extra_config=<path to your new default config file>
 snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
 ```
 
+#  Outputs 
+
+ADD DESCRIPTION OF OUTPUTS 
+
 # :gear: Installation and Dependencies
 
 This tool has been designed and tested for use on a high-performance computing cluster (HPC) with a SLURM workload manager.
@@ -373,7 +377,7 @@ Add table with resource usage for different sice references and queries
 
 7. Create pull request from your branch to dev and request reviewer
 
-8. Make sure module on Narval/Hydra gets updated with the new tool packages 
+8. Make sure module on Narval/Hydra gets updated with necessary packages 
 
 # 🐍 Snakemake Tips and Tricks 
 

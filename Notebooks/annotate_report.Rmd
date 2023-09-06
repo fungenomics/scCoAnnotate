@@ -43,11 +43,11 @@ marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 
 ```{r}
 # function converts everything that is not in reference labels 
-# to 'Unsure' 
-harmonize_unsure = function(pred, ref_labels){
+# to 'Unresolved' 
+harmonize_unresolved = function(pred, ref_labels){
   pred %>%
   column_to_rownames('cellname') %>%
-  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label, 'No Consensus'), ., 'Unsure'))) %>%
+  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label, 'No Consensus'), ., 'Unresolved'))) %>%
   return()
 }
 
@@ -71,7 +71,7 @@ plot_tool_correlation_heatmap = function(seurat, tools){
   select(all_of(tools)) %>%
   rownames_to_column('cell') %>%
   pivot_longer(!cell) %>%
-  filter(value %in% c('Unsure', 'No Consensus')) %>%
+  filter(value %in% c('Unresolved', 'No Consensus')) %>%
   dplyr::count(name, .drop = F) %>%
   mutate(freq = round(n/nrow(query@meta.data)*100)) %>%
   select(!n) %>%
@@ -80,7 +80,7 @@ plot_tool_correlation_heatmap = function(seurat, tools){
   count[setdiff(names(seurat@meta.data %>% select(tools)), rownames(count)),] = 0
   count = count[order(match(rownames(count), colnames(mat))), , drop = FALSE]
 
-  ha = columnAnnotation('% Unsure/No Consensus' = anno_barplot(count, border = F, gp = gpar(fill = '#596475', col = '#596475')))
+  ha = columnAnnotation('% Unresolved/No Consensus' = anno_barplot(count, border = F, gp = gpar(fill = '#596475', col = '#596475')))
 
   h = ComplexHeatmap::Heatmap(mat,
                         name = 'Correlation',
@@ -96,7 +96,7 @@ plot_tool_correlation_heatmap = function(seurat, tools){
 create_color_pal = function(class, mb = 'Juarez'){
   pal = sample(met.brewer(mb, length(class)))  
   names(pal) = class
-  pal['Unsure'] = 'lightgrey'
+  pal['Unresolved'] = 'lightgrey'
   pal['No Consensus'] = 'grey'
   return(pal)
 }

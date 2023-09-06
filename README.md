@@ -239,7 +239,7 @@ extra_config=<path to your new default config file>
 snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
 ```
 
-#  Outputs 
+# :hatching_chick: Outputs 
 
 ## Output folder structure 
 

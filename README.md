@@ -350,9 +350,9 @@ Add table with resource usage for different sice references and queries
 
 # :woman_mechanic: Adding new tools
 
-1. Identify new tool
+**1. Identify new tool**
 
-2. Read documentation. Try to find this information: 
+**2. Read documentation. Try to find this information:**
 - Can tool be split into training and prediction step? 
 - What normalization does the tool expect for the reference and query? 
 - Can the tool be paralellized? How? 
@@ -360,22 +360,26 @@ Add table with resource usage for different sice references and queries
 - Are there extra outputs from the training and prediction that may be usefull to save (qc plots, probbability/p-value associated with each prediction etc..)?
 - Are there parameters in the training and prediction that can be changed? What are the defult values? 
 
-3. Open issue and create a branch from dev with the tool name + your name 
+**3. Open issue and create a branch from dev with the tool name + your name** 
 
-4. Write scripts (check Templats folder for how to structure scripts: [Templats](Templats)) 
+**4. Write scripts (check Templats folder for how to structure scripts: [Templats](Templats))** 
 - The scripts should take the reference expression/labels and query expression .csv files as specified in [Prepare reference](#2-prepare-reference) and [Prepare query samples](#3-prepare-query-samples)
 - The scripts should take any additional parameters you want to be able to change as input
 
-5. Update the snakefiles with rules for the new tool (ask Alva if you need help)
+**5. Update the snakefiles with rules for the new tool (ask Alva if you need help)**
 
-6. Update README
+**6. Update README**
 - Write detailed documentation about the tool in the section: [Detailed documentation on tool wrapper scripts](female-detective-detailed-documentation-on-tool-wrapper-scripts)
 - Detailed documentation should include information from step 2 and if you changed any default parameters/normalization etc.. Links to papers and tutorials used to create the scripts can be put here.
 - Update other sections of the readme such as the [Installation and Dependencies](gear-installation-and-dependencies) and [Available tools](hammer-and-wrench-available-tools)
 
-7. Create pull request from your branch to dev and request reviewer
+**7. Create pull request from your branch to dev and request reviewer**
 
-8. Make sure module on Narval/Hydra gets updated with necessary packages 
+**8. When pull request is approved merge with dev** 
+- Rebase with dev
+- Squash + merge 
+
+**9. Make sure module on Narval/Hydra gets updated with necessary packages**
 
 # 🐍 Snakemake Tips and Tricks 
 

@@ -5,12 +5,12 @@ library(scLearn)
 library(glue)
 set.seed(1234)
 
+#---------- Parameters -------------------
 args = commandArgs(trailingOnly = TRUE)
 query_path = args[1]
 model_path = args[2]
 pred_path = args[3]
 threads = as.numeric(args[4])
-# species = args[5] # species="Hs" for homo sapiens or species="Mm" for mus musculus.
 
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)
@@ -60,7 +60,8 @@ data.table::fwrite(pred_labs,
                    nThread = threads)
 message('@ DONE')
 #----------------------------------------
-### Add the entire output with the Scores in Additional_information
+
+# Add the entire output with the Scores in Additional_information
 message('@ WRITE TABLE OUTPUT WITH ALL PROBABILITIES')
 data.table::fwrite(scLearn_predict_result, 
                    file = glue('{out_path}/table_with_probabilities.csv'),

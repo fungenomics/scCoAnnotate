@@ -1,0 +1,58 @@
+
+SingleR:
+  threads: 1 
+
+Correlation:
+  threads: 1 
+
+scPred:
+  threads: 1
+  classifier: 'svmRadial'  
+
+scClassify:
+  threads: 1 
+
+SciBet:
+  threads: 1
+
+singleCellNet:
+  threads: 1
+
+scHPL:
+  threads: 1
+  classifier: 'svm'
+  dimred: 'False'
+  threshold: 0.5
+
+SVMlinear:
+  threads: 1
+  threshold: 0
+  classifier: 'SVMlinear'
+
+SVC:
+  threads: 1
+  classifier: 'rbf'
+  threshold: 0.5
+
+ACTINN:
+  threads: 1
+
+scLearn:
+  threads: 1
+
+scID:
+  threads: 1
+
+scAnnotate:
+  threads: 1
+  threshold: 0.5
+
+scNym:
+  threads: 1
+  threshold: 0.5
+
+CellTypist:
+  threads: 1 
+  feature_selection: 'True'
+  majority_voting: 'True'
+  threshold: 0.5

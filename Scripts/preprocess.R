@@ -1,98 +1,109 @@
-library(glue)
-library(data.table)
 
-preprocess_data<-function(RefPath, QueryPaths, OutputDir, check_genes = FALSE, genes_required = NULL){
-  "
-  run preproccessing, normalization, and writing down of matrices with common genes
-  Wrapper script to run preproccessing, normalization, and writing down of matrices with common genes between query and reference datasets
-  outputs lists of true and predicted cell labels as csv files, as well as computation time.
-  
-  Parameters
-  ----------
-  RefPath : Data file path (.csv), cells-genes matrix with cell unique barcodes 
-  as row names and gene names as column names.
-  LabelsPath : Cell population annotations (per cell) file path (.csv).
-  QueryPaths : List of Query datasets paths
-  OutputDir : Output directory defining the path of the exported files.
-  genes_required: path to file containing required genes in common feature space with column name genes_required
-  "
+library(tidyverse)
 
-  if(check_genes){
-  genes_required <- as.vector(read.csv(genes_required$genes_required))}
+args = commandArgs(trailingOnly = TRUE)
+ref_path = args[1]
+query_paths = strsplit(args[2], split = ' ')[[1]]
+out = args[3]
+convert_genes = as.logical(args[4])
+lab_path = args[5]
+reference_name = args[6]
 
-  message("@Reading reference")
-  # read data and labels
-  # Read the reference expression matrix
-  Data <- fread(RefPath,data.table=FALSE)
-  message("@Done reading reference")
+l = list()
 
-  row.names(Data) <- Data$V1
-  Data <-  Data[, 2:ncol(Data)]
-  colnames(Data) <- toupper(colnames(Data))
+# read reference 
+l[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
 
-  # set the genes of the reference to common_genes
-  common_genes <- colnames(Data)
-
-  # loop over all query datasets and get common genes with all
-  for(query in QueryPaths){
-    message("reading Test")
-    # Read Query
-    Test <- fread(query,data.table=FALSE)
-    row.names(Test) <- Test$V1
-    Test <-  Test[, 2:ncol(Test)]
-    # Map gene names to upper
-    colnames(Test) <- toupper(colnames(Test))
-    # subset based on common genes
-    common_genes<- as.vector(intersect(common_genes, colnames(Test)))
-  }
-
-  # check if the common genes
-    if(check_genes){
-  if(!(genes_required %in% common_genes)){
-    warning("Not all genes required in Gene list are found in the common genes between reference and query")
-  }}
-
-  # loop over query datasets and subset them to common genes and write it down in each query output dir
-  for(query in QueryPaths){
-    # Read Query
-    Test <- fread(query,data.table=FALSE)
-    row.names(Test) <- Test$V1
-    Test <-  Test[, 2:ncol(Test)]
-    colnames(Test) <- toupper(colnames(Test))
-    Test <- Test[,common_genes]
-
-    # write down query expression matrices
-    dir.create(file.path(OutputDir, basename(dirname(query))), showWarnings = FALSE)
-    setwd(paste(OutputDir, basename(dirname(query)),sep= '/'))
-    fwrite(Test, "expression.csv",row.names=T)
-   }
-  Data <- Data[,common_genes ]
-  fwrite(Data, glue("{OutputDir}/expression.csv"),row.names=T)
-  fwrite(as.data.frame(common_genes), glue("{OutputDir}/common_genes.csv"))
+# read query 
+for(p in query_paths){
+  tmp = data.table::fread(p, header = T) %>% column_to_rownames('V1')
+  query = basename(dirname(p))
+  l[[query]] = tmp
 }
 
-# Get Command line arguments
-args <- commandArgs(trailingOnly = TRUE)
-# Split the arguments to form lists
-arguments <- paste(unlist(args),collapse=' ')
-listoptions <- unlist(strsplit(arguments,'--'))[-1]
-# Get individual argument names
-options.args <- sapply(listoptions,function(x){
-         unlist(strsplit(x, ' '))[-1]
-        })
-options.names <- sapply(listoptions,function(x){
-  option <-  unlist(strsplit(x, ' '))[1]
-})
+# if specified by user, convert reference gene names from mouse to human
+if(convert_genes){
 
-# Set variables containing command line argument values
-names(options.args) <- unlist(options.names)
-ref <- unlist(options.args['ref'])
-test <- unlist(options.args['query'])
-output_dir <- unlist(options.args['output_dir' ])
-check_genes <- unlist(options.args['check_genes' ])
-genes_required <- unlist(options.args['genes_required' ])
+  # include functions and libraries for conversion
+  library(Orthology.eg.db)
+  library(org.Mm.eg.db)
+  library(org.Hs.eg.db)
+  library(WGCNA)
 
+  mapfun = function(mousegenes){
+    gns    = mapIds(org.Mm.eg.db, mousegenes, "ENTREZID", "SYMBOL")
+    mapped = AnnotationDbi::select(Orthology.eg.db, gns, "Homo_sapiens","Mus_musculus")
+    naind  = is.na(mapped$Homo_sapiens)
+    hsymb  = mapIds(org.Hs.eg.db, as.character(mapped$Homo_sapiens[!naind]), "SYMBOL", "ENTREZID")
+    out    = data.frame(Mouse_symbol = mousegenes, mapped, Human_symbol = NA)
+    out$Human_symbol[!naind] = hsymb
+    return(out)
+  }
 
-preprocess_data(ref, test, output_dir, check_genes, genes_required)
+  # convert
+  hg = mapfun(colnames(l[['ref']])) %>% dplyr::select(Mouse_symbol, Human_symbol) 
+  
+  # output list of mouse genes that were not converted
+  not_converted = hg %>% filter(is.na(Human_symbol)) %>% .$Mouse_symbol
+  data.table::fwrite(as.list(not_converted), file = paste0(reference_out, '/genes_not_converted.csv'), sep = ',')
+
+  # throw error if more than threshold % genes not converted
+  threshold = 0.5
+  if(length(not_converted) > threshold*length(colnames(l[['ref']]))){
+    stop(paste0("@ More than ",threshold*100,"% of mouse genes in reference could not be converted to human"))
+  }
+
+  # modify reference matrix to contain converted genes
+  l[['ref']] = l[['ref']] %>%
+    transposeBigData() %>%
+    rownames_to_column('Mouse_symbol') %>%
+    inner_join(hg %>% filter(!is.na(Human_symbol)), 
+               by = 'Mouse_symbol') %>%
+    dplyr::select(-Mouse_symbol) %>%
+    column_to_rownames('Human_symbol') %>%
+    transposeBigData() 
+
+}
+
+# get genes for each data frame (colnames)
+genes = lapply(l, function(x){(colnames(x))})
+
+# reduce set of genes to the intersect 
+common_genes = Reduce(intersect,genes)
+
+# throw error if number of common genes below % threshold of genes in any of provided datasets (ref or query) 
+threshold = 0.5
+if(any(length(common_genes) < threshold*length(genes))){
+  frac = lapply(genes, function(x){length(common_genes)/length(x)})
+  names(frac) = names(l)
+  print(frac)
+  stop(paste0("@ In at least one provided dataset (ref or query), less than ",threshold*100,"% of genes appear in common gene set. See above for the fraction of genes from each dataset appearing in common gene set (note: samples with few genes will have higher fractions)"))
+}
+
+# save common genes 
+data.table::fwrite(data.frame('common_genes' = genes), paste0(out, '/model/', reference_name, '/common_genes.csv'))
+
+# filter each data set for common genes
+l = lapply(l, function(x){x[,common_genes]})
+
+# save reference 
+tmp = l[['ref']] %>% rownames_to_column()
+colnames(tmp)[1] = " "
+data.table::fwrite(tmp, file = paste0(out, '/model/', reference_name, '/expression.csv'), sep = ',')
+
+# save query 
+query_names = names(l)[!names(l) == 'ref']
+for(q in query_names){
+  print(q)
+  tmp = l[[q]] %>% rownames_to_column()
+  colnames(tmp)[1] = " "
+  data.table::fwrite(tmp, file = paste0(out, '/', q, '/', reference_name, '/expression.csv'), sep = ',')
+}
+
+# save unique labels (for downstream report color pal)
+lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
+lab = data.frame(label = unique(lab$label))
+data.table::fwrite(lab, file = paste0(out, '/model/', reference_name, '/labels.csv'), sep = ',')
+
 
 

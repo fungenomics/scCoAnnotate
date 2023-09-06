@@ -1,0 +1,47 @@
+# Example config for scCoAnnotate annotation and benchmarking workflow 
+
+# target directory 
+output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev
+output_dir_benchmark: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/benchmark
+
+# path to reference to train classifiers on (cell x gene raw counts)
+references: 
+      braindex1:
+            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
+            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
+      braindex2:
+            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
+            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
+
+# path to query datasets (cell x gene raw counts)
+query_datasets:
+      ct_p3: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
+      ct_p0: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
+
+# convert gene symbols in reference from mouse to human 
+convert_ref_mm_to_hg: False 
+
+# classifiers to run
+tools_to_run:
+      - scPred
+      - SingleR
+      - scClassify
+      - SciBet
+      - singleCellNet
+      - scHPL
+      - SVMlinear
+      - Correlation
+      - scLearn
+      - ACTINN
+      - scID
+      - scAnnotate
+      - scNym
+      - CellTypist
+
+consensus_tools:
+      - all
+      
+# Benchmark parameters 
+benchmark:
+  n_folds: 10 
+

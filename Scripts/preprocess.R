@@ -16,13 +16,17 @@ l[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1'
 
 # read query 
 for(p in query_paths){
+  print(p)
   tmp = data.table::fread(p, header = T) %>% column_to_rownames('V1')
   query = basename(dirname(p))
+  print(query)
   l[[query]] = tmp
 }
 
 # if specified by user, convert reference gene names from mouse to human
 if(convert_genes){
+  
+  message('@ CONVERTING GENE NAMES')
 
   # include functions and libraries for conversion
   library(Orthology.eg.db)
@@ -70,18 +74,20 @@ genes = lapply(l, function(x){(colnames(x))})
 
 # reduce set of genes to the intersect 
 common_genes = Reduce(intersect,genes)
+print(paste0('@Found ', length(common_genes), ' in common'))
 
 # throw error if number of common genes below % threshold of genes in any of provided datasets (ref or query) 
 threshold = 0.5
-if(any(length(common_genes) < threshold*length(genes))){
-  frac = lapply(genes, function(x){length(common_genes)/length(x)})
+frac = lapply(genes, function(x){length(common_genes)/length(x)})
+
+if(any(frac < threshold)){
   names(frac) = names(l)
   print(frac)
   stop(paste0("@ In at least one provided dataset (ref or query), less than ",threshold*100,"% of genes appear in common gene set. See above for the fraction of genes from each dataset appearing in common gene set (note: samples with few genes will have higher fractions)"))
 }
 
 # save common genes 
-data.table::fwrite(data.frame('common_genes' = genes), paste0(out, '/model/', reference_name, '/common_genes.csv'))
+data.table::fwrite(data.frame('common_genes' = common_genes), file = paste0(out, '/model/', reference_name, '/common_genes.csv'))
 
 # filter each data set for common genes
 l = lapply(l, function(x){x[,common_genes]})
@@ -104,6 +110,4 @@ for(q in query_names){
 lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
 lab = data.frame(label = unique(lab$label))
 data.table::fwrite(lab, file = paste0(out, '/model/', reference_name, '/labels.csv'), sep = ',')
-
-
 

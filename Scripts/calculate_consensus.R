@@ -20,7 +20,7 @@ print(consensus_tools)
 harmonize_unsure = function(pred, ref_labels){
   pred %>%
   column_to_rownames('cellname') %>%
-  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label), ., 'Unsure'))) %>%
+  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label), ., 'Unresolved'))) %>%
   rownames_to_column('cellname') %>%
   return()
 }

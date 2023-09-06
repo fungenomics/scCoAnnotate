@@ -5,8 +5,10 @@ library(WGCNA)
 library(tidyverse)
 library(Seurat)
 library(glue)
+
 set.seed(1234)
 
+#---------- Parameters -------------------
 args = commandArgs(trailingOnly = TRUE)
 query_path = args[1]
 model_path = args[2]
@@ -19,8 +21,9 @@ out_path = dirname(pred_path)
 
 # read query matrix and transpose 
 message('@ READ QUERY')
-### The matrix of the references is transpose since it needs to be normalize 
-### with Seurat that expect a genes x cell.
+
+# The matrix of the references is transpose since it needs to be normalize 
+# with Seurat that expect a genes x cell.
 query <- data.table::fread(query_path,
                           data.table=F,
                           header=T,
@@ -35,9 +38,8 @@ message('@ LOAD MODEL')
 load(model_path)
 message('@ DONE')
 
-### The matrix here is transposed since SciBet expect a cell x gene matrix.
+# The matrix here is transposed since SciBet expect a cell x gene matrix.
 query <- Seurat::NormalizeData(query) %>% as.data.frame() %>% WGCNA::transposeBigData()
-
 
 #----------- Predict SciBet --------
 
@@ -55,12 +57,11 @@ data.table::fwrite(pred_labels,
                    sep = ",",
                    nThread = threads)
 message('@ DONE')
-#----------------------------------------
-
 
 #------------- Other outputs --------------
-### I tested and the results are the same when you run the same model twice,
-### so I run it again to obtain the prob matrix.
+
+# I tested and the results are the same when you run the same model twice,
+# so I run it again to obtain the prob matrix.
 pred_matrix <- Scibet_model(query,
                             result = 'table')
 rownames(pred_matrix) <- rownames(query)

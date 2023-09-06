@@ -243,7 +243,7 @@ snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
 
 ADD DESCRIPTION OF OUTPUTS 
 
-# :package: Installation and Dependencies
+# :gear: Installation and Dependencies
 
 This tool has been designed and tested for use on a high-performance computing cluster (HPC) with a SLURM workload manager.
 

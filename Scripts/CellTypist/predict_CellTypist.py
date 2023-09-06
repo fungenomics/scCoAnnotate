@@ -8,10 +8,12 @@ import scanpy as sc
 import pickle
 import os
 import random
+
 ### Set seed
 random.seed(123456) 
 
 #--------------- Parameters -------------------
+
 sample_path = str(sys.argv[1])
 model_path = str(sys.argv[2])
 out_path = str(sys.argv[3])
@@ -21,6 +23,7 @@ threads = int(sys.argv[5])
 majority_voting = bool(sys.argv[6])
 
 #--------------- Data -------------------------
+
 print('@ READ QUERY')
 query = pd.read_csv(sample_path,
                     index_col=0,
@@ -34,12 +37,13 @@ query = ad.AnnData(X = query,
                    var = dict(var_names=query.columns.astype(str))
 )
 
-## Now I normalize the matrix with scanpy:
-#Normalize each cell by total counts over all genes,
-#so that every cell has the same total count after normalization.
-#If choosing `target_sum=1e6`, this is CPM normalization
-#1e4 similar as Seurat
+# Now I normalize the matrix with scanpy:
+# Normalize each cell by total counts over all genes,
+# so that every cell has the same total count after normalization.
+# If choosing `target_sum=1e6`, this is CPM normalization
+# 1e4 similar as Seurat
 sc.pp.normalize_total(query, target_sum=1e4)
+
 #Logarithmize the data:
 sc.pp.log1p(query)
 
@@ -74,10 +78,12 @@ pred_df.to_csv(out_path, index = False)
 print('@ DONE')
 
 #------------- Other outputs --------------
+
 ## Save the outputs as .csv
 print('@ WRITTING CSV OUTPUTS')
 predictions.to_table(out_other_path)
 print('@ DONE')
+
 ## Save the output plots
 print('@ GENERATING OUTPUT PLOTS')
 predictions.to_plots(out_other_path)

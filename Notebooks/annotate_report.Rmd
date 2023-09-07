@@ -42,6 +42,13 @@ marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 ```
 
 ```{r}
+harmonize_unresolved = function(pred, ref_labels){
+  pred %>%
+  column_to_rownames('cellname') %>%
+  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label, 'No Consensus'), ., 'Unresolved'))) %>%
+  return()
+}
+
 plot_tool_correlation_heatmap = function(seurat, tools){
  
  mat = query@meta.data %>%
@@ -155,7 +162,7 @@ x = seurat@meta.data %>%
 
 color_class_seurat = function(seurat, meta_column, pal){
   list = list()
-  pal['Unsure'] = 'red'
+  pal['Unresolved'] = 'red'
   pal['No Consensus'] = 'red'
   Idents(seurat) = meta_column
   class = (table(query@meta.data[[meta_column]]) %>% as.data.frame() %>% filter(Freq > 20))$Var
@@ -194,7 +201,7 @@ umap_plotly = function(seurat, meta_column, pal){
   return(p2)
 }
 
-calculate_percentage_unsure = function(pred, order){
+calculate_percentage_unresolved = function(pred, order){
   warn = pred %>% 
     select(order) %>%
     pivot_longer(order) %>% 
@@ -203,7 +210,7 @@ calculate_percentage_unsure = function(pred, order){
     count(value, .drop = F) %>%
     mutate(frac = n/sum(n)*100) %>%
     filter(!(!name == 'Consensus'  & value == 'No Consensus')) %>%
-    filter(value %in% c('No Consensus', 'Unsure')) %>%
+    filter(value %in% c('No Consensus', 'Unresolved')) %>%
     mutate(warn = case_when(frac >= 70 ~ 'HIGH', 
                             frac < 70 & frac > 30 ~ 'MEDIUM',
                             frac <= 30 ~ 'LOW'))
@@ -251,7 +258,7 @@ for(r in refs){
   list[[r]]$lab = data.table::fread(paste0(params$output_dir, '/model/', r, '/labels.csv'), header = T)
  
   list[[r]]$pred = data.table::fread(paste0(params$output_dir, '/', params$sample, '/', r, '/Prediction_Summary.tsv')) %>% 
-                       harmonize_unsure(., list[[r]]$lab) 
+                       harmonize_unresolved(., list[[r]]$lab) 
 
   # create reference pal
   list[[r]]$pal = create_color_pal(list[[r]]$lab$label)
@@ -319,9 +326,9 @@ for(r in refs){
   
   cat("  \n## Prediction QC \n")
   
-  cat("<h3>Percentage Unsure</h3>")
+  cat("<h3>Percentage Unresolved</h3>")
   
-  calculate_percentage_unsure(list[[r]]$pred, order = tools) %>% 
+  calculate_percentage_unresolved(list[[r]]$pred, order = tools) %>% 
   kbl(escape = FALSE, row.names = F) %>% 
   kable_styling(position = "center") %>%
   print()

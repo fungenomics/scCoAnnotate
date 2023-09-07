@@ -42,6 +42,14 @@ marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 ```
 
 ```{r}
+harmonize_unresolved = function(pred, ref_labels){
+  pred %>%
+  column_to_rownames('cellname') %>%
+  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label), ., 'Unresolved'))) %>%
+  rownames_to_column('cellname') %>%
+  return()
+}
+
 plot_tool_correlation_heatmap = function(seurat, tools){
  
  mat = query@meta.data %>%
@@ -251,7 +259,7 @@ for(r in refs){
   list[[r]]$lab = data.table::fread(paste0(params$output_dir, '/model/', r, '/labels.csv'), header = T)
  
   list[[r]]$pred = data.table::fread(paste0(params$output_dir, '/', params$sample, '/', r, '/Prediction_Summary.tsv')) %>% 
-                       harmonize_unsure(., list[[r]]$lab) 
+                       harmonize_unresolved(., list[[r]]$lab) 
 
   # create reference pal
   list[[r]]$pal = create_color_pal(list[[r]]$lab$label)

@@ -45,8 +45,7 @@ marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 harmonize_unresolved = function(pred, ref_labels){
   pred %>%
   column_to_rownames('cellname') %>%
-  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label), ., 'Unresolved'))) %>%
-  rownames_to_column('cellname') %>%
+  mutate(across(where(is.character), ~ifelse(. %in% c(ref_labels$label, 'No Consensus'), ., 'Unresolved'))) %>%
   return()
 }
 

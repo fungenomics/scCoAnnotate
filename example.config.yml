@@ -18,12 +18,6 @@ query_datasets:
       ct_p3: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
       ct_p0: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
 
-# convert gene symbols in reference from mouse to human (can be omited)
-convert_ref_mm_to_hg: False 
-
-# marker genes to plot in report (can be omitted)
-marker_genes: "PDGFRA MOG GFAP RBFOX1"
-
 # classifiers to run
 tools_to_run:
       - scPred

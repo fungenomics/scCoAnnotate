@@ -1,4 +1,25 @@
 
+#--- PREPROCESS ------
+
+# convert gene symbols in reference from mouse to human 
+convert_ref_mm_to_hg: False
+
+#--- CONSENSUS -------
+
+# specify consensus tools to include, either 'all' ot list of tool names
+consensus_tools:
+      - 'all'
+
+# specify consensus type, either 'majority' or numeric value 
+consensus_type: 'majority'
+
+#--- NOTEBOOKS -------
+
+# genes of interest
+# space separated string: "PDGFRA MOG GFAP RBFOX1"
+marker_genes: ""
+
+#---- TOOLS ----------
 SingleR:
   threads: 1 
 
@@ -56,3 +77,4 @@ CellTypist:
   feature_selection: 'True'
   majority_voting: 'True'
   threshold: 0.5
+#-----------------

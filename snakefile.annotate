@@ -71,6 +71,7 @@ rule consensus:
     basedir = {workflow.basedir}, 
     tools = config['tools_to_run'],
     consensus_tools = config['consensus_tools'],
+    consensus_type = config['consensus_type'],
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     sample = config["output_dir"] + "/{sample}/{reference}/"
   shell:
@@ -80,6 +81,7 @@ rule consensus:
     {output.prediction_summary} \
     "{params.tools}" \
     "{params.consensus_tools}" \
+    "{params.consensus_type}" \
     {params.labfile} \
     &> {log}
     """  

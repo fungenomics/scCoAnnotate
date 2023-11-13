@@ -62,8 +62,8 @@ sc.pp.log1p(query)
 #----------- Predict scHPL --------
 
 pred = predict.predict_labels(testdata= query.X,
-                                     tree = scHPL_model,
-                                     threshold = threshold)
+                              tree = scHPL_model,
+                              threshold = threshold)
 
 print('@ WRITTING PREDICTIONS')
 

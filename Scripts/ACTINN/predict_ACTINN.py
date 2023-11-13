@@ -205,7 +205,6 @@ def predict(X, parameters):
     return prediction
 
 
-
 # Build the model
 def model(X_train, Y_train, X_test, starting_learning_rate = 0.0001, num_epochs = 1500, minibatch_size = 128, print_cost = True):
     # input -- X_train (training set), Y_train(training labels), X_test (test set), Y_test (test labels),

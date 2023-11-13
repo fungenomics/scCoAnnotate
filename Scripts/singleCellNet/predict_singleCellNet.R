@@ -36,15 +36,16 @@ query = transposeBigData(query, blocksize = 10000)
 
 # predict labels 
 message('@ PREDICT LABELS')
+
 # Default nrand = 50, Hussein had used nrand = 0
-crPBMC = scn_predict(class_info[['cnProc']], query, nrand = 0)
+pred = scn_predict(class_info[['cnProc']], query, nrand = 0)
 message('@ DONE')
 
 # classify cells 
-stQuery = assign_cate(classRes = crPBMC, sampTab = data.frame(row.names = cellnames), cThresh = 0.5) 
+query_res = assign_cate(classRes = pred, sampTab = data.frame(row.names = cellnames), cThresh = 0.5) 
 
-pred_labs = data.frame(cell = rownames(stQuery),
-	               singleCellNet = stQuery$category)
+pred_labs = data.frame(cell = rownames(query_res),
+	               singleCellNet = query_res$category)
 
 # write prediction 
 data.table::fwrite(pred_labs, file = out_path)

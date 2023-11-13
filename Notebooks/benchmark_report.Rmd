@@ -60,6 +60,7 @@ plot_cm = function(cm_table){
 
 # Plot class stat per fold (F1 etc) as barplot
 plot_stat = function(cm_byclass, stat){
+
 p = cm_byclass %>% 
   as.data.frame() %>%
   rownames_to_column('class') %>%
@@ -86,9 +87,11 @@ return(p)
 # plot F1 accross folds for each class as a boxplot  
 plot_stat_boxplot = function(list, tool, stat){
   
-df = lapply(list[[tool]], get_stat, stat = stat)
+df = lapply(list[[tool]], get_stat, stat = stat) %>% bind_rows()
 
-bind_rows(df) %>%
+df[is.na(df)] = 0
+
+df %>%
   ggplot(aes(reorder(class, -.data[[stat]], mean), .data[[stat]])) +
   geom_boxplot() +
   theme_bw() +
@@ -144,6 +147,37 @@ h = Heatmap(df,
 return(h)
 }
 
+plot_n_cells_per_class = function(df){
+ mean_n = df %>%
+  count(label, fold) %>%
+  group_by(label) %>%
+  summarise(mean = round(mean(n)))
+
+ b = df %>%
+  count(label, fold) %>%
+  ggplot(aes(reorder(label, desc(mean)), mean)) +
+  geom_bar(data = mean_n, 
+           mapping = aes(reorder(label, desc(mean)), mean), 
+           stat = 'identity', 
+           fill = 'grey90') +
+  geom_text(data = mean_n, mapping = aes(label = mean), hjust = -0.2, vjust = -0.2, angle = 45) +
+  geom_point(aes(label, n), alpha = 0.5) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(mean_n$mean) + (max(mean_n$mean)*0.2))) +
+  ylab('N') +
+  theme(text = element_text(size = 10), 
+        axis.title.x = element_blank(),
+        axis.line = element_line(size = 0.5), 
+        panel.border = element_blank(), 
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 45,
+                                   vjust = 1, 
+                                   hjust=1))
+
+  return(b)
+}
+
 #--------- HELPER FUNCTIONS ----------------
 
 # gets stat for each fold and returns data frame 
@@ -182,12 +216,36 @@ for(n in 1:fold){
    for(t in tools){
     
      tmp = get_pred(pred, t, true)
-    
+      
      list[[t]][[n]] = confusionMatrix(data = tmp$label, reference = true$label, mode = 'everything')
      list[[t]][[n]]$fold = paste0('fold', n)
      list[[t]][[n]]$tool = t
+
+     #change na values to 0 
+     list[[t]][[n]]$byClass[is.na(list[[t]][[n]]$byClass)] = 0
   }
 }
+
+# save list object with all stats 
+save(list, file=paste0(params$pred_path, '/report/stats.Rda'))
+
+# save F1 as table 
+F1 = lapply(list, function(x){lapply(x, get_stat, stat = 'F1') %>% bind_rows()}) %>% bind_rows()
+data.table::fwrite(F1, file=paste0(params$pred_path, '/report/F1.csv'))
+```
+
+```{r}
+# Read training data class labels 
+
+train_lab = list()
+for(n in 1:fold){
+  train_lab[[n]] = data.table::fread(paste0(params$pred_path, '/fold', n, '/train_labels.csv'), header = T) %>%
+           column_to_rownames('V1') %>%
+           mutate(label = factor(label, ordered = TRUE),
+           fold = paste0('fold', n))
+}
+
+train_lab = bind_rows(train_lab)
 ```
 
 ```{r fig.width=10,echo=FALSE,message=FALSE,results="asis"}
@@ -197,6 +255,12 @@ cat("  \n## Summary \n")
 cat("<h3>Average F1 score per tool and class</h3>") 
 
 plot_mean_tool(list, 'F1', tools)
+
+cat("\n")
+
+cat("<h3>Average number of cells per label and fold</h3>") 
+
+plot_n_cells_per_class(train_lab)
 
 cat("\n")
 

@@ -31,7 +31,7 @@ if(!order){
     stop("@ Order of cells in reference and labels do not match")
 }
 
-ref[1:10,1:10]
+ref[1:10, 1:10]
 head(labels)
 
 # create n folds 

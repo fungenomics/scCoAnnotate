@@ -69,7 +69,7 @@ pred_matrix <- pred_matrix %>% as.data.frame() %>% tibble::rownames_to_column(" 
 
 message('@ SAVE PRED MATRIX')
 data.table::fwrite(pred_matrix,
-                   file = glue('{out_path}/Query_probabilities_matrix.csv'),
+                   file = glue('{out_path}/prob_matrix.csv'),
                    row.names = F,
                    col.names = T,
                    sep = ",",

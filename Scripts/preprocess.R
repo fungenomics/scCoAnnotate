@@ -77,7 +77,7 @@ common_genes = Reduce(intersect,genes)
 print(paste0('@Found ', length(common_genes), ' in common'))
 
 # throw error if number of common genes below % threshold of genes in any of provided datasets (ref or query) 
-threshold = 0.5
+threshold = 0.25
 frac = lapply(genes, function(x){length(common_genes)/length(x)})
 
 if(any(frac < threshold)){

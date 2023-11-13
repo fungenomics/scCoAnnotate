@@ -287,24 +287,21 @@ query = query %>%
   RunPCA() %>% 
   FindNeighbors(dims = 1:30) %>%
   FindClusters(resolution = 0.5) %>%
-  RunUMAP(dims = 1:30) 
+  RunUMAP(dims = 1:30)
+
+#create cluster pal 
+cluster_pal = create_color_pal(query$seurat_clusters)
 ```
 
 ```{r fig.width=8,fig.height=8,echo=FALSE,message=FALSE,results="asis"}
 set.seed(12345)
 cat("\n")
 
-for(r in refs){
-  
-  query = AddMetaData(query, list[[r]]$pred)
-  
-  cat("  \n#",  r, "{.tabset} \n")
-  
-  cat("  \n## Sample \n")
+cat("  \n# Sample \n")
   
   cat("<h3>Clusters</h3>")
   
-  p = umap_plotly(query, 'seurat_clusters', unname(list[[r]]$pal))
+  p = umap_plotly(query, 'seurat_clusters', cluster_pal)
   print(htmltools::tagList(p))
 
   cat("\n")
@@ -321,6 +318,14 @@ for(r in refs){
      }
     }
   }
+
+cat("\n")
+
+for(r in refs){
+  
+  query = AddMetaData(query, list[[r]]$pred)
+  
+  cat("  \n#",  r, "{.tabset} \n")
   
   cat("\n")
   

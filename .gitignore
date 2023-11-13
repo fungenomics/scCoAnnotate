@@ -6,3 +6,4 @@ config.yml
 test/
 Notebooks/annotate_report_cache/
 Notebooks/benchmark_report_cache/
+*/*/.Rapp.history

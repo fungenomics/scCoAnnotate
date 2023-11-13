@@ -6,7 +6,8 @@ pred_path = args[1]
 summary_path = args[2]
 tools = strsplit(args[3], split = ' ')[[1]]
 consensus_tools = strsplit(args[4], split = ' ')[[1]]
-ref_lab = args[5] 
+consensus_type = args[5]
+ref_lab = args[6] 
 
 print(tools)
 print(consensus_tools)
@@ -15,7 +16,17 @@ if(consensus_tools[1] == 'all'){
   consensus_tools = tools
 }
 
+if(consensus_type == 'majority'){
+  min_agree = 1 
+}else{
+  min_agree = as.numeric(consensus_type) 
+}
+
+print('CONSENSUS TOOLS: ')
 print(consensus_tools)
+
+print('CONSENSUS TYPE: ')
+print(min_agree)
 
 harmonize_unresolved = function(pred, ref_labels){
   pred %>%
@@ -25,14 +36,14 @@ harmonize_unresolved = function(pred, ref_labels){
   return()
 }
 
-getmode = function(v) {
+getmode = function(v, min = 1){
   uniqv = unique(v)
   matches = tabulate(match(v, uniqv))
   max_match = max(matches)
   
   ties = ifelse(length(which(matches == max_match)) > 1, T, F)
   
-  if (max_match == 1) {
+  if (max_match < min) {
     return("No Consensus")
   } else if (ties) {
     return("No Consensus") 
@@ -55,9 +66,8 @@ rm(l)
 
 tmp = harmonize_unresolved(consensus, ref_labels)
 tmp = tmp %>% select(all_of(consensus_tools))
-consensus$Consensus = apply(tmp, 1, getmode)
+consensus$Consensus = apply(tmp, 1, getmode, min = min_agree)
 rm(tmp)
 
 data.table::fwrite(consensus, summary_path, sep = '\t')
-
 

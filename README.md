@@ -107,9 +107,6 @@ query_datasets:
       <sample1>: <path to sample1 cell x gene matrix>
       <sample2>: <path to sample2 cell x gene matrix>
 
-# convert gene symbols in reference from mouse to human 
-convert_ref_mm_to_hg: False 
-
 # classifiers to run
 tools_to_run:
       - tool1
@@ -123,6 +120,7 @@ consensus_tools:
 benchmark:
   n_folds: <number of folds to use in the benchmarking>
 ```
+
 See: [Changing Default Parameters](##changing-default-parameters)
 
 ### 5. Prepare HPC submission script
@@ -194,18 +192,15 @@ output_dir_benchmark: <output directory for the benchmarking workflow>
 references: 
       <reference name>:
             expression: <path to cell x gene matrix>
-            labels: <pth to cell x label matrix>
+            labels: <path to cell x label matrix>
       <reference name>:
             expression: <path to cell x gene matrix>
-            labels: <pth to cell x label matrix>
+            labels: <path to cell x label matrix>
 
 # path to query datasets (cell x gene raw counts)
 query_datasets:
       <sample1>: <path to sample1 cell x gene matrix>
       <sample2>: <path to sample2 cell x gene matrix>
-
-# convert gene symbols in reference from mouse to human 
-convert_ref_mm_to_hg: False 
 
 # classifiers to run
 tools_to_run:
@@ -237,6 +232,16 @@ extra_config=<path to your new default config file>
 
 # run workflow 
 snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
+```
+
+### Example of some non-tool specific paramters 
+
+```yaml
+# convert gene symbols in reference from mouse to human 
+convert_ref_mm_to_hg: False
+
+# specify consensus type, either 'majority' or numeric value 
+consensus_type: 'majority'
 ```
 
 # :hatching_chick: Outputs 
@@ -278,7 +283,8 @@ pkg = c("Seurat",
         "plotly",
         "caret",
         "Matrix",
-        "scAnnotate") 
+        "scAnnotate",
+        "terra") 
 
 install.packages(pkg)
 ```
@@ -310,7 +316,8 @@ pkg = c("SingleCellExperiment",
         "scAnnotate",
         "Orthology.eg.db",
         "org.Mm.eg.db",
-        "org.Hg.eg.db")
+        "org.Hg.eg.db",
+        "scater")
 
 BiocManager::install(pkg)
 ```

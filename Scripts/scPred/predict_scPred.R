@@ -12,6 +12,9 @@ model_path = args[2]
 pred_path = args[3]
 threads = as.numeric(args[4])
 
+# get path for other output
+out_path = dirname(pred_path)
+
 #--------------- Data -------------------
 
 # read query matrix 
@@ -48,5 +51,12 @@ pred_labs = data.frame(cell = colnames(query),
 
 # write prediction 
 data.table::fwrite(pred_labs, file = pred_path)
+
+# save probbability matrix 
+prob_mat = query@meta.data %>% select(starts_with('scpred'))
+colnames(prob_mat) = str_remove(colnames(prob_mat), 'scpred_')
+
+# write probability matrix 
+data.table::fwrite(prob_mat, file = paste0(out_path, '/prob_matrix.csv'))
 
 #----------------------------------------

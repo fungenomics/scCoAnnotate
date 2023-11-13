@@ -129,7 +129,7 @@ df.to_csv(filename,
           index=True) #True because we want to conserve the rownames (cells)
 print('@ DONE ')
 
-# Save map object that contains the cell x spot prob
+# Save map object that contains the cell x label prob
 print('@ WRITTING OUTPUT OBJECT ')
 filename = out_other_path + '/scNym_output_object.h5ad'
 adata.write_h5ad(filename= filename,

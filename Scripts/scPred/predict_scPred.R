@@ -55,6 +55,7 @@ data.table::fwrite(pred_labs, file = pred_path)
 # save probbability matrix 
 prob_mat = query@meta.data %>% select(starts_with('scpred'))
 colnames(prob_mat) = str_remove(colnames(prob_mat), 'scpred_')
+colnames(prob_mat) = gsub("_minus", "-", colnames(prob_mat))
 
 # write probability matrix 
 data.table::fwrite(prob_mat, file = paste0(out_path, '/prob_matrix.csv'))

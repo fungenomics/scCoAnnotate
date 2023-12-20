@@ -56,9 +56,14 @@ rule preprocess:
     """
 
 #----------------------------------------------------
-#  Consensus 
+#  Consensus
 #----------------------------------------------------
-
+def cons_file(cons_type):
+    if cons_type != 'CAWPE':
+        return "Scripts/calculate_consensus.R"
+    else:
+        return "Scripts/CAWPE.R"
+        
 rule consensus:
   input:
     results = expand(config["output_dir"] + "/{{sample}}/{{reference}}/{tool}/{tool}_pred.csv",
@@ -73,16 +78,19 @@ rule consensus:
     consensus_tools = config['consensus_tools'],
     consensus_type = config['consensus_type'],
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
-    sample = config["output_dir"] + "/{sample}/{reference}/"
+    sample = config["output_dir"] + "/{sample}/{reference}/",
+    consensus_file = cons_file(config['consensus_type']),
+    f1_file = config["output_dir_benchmark"] + "/{reference}/report/F1.csv"
   shell:
     """
-    Rscript {params.basedir}/Scripts/calculate_consensus.R \
+    Rscript {params.basedir}/{params.consensus_file} \
     {params.sample} \
     {output.prediction_summary} \
     "{params.tools}" \
     "{params.consensus_tools}" \
     "{params.consensus_type}" \
     {params.labfile} \
+    {params.f1_file} \
     &> {log}
     """  
 

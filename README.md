@@ -672,3 +672,18 @@ Predicting:
   * `predicted_labels.csv`: The prediction for each cell, if majority_voting was true it has the information of the majority_voting labels AND the predicted_labels.
   * Generates some embedding plots.
   * An `.h5ad` object that has all the previous information (with the embeddings too) in a `.h5ad` object.
+
+## SciBet
+
+Documentation written by: Tomas Vega Waichman
+
+Date written: 2024-01-16
+
+The SciBet workflow was generated following the tutorial: http://scibet.cancer-pku.cn/document.html
+
+Training and test could be separated.
+Data inputs for SciBet were done with the default Seurat's log-normalization method. According to their paper (Li et al, Nat Comm): "For unique molecular identifier (UMI) data, we applied the widely-used pre-processing methods proposed by Seurat v3 with default parameters (normalizing the UMI count of each cell with size-factor 10,000, adding one and then log normalization)".
+All the parameters are the defaults
+The trained model is also export as a matrix and is saved in the `model_matrix.csv`
+The selected genes used in the model as markers for each cell-types are plot in `selected_markers_per_label.pdf` using the `scibet::Marker_heatmap` function and the marker table is on `selected_markers_per_label.csv`.
+For the query the score for each cell prediction is obtain also in the `SciBet_pred_score.csv`

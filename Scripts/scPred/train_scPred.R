@@ -69,8 +69,8 @@ save(scpred, file = model_path)
 message('@ DONE')
 
 # Plot prob 
-pdf(paste0(out_path, '/qc_plots.pdf'), width=10, height=10)
-plot_probabilities(scpred)
-dev.off()
+#pdf(paste0(out_path, '/qc_plots.pdf'), width=10, height=10)
+#plot_probabilities(scpred)
+#dev.off()
 
 #---------------------------------------------

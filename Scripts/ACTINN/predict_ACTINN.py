@@ -299,4 +299,17 @@ if __name__ == '__main__':
     predicted_label = pd.DataFrame({"cell":barcode, "ACTINN":predicted_label})
     predicted_label.to_csv(args.pred_path, sep=",", index=False)
 
+    # make binary output matrix
+    predicted_label['prob'] = 1
+    predicted_label = predicted_label.pivot_table(index=predicted_label.columns[0], columns='ACTINN', values='prob', fill_value=0).reset_index()
+    
+    # rename column names 
+    predicted_label.columns.name = None  # Remove the columns' name to match the R code
+    predicted_label.columns = [''] + list(predicted_label.columns[1:])
+
+    # save binary matrix
+    out_other_path = os.path.dirname(args.pred_path)
+    predicted_label.to_csv(out_other_path + '/ACTINN_pred_score.csv', index=False)
+
+
 print("Run time:", timeit.default_timer() - run_time)

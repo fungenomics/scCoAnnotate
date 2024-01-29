@@ -46,6 +46,8 @@ message('@ DONE')
 head(colnames(query))
 head(query$scpred_prediction)
 
+# scPred chnages - to _minus --> chnage back before saving 
+query$scpred_prediction = gsub("_minus", "-", query$scpred_prediction)
 pred_labs = data.frame(cell = colnames(query),
                        scPred = query$scpred_prediction)
 
@@ -53,11 +55,12 @@ pred_labs = data.frame(cell = colnames(query),
 data.table::fwrite(pred_labs, file = pred_path)
 
 # save probbability matrix 
-prob_mat = query@meta.data %>% select(starts_with('scpred'))
+prob_mat = query@meta.data %>% rownames_to_column('cell') %>% select(cell | starts_with('scpred'))
 colnames(prob_mat) = str_remove(colnames(prob_mat), 'scpred_')
 colnames(prob_mat) = gsub("_minus", "-", colnames(prob_mat))
+colnames(prob_mat)[1] = ""
 
 # write probability matrix 
-data.table::fwrite(prob_mat, file = paste0(out_path, '/prob_matrix.csv'))
+data.table::fwrite(prob_mat, file = paste0(out_path, '/scPred_pred_score.csv'))
 
 #----------------------------------------

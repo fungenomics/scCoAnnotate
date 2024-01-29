@@ -12,6 +12,7 @@ params:
     refs: ''
     tools: ''
     consensus: ''
+    cons_tools: ''
     output_dir: ''
     sample: ''
     threads: ''
@@ -37,7 +38,10 @@ plotly_empty()
 # format notebook parameters 
 threads = as.numeric(params$threads)
 refs = strsplit(params$refs, split = ' ')[[1]]
+consensus = strsplit(params$consensus, split = ' ')[[1]]
+names(consensus) = basename(dirname(consensus))
 tools = c('Consensus',strsplit(params$tools, split = ' ')[[1]])
+cons_tools = c('Consensus',strsplit(params$cons_tools, split = ' ')[[1]])
 marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 ```
 
@@ -214,7 +218,7 @@ calculate_percentage_unresolved = function(pred, order){
     mutate(warn = case_when(frac >= 70 ~ 'HIGH', 
                             frac < 70 & frac > 30 ~ 'MEDIUM',
                             frac <= 30 ~ 'LOW'))
-
+   if(nrow(warn) != 0){
    warn = data.frame(TOOL = warn$name, 
                      LABEL = warn$value, 
                      PERCENTAGE = warn$frac, 
@@ -233,6 +237,8 @@ calculate_percentage_unresolved = function(pred, order){
                          bold = ifelse(warn$TOOL == 'Consensus', T, F),
              background = ifelse(warn$TOOL == 'Consensus', 'black', 'white'),
              color = ifelse(warn$TOOL == 'Consensus', 'white', 'black'))
+   }
+   
    return(warn)
 }
 
@@ -255,9 +261,9 @@ umap_theme = theme(aspect.ratio = 1,
 list = list()
 
 for(r in refs){
-  list[[r]]$lab = data.table::fread(paste0(params$output_dir, '/model/', r, '/labels.csv'), header = T)
+  list[[r]]$lab = data.table::fread(paste0(params$output_dir, '/model/', r, '/labels.csv'), header = T, fill = T)
  
-  list[[r]]$pred = data.table::fread(paste0(params$output_dir, '/', params$sample, '/', r, '/Prediction_Summary.tsv')) %>% 
+  list[[r]]$pred = data.table::fread(consensus[r]) %>% 
                        harmonize_unresolved(., list[[r]]$lab) 
 
   # create reference pal

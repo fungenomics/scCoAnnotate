@@ -52,9 +52,9 @@ getmode = function(v, min = 1){
   }
 }
 
-ref_labels = data.table::fread(ref_lab, header = T) %>% column_to_rownames('V1')
+ref_labels = data.table::fread(ref_lab, header = T, fill=TRUE) %>% column_to_rownames('V1')
 
-files =list.files(pred_path, pattern = 'pred.csv', recursive = T, full.names = T)
+files = list.files(pred_path, pattern = 'pred.csv', recursive = T, full.names = T)
 
 l = list()
 for(f in files){

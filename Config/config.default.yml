@@ -13,6 +13,9 @@ consensus_tools:
 # specify consensus type, either 'majority' or numeric value 
 consensus_type: 'majority'
 
+# alpha value for CAWPE calculation 
+alpha: 4
+
 #--- NOTEBOOKS -------
 
 # genes of interest

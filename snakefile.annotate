@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 # Get the names of query samples from the paths given in the query section of the config
-samples = config['query_datasets']
+samples = list(config['query_datasets'].keys())
 
 now = datetime.now()
 dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -21,8 +21,9 @@ dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
 rule all:
   input:
-    expand(config['output_dir'] + '/{sample}/report/{sample}.prediction_report.' + dt_string + '.html',
-           sample = samples)
+    expand(config['output_dir'] + '/{sample}/report/{sample}.{consensus_type}.prediction_report.' + dt_string + '.html',
+    sample = samples,
+    consensus_type = config['consensus_type'])
 
 #----------------------------------------------------
 #  Preprocess
@@ -42,7 +43,8 @@ rule preprocess:
     basedir = {workflow.basedir},
     out = config['output_dir'],
     convert_genes = config['convert_ref_mm_to_hg'],
-    reference_name = "{reference}"
+    reference_name = "{reference}",
+    query_names = samples
   shell:
     """
     Rscript {params.basedir}/Scripts/preprocess.R \
@@ -52,6 +54,7 @@ rule preprocess:
     {params.convert_genes} \
     {input.labfile} \
     {params.reference_name} \
+    "{params.query_names}" \
     &> {log} 
     """
 
@@ -59,7 +62,7 @@ rule preprocess:
 #  Consensus
 #----------------------------------------------------
 def cons_file(cons_type):
-    if cons_type != 'CAWPE':
+    if cons_type == 'majority':
         return "Scripts/calculate_consensus.R"
     else:
         return "Scripts/CAWPE.R"
@@ -69,18 +72,19 @@ rule consensus:
     results = expand(config["output_dir"] + "/{{sample}}/{{reference}}/{tool}/{tool}_pred.csv",
                      tool=config['tools_to_run'])
   output:
-    prediction_summary = config["output_dir"] + "/{sample}/{reference}/Prediction_Summary.tsv"
+    prediction_summary = config["output_dir"] + "/{sample}/{reference}/Prediction_Summary.{consensus_type}.tsv"
   log: 
-    config["output_dir"] + "/{sample}/{reference}/Gatherpreds.log"
+    config["output_dir"] + "/{sample}/{reference}/Gatherpreds.{consensus_type}.log"
   params:
     basedir = {workflow.basedir}, 
     tools = config['tools_to_run'],
     consensus_tools = config['consensus_tools'],
-    consensus_type = config['consensus_type'],
+    consensus_type = "{consensus_type}",
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     sample = config["output_dir"] + "/{sample}/{reference}/",
-    consensus_file = cons_file(config['consensus_type']),
-    f1_file = config["output_dir_benchmark"] + "/{reference}/report/F1.csv"
+    consensus_file = lambda wildcards:cons_file(wildcards.consensus_type),
+    f1_file = config["output_dir_benchmark"] + "/{reference}/report/F1.csv",
+    alpha = config["alpha"]
   shell:
     """
     Rscript {params.basedir}/{params.consensus_file} \
@@ -91,6 +95,7 @@ rule consensus:
     "{params.consensus_type}" \
     {params.labfile} \
     {params.f1_file} \
+    {params.alpha} \
     &> {log}
     """  
 
@@ -100,18 +105,18 @@ rule consensus:
 
 rule knit_report:
   input: 
-    pred = expand(config['output_dir'] + "/{{sample}}/{reference}/Prediction_Summary.tsv", reference = config['references']),
+    pred = expand(config['output_dir'] + "/{{sample}}/{reference}/Prediction_Summary.{{consensus_type}}.tsv", reference = config['references']),
     query = lambda wildcards:config['query_datasets'][wildcards.sample]
   output: 
-    report_path = config['output_dir'] + '/{sample}/report/{sample}.prediction_report.' + dt_string + '.html'
+    report_path = config['output_dir'] + '/{sample}/report/{sample}.{consensus_type}.prediction_report.' + dt_string + '.html'
   log:
-    config['output_dir'] + "/{sample}/report/report.log"
+    config['output_dir'] + "/{sample}/report/report.{consensus_type}.log"
   params:
     basedir = {workflow.basedir},
     output_dir = config['output_dir'], 
     sample = "{sample}",
     tools = config['tools_to_run'], 
-    consensus = config['consensus_tools'],
+    consensus_tools = config['consensus_tools'],
     refs = list(config['references'].keys()),
     marker_genes = config['marker_genes']
   threads: 1
@@ -121,9 +126,10 @@ rule knit_report:
     Rscript -e "rmarkdown::render(
             '{params.basedir}/Notebooks/annotate_report.Rmd',
             params = list(tools         = '{params.tools}',
-                          consensus     = '{params.consensus}',
+                          cons_tools    = '{params.consensus_tools}',
                           refs          = '{params.refs}',
                           output_dir    = '{params.output_dir}',
+                          consensus     = '{input.pred}',
                           sample        = '{params.sample}',
                           marker_genes  = '{params.marker_genes}',
                           threads       = '{threads}',

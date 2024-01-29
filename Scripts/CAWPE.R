@@ -1,3 +1,4 @@
+
 library(tidyverse)
 
 #The arguments are provided in the appropriate snakefile
@@ -9,102 +10,91 @@ consensus_tools = strsplit(args[4], split = ' ')[[1]]
 consensus_type = args[5]
 ref_lab = args[6]
 f1_path = args[7]
+alpha = as.numeric(args[8])
+
+pred_path = "/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/03_scCoAnnotate_allen/hold_out_sample/"
+#summary_path = paste0('/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/03_scCoAnnotate/Forebrain_P6/Braindex_Level3/Prediction_Summary.CAWPE.tsv')
+tools = strsplit('SingleR Correlation scHPL scClassify SciBet singleCellNet SVMlinear scLearn scAnnotate scNym CellTypist ACTINN scPred', split = ' ')[[1]] 
+consensus_tools = 'all'
+consensus_type = 'CAWPE_T'
+ref_lab = '/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/03_scCoAnnotate_allen/model/AllenBrain2019_SMARTseq/labels.csv'
+f1_path = '/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/02_benchmark_allen/AllenBrain2019_SMARTseq/report/F1.csv'
 
 if(consensus_tools[1] == 'all'){
   consensus_tools = tools
 }
 
-CAWPE = function(v, cva, ref_labels, consensus_tools, column_names, alpha = 4){
-  #Slash is added to create exact match for labels
-  tmp_labels = paste0(ref_labels,"/")
-  
-  CAWPE_values = list()
-  
-  #for each label 
-  for (lab in tmp_labels){
-    
-    # get the F1 scores for each tool for one lable 
-    cva_one_label = cva %>% filter(class == lab)
-    
-    # get the column names containing the label (tool.label format)?? 
-    # can be done with a paste instead maybe 
-    # one_label_prob_columns = paste0(consensus_tools, '.', lab)
-    one_label_prob_columns = grep(lab, column_names)
-
-    # filtered for one label (named named vector)
-    v_one_label = as.list(v)[one_label_prob_columns]
-    
-    CAWPE_values[lab] = 0
-    
-    for(c_tool in consensus_tools){
-      #There is now only one column for the label-tool pair
-      label_tool_prob = as.double(v_one_label[grep(c_tool, names(v_one_label))])
-      
-      # check if there is a value 
-      if(length(label_tool_prob) == 0){label_tool_prob = 0}
-      
-      # calculate value per tool and lab
-      tool_contribution = (cva_one_label %>% filter(tool == c_tool))[,"F1"]^alpha*label_tool_prob
-      
-      # add to sum 
-      CAWPE_values[lab] = CAWPE_values[lab] + tool_contribution
-    }
-    
-  }
-  #Ref_labels iteration determines the order anyhow, this extracts the label with no slash
-  return(ref_labels[which.max(unlist(CAWPE_values))])
-  
+if(consensus_type == 'CAWPE_T'){
+  cols = c('tool')
+}else if(consensus_type == 'CAWPE_CT'){
+  cols = c('tool', 'class')
 }
 
-
-F1_file = read.csv(f1_path)
-
-#Process the F1 data
-#Add slash to distinguish labels
-F1_file$class = paste0(F1_file$class,"/")
-
-#Keep only rows with active consensus_tools
-F1_filtered = F1_file %>%
-  filter(tool %in% consensus_tools)
-
-#Calculate the mean F1 score for each class and tool (this is the cross-validation accuracy estimate)
-cva = F1_filtered %>%
-  group_by(tool, class) %>%
-  summarize(F1 = mean(F1))
-
-
-#The filtering assumes that tools have a parent directory with the consensus tool name
-
-unfiltered_pred_files =list.files(pred_path, pattern = 'pred.csv', recursive = T, full.names = T)
-pred_files = grep(paste(paste0("/",consensus_tools,"/"),collapse="|"), unfiltered_pred_files, value=TRUE)
-rm(unfiltered_pred_files)
-
-unfiltered_prob_files =list.files(pred_path, pattern = 'prob_matrix.csv', recursive = T, full.names = T)
-prob_files = grep(paste(paste0("/",consensus_tools,"/"),collapse="|"), unfiltered_prob_files, value=TRUE)
-rm(unfiltered_prob_files)
-
-#If we do not use unique, we get all the training data redundancies
-ref_labels = unique((data.table::fread(ref_lab, header = T))$label)
-
-l = list()
-l2 = list()
-for(f in prob_files){
-  l[[basename(dirname(f))]] = data.table::fread(f) 
-  }
-for(f in pred_files){
-  l2[[basename(dirname(f))]] = data.table::fread(f) 
+CAWPE = function(x, alpha = 4){
+  (as.numeric(x['F1'])^alpha)*as.numeric(x['prob'])
 }
 
-#cbind automatically provides the tool name to the table columns! e.g. scPred.ASEP
-consensus_calc_table = do.call(cbind,l)
+# read F1 table, filter rows with consensus_tools and calculate mean F1
+F1 = read.csv(f1_path) %>%
+  filter(tool %in% consensus_tools) %>%
+  group_by(across(all_of(cols))) %>%
+  summarize(F1 = mean(F1)) %>%
+  ungroup()
 
-#Add slash to distinguish between labels that are similar
-colnames(consensus_calc_table) = paste0(colnames(consensus_calc_table),"/")
-column_names = colnames(consensus_calc_table)
-consensus = l2 %>% reduce(left_join, by = "cell") %>% rename('cellname' = 'cell')
-rm(l)
-rm(l2)
+# get the paths to the probability files 
+prob_files = list.files(pred_path, 
+                        pattern = paste0(paste0(consensus_tools, '_pred_score.csv'), collapse = '|'), 
+                        recursive = T, 
+                        full.names = T)
 
-#Append the consensus prediction to the table of all best predictions
-consensus$Consensus = apply(consensus_calc_table, 1, CAWPE, cva, ref_labels, consensus_tools, column_names)
-data.table::fwrite(consensus, summary_path, sep = '\t')
+print(prob_files)
+
+# read probability matrixes
+data = lapply(prob_files, function(f){data.table::fread(f, check.names = F) %>% rename(cell = V1) %>% mutate(tool = basename(dirname(f)))})
+
+length(intersect(data[[1]]$cell,data[[13]]$cell))
+
+# read labels in matrix (used to filter the probbability matrix which sometimes contains additional information)
+ref_labels = unique((data.table::fread(ref_lab, header = T, fill=TRUE))$label)
+
+x = lapply(data, function(f){(f$cell)})
+
+# 
+data = bind_rows(data) %>% 
+  select(cell, all_of(ref_labels), tool) %>%
+  pivot_longer(!c('cell', 'tool'), 
+               names_to = 'class', 
+               values_to = 'prob') %>%
+  left_join(F1, by = cols) %>%
+  na.omit()
+
+# calculate CAWPE score for each combination of cell, tool and class 
+data$CAWPE = apply(data, 1, CAWPE, alpha = 4)
+
+# get best prediction from each tool 
+top_pred = data %>%
+  group_by(cell, tool) %>%
+  slice(which.max(prob)) %>%
+  pivot_wider(id_cols = !c(prob, F1, CAWPE),
+              names_from = tool, 
+              values_from = class)
+
+# add up the CAWPE scores for each class for each cell 
+pred = data %>%
+  group_by(cell, class) %>%
+  summarise(CAWPE = sum(CAWPE)) %>%
+  ungroup()
+
+# get final prediction by max CAWPE value 
+final_pred = pred %>% 
+  group_by(cell) %>% 
+  slice(which.max(CAWPE)) %>%
+  ungroup() %>%
+  left_join(top_pred, by = 'cell') %>% 
+  rename(Consensus = class,
+         cellname = cell) 
+
+# save consensus 
+data.table::fwrite(final_pred, summary_path, sep = '\t')
+
+nrow(data)

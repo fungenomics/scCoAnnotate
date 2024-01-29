@@ -106,3 +106,21 @@ save(pred,
      )
 
 message('@ DONE')
+
+# output binary matrix
+message('@ WRITE TABLE WITH BINARY OUTPUT')
+pred_labels = pred_labels %>% 
+            mutate(prob = 1) %>% 
+            pivot_wider(names_from = scID, 
+                        values_from = prob, 
+                        values_fill = 0)
+
+names(pred_labels)[1] = ""
+
+data.table::fwrite(pred_labels, 
+                   file = paste0(out_path, '/scID_pred_score.csv'),
+                   row.names = F,
+                   col.names = T,
+                   sep = ",",
+                   nThread = threads)
+message('@ DONE')

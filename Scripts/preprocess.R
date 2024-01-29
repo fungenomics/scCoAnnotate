@@ -8,6 +8,11 @@ out = args[3]
 convert_genes = as.logical(args[4])
 lab_path = args[5]
 reference_name = args[6]
+query_names = strsplit(args[7], split = ' ')[[1]]
+
+print(args[7])
+print(query_names)
+names(query_paths) = query_names
 
 l = list()
 
@@ -15,10 +20,10 @@ l = list()
 l[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
 
 # read query 
-for(p in query_paths){
-  print(p)
-  tmp = data.table::fread(p, header = T) %>% column_to_rownames('V1')
-  query = basename(dirname(p))
+for(i in 1:length(query_paths)){
+  print(query_paths[i])
+  tmp = data.table::fread(query_paths[i], header = T) %>% column_to_rownames('V1')
+  query = names(query_paths)[i]
   print(query)
   l[[query]] = tmp
 }

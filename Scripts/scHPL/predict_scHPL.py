@@ -71,3 +71,14 @@ pred_labels = pd.DataFrame({'cell': query.obs_names, 'scHPL': pred})
 pred_labels.to_csv(out_path, index = False)
 print('@ DONE')
 #----------------------------------------
+
+# make binary output matrix
+pred_labels['prob'] = 1
+pred_labels = pred_labels.pivot_table(index=pred_labels.columns[0], columns='scHPL', values='prob', fill_value=0).reset_index()
+    
+# rename column names 
+pred_labels.columns.name = None  # Remove the columns' name to match the R code
+pred_labels.columns = [''] + list(pred_labels.columns[1:])
+
+# save binary matrix
+pred_labels.to_csv(out_other_path + '/scHPL_pred_score.csv', index=False)

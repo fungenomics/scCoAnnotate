@@ -17,7 +17,7 @@ pred_path = args[3]
 threads = as.numeric(args[4])
 
 # path for other outputs (depends on tools)
-out_path = dirname(model_path)
+out_path = dirname(pred_path)
 
 #--------------- Data -------------------
 
@@ -60,6 +60,8 @@ pred <- predict_scClassify(
     BPPARAM = bpparam
 )
 
+print(head(pred))
+
 # extract predictions table and format
 message('@ FORMATTING PREDICTIONS')
 pred_table <- pred$pearson_WKNN_limma$predRes %>% as.data.frame() %>% rownames_to_column()
@@ -76,3 +78,21 @@ data.table::fwrite(pred_table, file = pred_path,
 message('@ DONE')
 
 #----------------------------------------
+
+# output binary matrix
+message('@ WRITE TABLE WITH BINARY OUTPUT')
+pred_table = pred_table %>% 
+            mutate(prob = 1) %>% 
+            pivot_wider(names_from = scClassify, 
+                        values_from = prob, 
+                        values_fill = 0)
+
+names(pred_table)[1] = ""
+
+data.table::fwrite(pred_table, 
+                   file = paste0(out_path, '/scClassify_pred_score.csv'),
+                   row.names = F,
+                   col.names = T,
+                   sep = ",",
+                   nThread = threads)
+message('@ DONE')

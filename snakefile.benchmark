@@ -104,7 +104,7 @@ rule consensus:
     basedir = {workflow.basedir},
     tools = config['tools_to_run'],
     consensus_tools = config['consensus_tools'],
-    consensus_type = config['consensus_type'],
+    consensus_type = 'majority',
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     sample = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}"
   shell:

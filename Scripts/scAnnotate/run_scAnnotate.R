@@ -31,7 +31,7 @@ ref <- data.table::fread(ref_path,
                          header=T,
                          nThread=threads) %>%
   column_to_rownames('V1') %>% 
-  transposeBigData()
+  WGCNA::transposeBigData()
 
 message('@ DONE')
 
@@ -74,7 +74,7 @@ ref   <- ref[common.genes,]
 ref <- NormalizeData(ref) %>% as.data.frame() %>% transposeBigData()
 
 # The label should be in the first column
-ref <- cbind(labels,ref)
+ref <- cbind(labels, ref)
 
 # Prepare the query: Normalization
 query <- NormalizeData(query) %>% as.data.frame() %>% transposeBigData()
@@ -85,7 +85,7 @@ query <- NormalizeData(query) %>% as.data.frame() %>% transposeBigData()
 pred <- scAnnotate(train=ref,
                    test=query,
                    distribution="normal", #Default
-                   correction ="auto",
+                   correction ="harmony",
                    screening = "wilcox",
                    threshold=threshold,
                    lognormalized=TRUE)
@@ -96,6 +96,26 @@ pred_labels <- data.frame(cell = rownames(query),
 message('@ WRITTING PREDICTIONS')
 data.table::fwrite(pred_labels,
                    file = pred_path,
+                   row.names = F,
+                   col.names = T,
+                   sep = ",",
+                   nThread = threads)
+message('@ DONE')
+
+# ---- OTHER OUTPUTS ---------------------
+
+# output binary matrix
+message('@ WRITE TABLE WITH BINARY OUTPUT')
+pred_labels = pred_labels %>% 
+              mutate(prob = 1) %>% 
+              pivot_wider(names_from = scAnnotate, 
+                          values_from = prob, 
+                          values_fill = 0)
+
+names(pred_labels)[1] = ""
+
+data.table::fwrite(pred_labels, 
+                   file = paste0(out_path, '/scAnnotate_pred_score.csv'),
                    row.names = F,
                    col.names = T,
                    sep = ",",

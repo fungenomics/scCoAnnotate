@@ -12,14 +12,6 @@ ref_lab = args[6]
 f1_path = args[7]
 alpha = as.numeric(args[8])
 
-pred_path = "/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/03_scCoAnnotate_allen/hold_out_sample/"
-#summary_path = paste0('/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/03_scCoAnnotate/Forebrain_P6/Braindex_Level3/Prediction_Summary.CAWPE.tsv')
-tools = strsplit('SingleR Correlation scHPL scClassify SciBet singleCellNet SVMlinear scLearn scAnnotate scNym CellTypist ACTINN scPred', split = ' ')[[1]] 
-consensus_tools = 'all'
-consensus_type = 'CAWPE_T'
-ref_lab = '/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/03_scCoAnnotate_allen/model/AllenBrain2019_SMARTseq/labels.csv'
-f1_path = '/lustre06/project/6004736/alvann/from_narval/SIDE_PROJECTS/231221_test_cawpe/out/02_benchmark_allen/AllenBrain2019_SMARTseq/report/F1.csv'
-
 if(consensus_tools[1] == 'all'){
   consensus_tools = tools
 }

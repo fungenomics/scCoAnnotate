@@ -12,7 +12,7 @@ ref_path = args[1]
 lab_path = args[2]
 out_path = args[3]
 threads = as.numeric(args[4])
-nTrees = args[5]
+nTrees = as.numceric(args[5])
 
 #--------------- Data -------------------
 # read reference matrix and transpose  

@@ -543,7 +543,7 @@ rule train_singleCellNet:
     model = config['output_dir'] + "/model/{reference}/singleCellNet/singleCellNet_model.Rda"
   params:
     basedir = {workflow.basedir},
-    nTrees = config['nTrees']
+    nTrees = config['singleCellNet']['nTrees']
   log:
     config['output_dir'] + "/model/{reference}/singleCellNet/singleCellNet.log"
   benchmark:

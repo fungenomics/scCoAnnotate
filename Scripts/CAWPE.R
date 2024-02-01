@@ -81,8 +81,6 @@ pred = data %>%
 final_pred = pred %>% 
   group_by(cell) %>% 
   slice(which.max(CAWPE)) %>%
-  ungroup() %>%
-  left_join(top_pred, by = 'cell') %>% 
   rename(Consensus = class,
          cellname = cell) 
 

@@ -72,7 +72,7 @@ rule consensus:
     results = expand(config["output_dir"] + "/{{sample}}/{{reference}}/{tool}/{tool}_pred.csv",
                      tool=config['tools_to_run'])
   output:
-    prediction_summary = config["output_dir"] + "/{sample}/{reference}/Prediction_Summary.{consensus_type}.tsv"
+    prediction_summary = config["output_dir"] + "/{sample}/{reference}/{consensus_type}/{consensus_type}_pred.tsv"
   log: 
     config["output_dir"] + "/{sample}/{reference}/Gatherpreds.{consensus_type}.log"
   params:
@@ -105,7 +105,7 @@ rule consensus:
 
 rule knit_report:
   input: 
-    pred = expand(config['output_dir'] + "/{{sample}}/{reference}/Prediction_Summary.{{consensus_type}}.tsv", reference = config['references']),
+    pred = expand(config['output_dir'] + "/{{sample}}/{reference}/{{consensus_type}}/{{consensus_type}}_pred.tsv", reference = config['references']),
     query = lambda wildcards:config['query_datasets'][wildcards.sample]
   output: 
     report_path = config['output_dir'] + '/{sample}/report/{sample}.{consensus_type}.prediction_report.' + dt_string + '.html'
@@ -542,7 +542,8 @@ rule train_singleCellNet:
   output:
     model = config['output_dir'] + "/model/{reference}/singleCellNet/singleCellNet_model.Rda"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    nTrees = config['nTrees']
   log:
     config['output_dir'] + "/model/{reference}/singleCellNet/singleCellNet.log"
   benchmark:
@@ -557,6 +558,7 @@ rule train_singleCellNet:
     {input.labfile} \
     {output.model} \
     {threads} \
+    {params.nTrees} \
     &> {log}
     """
 

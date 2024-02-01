@@ -466,6 +466,7 @@ rule train_singleCellNet:
     model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet_model.Rda"
   params:
     basedir = {workflow.basedir},
+    nTrees = config['nTrees']
   log:
     config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet.log"
   benchmark:
@@ -480,6 +481,7 @@ rule train_singleCellNet:
     {input.labfile} \
     {output.model} \
     {threads} \
+    {params.nTrees} \
     &> {log}
     """
 

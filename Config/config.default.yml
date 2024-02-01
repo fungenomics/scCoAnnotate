@@ -41,6 +41,7 @@ SciBet:
 
 singleCellNet:
   threads: 1
+  nTrees: 500 
 
 scHPL:
   threads: 1

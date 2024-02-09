@@ -44,8 +44,6 @@ print(prob_files)
 # read probability matrixes
 data = lapply(prob_files, function(f){data.table::fread(f, check.names = F) %>% rename(cell = V1) %>% mutate(tool = basename(dirname(f)))})
 
-length(intersect(data[[1]]$cell,data[[13]]$cell))
-
 # read labels in matrix (used to filter the probbability matrix which sometimes contains additional information)
 ref_labels = unique((data.table::fread(ref_lab, header = T, fill=TRUE))$label)
 

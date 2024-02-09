@@ -190,6 +190,16 @@ get_stat = function(x, stat){
   mutate(fold = x$fold,
          tool = x$tool)
 }
+
+# gets all stats for each fold and returns data frame 
+get_all_stats = function(x){
+  x$byClass %>% 
+  as.data.frame() %>%
+  rownames_to_column('class') %>%
+  separate(class, into = c(NA, 'class'), sep = ': ') %>%
+  mutate(fold = x$fold,
+         tool = x$tool)
+}
 #-------------------------------------------
 ```
 
@@ -230,8 +240,8 @@ for(n in 1:fold){
 save(list, file=paste0(params$pred_path, '/report/stats.Rda'))
 
 # save F1 as table 
-F1 = lapply(list, function(x){lapply(x, get_stat, stat = 'F1') %>% bind_rows()}) %>% bind_rows()
-data.table::fwrite(F1, file=paste0(params$pred_path, '/report/F1.csv'))
+F1 = lapply(list, function(x){lapply(x, get_all_stats) %>% bind_rows()}) %>% bind_rows()
+data.table::fwrite(F1, file=paste0(params$pred_path, '/report/metrics.csv'))
 ```
 
 ```{r}

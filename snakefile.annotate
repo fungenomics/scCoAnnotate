@@ -72,7 +72,7 @@ rule consensus:
     results = expand(config["output_dir"] + "/{{sample}}/{{reference}}/{tool}/{tool}_pred.csv",
                      tool=config['tools_to_run'])
   output:
-    prediction_summary = config["output_dir"] + "/{sample}/{reference}/{consensus_type}/{consensus_type}_pred.tsv"
+    prediction_summary = config["output_dir"] + "/{sample}/{reference}/Prediction_Summary.{consensus_type}.tsv"
   log: 
     config["output_dir"] + "/{sample}/{reference}/Gatherpreds.{consensus_type}.log"
   params:
@@ -83,7 +83,7 @@ rule consensus:
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     sample = config["output_dir"] + "/{sample}/{reference}/",
     consensus_file = lambda wildcards:cons_file(wildcards.consensus_type),
-    f1_file = config["output_dir_benchmark"] + "/{reference}/report/F1.csv",
+    f1_file = config["output_dir_benchmark"] + "/{reference}/report/metrics.csv",
     alpha = config["alpha"]
   shell:
     """
@@ -105,7 +105,7 @@ rule consensus:
 
 rule knit_report:
   input: 
-    pred = expand(config['output_dir'] + "/{{sample}}/{reference}/{{consensus_type}}/{{consensus_type}}_pred.tsv", reference = config['references']),
+    pred = expand(config['output_dir'] + "/{{sample}}/{reference}/Prediction_Summary.{{consensus_type}}.tsv", reference = config['references']),
     query = lambda wildcards:config['query_datasets'][wildcards.sample]
   output: 
     report_path = config['output_dir'] + '/{sample}/report/{sample}.{consensus_type}.prediction_report.' + dt_string + '.html'

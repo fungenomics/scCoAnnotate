@@ -54,7 +54,7 @@ if(convert_genes){
   
   # output list of mouse genes that were not converted
   not_converted = hg %>% filter(is.na(Human_symbol)) %>% .$Mouse_symbol
-  data.table::fwrite(as.list(not_converted), file = paste0(reference_out, '/genes_not_converted.csv'), sep = ',')
+  data.table::fwrite(as.list(not_converted), file = paste0(out, '/model/', reference_name, '/genes_not_converted.csv'), sep = ',')
 
   # throw error if more than threshold % genes not converted
   threshold = 0.5

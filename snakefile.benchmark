@@ -40,7 +40,8 @@ rule subset_folds:
   params:
     basedir = {workflow.basedir},
     outdir = config['output_dir_benchmark'] + "/{reference}",
-    n_folds = config['benchmark']['n_folds']
+    n_folds = config['benchmark']['n_folds'],
+    min_cells_per_cluster = config['min_cells_per_cluster']
   threads: 1
   resources:
   shell:
@@ -51,6 +52,7 @@ rule subset_folds:
     {params.outdir} \
     {threads} \
     {params.n_folds} \
+    {params.min_cells_per_cluster} \
     &> {log}
     """
 

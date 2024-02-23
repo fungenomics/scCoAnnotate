@@ -5,7 +5,7 @@
 convert_ref_mm_to_hg: False
 
 # filter small clusters in reference 
-min_cells_per_cluster = 0
+min_cells_per_cluster: 0
 
 #--- CONSENSUS -------
 

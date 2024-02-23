@@ -9,6 +9,7 @@ convert_genes = as.logical(args[4])
 lab_path = args[5]
 reference_name = args[6]
 query_names = strsplit(args[7], split = ' ')[[1]]
+min_cells = as.numeric(args[8])
 
 print(args[7])
 print(query_names)
@@ -18,7 +19,16 @@ l = list()
 
 # read reference 
 l[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
+#read labels 
+lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
 
+if(min_cells > 0){
+  rmv_labels = names(which(table(lab$label) < min_cells))
+  lab = lab %>% filter((!label %in% rmv_labels))
+  message(paste0(paste0(rmv_labels,collapse = '-'),' classes were remove because of lower number of cells (< ',as.character(min_cells),')'))
+  #filtering the cells from the filtered classes
+  l[['ref']] = l[['ref']][rownames(lab),]
+}
 # read query 
 for(i in 1:length(query_paths)){
   print(query_paths[i])
@@ -112,7 +122,7 @@ for(q in query_names){
 }
 
 # save unique labels (for downstream report color pal)
-lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
+# lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
 lab = data.frame(label = unique(lab$label))
 data.table::fwrite(lab, file = paste0(out, '/model/', reference_name, '/labels.csv'), sep = ',')
 

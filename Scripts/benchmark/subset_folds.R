@@ -32,7 +32,7 @@ if(min_cells > 0){
   labels = labels %>% filter((!label %in% rmv_labels))
   message(paste0(paste0(rmv_labels,collapse = '-'),' classes were remove because of lower number of cells (< ',as.character(min_cells),')'))
   #filtering the cells from the filtered classes
-  ref = ref[rownames(lab),]
+  ref = ref[rownames(labels),]
 }
 
 # throw error if order is not the same 

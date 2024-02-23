@@ -4,6 +4,9 @@
 # convert gene symbols in reference from mouse to human 
 convert_ref_mm_to_hg: False
 
+# filter small clusters in reference 
+min_cells_per_cluster = 0
+
 #--- CONSENSUS -------
 
 # specify consensus tools to include, either 'all' ot list of tool names

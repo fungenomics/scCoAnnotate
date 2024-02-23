@@ -10,6 +10,7 @@ lab_path = args[2]
 out_path = args[3]
 threads = as.numeric(args[4])
 n_folds = as.numeric(args[5])
+min_cells = as.numeric(args[6])
 
 #--------------- Data -------------------
 
@@ -26,13 +27,21 @@ labels = data.table::fread(lab_path, header=T, data.table=F) %>%
 # check if cell names are in the same order in labels and ref
 order = all(as.character(rownames(labels)) == as.character(rownames(ref)))
 
+if(min_cells > 0){
+  rmv_labels = names(which(table(labels$label) < min_cells))
+  labels = labels %>% filter((!label %in% rmv_labels))
+  message(paste0(paste0(rmv_labels,collapse = '-'),' classes were remove because of lower number of cells (< ',as.character(min_cells),')'))
+  #filtering the cells from the filtered classes
+  ref = ref[rownames(lab),]
+}
+
 # throw error if order is not the same 
 if(!order){
     stop("@ Order of cells in reference and labels do not match")
 }
 
-ref[1:10, 1:10]
-head(labels)
+# ref[1:10, 1:10]
+# head(labels)
 
 # create n folds 
 folds = KFold(labels$label, 

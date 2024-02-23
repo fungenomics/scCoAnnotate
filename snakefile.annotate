@@ -44,7 +44,8 @@ rule preprocess:
     out = config['output_dir'],
     convert_genes = config['convert_ref_mm_to_hg'],
     reference_name = "{reference}",
-    query_names = samples
+    query_names = samples,
+    min_cells_per_cluster = config['min_cells_per_cluster']
   shell:
     """
     Rscript {params.basedir}/Scripts/preprocess.R \
@@ -55,6 +56,7 @@ rule preprocess:
     {input.labfile} \
     {params.reference_name} \
     "{params.query_names}" \
+    "{params.min_cells_per_cluster}" \
     &> {log} 
     """
 

@@ -9,10 +9,22 @@ convert_genes = as.logical(args[4])
 lab_path = args[5]
 reference_name = args[6]
 query_names = strsplit(args[7], split = ' ')[[1]]
-min_cells = as.numeric(args[8])
 
-print(args[7])
-print(query_names)
+min_cells = as.numeric(args[8])
+if(is.na(min_cells)){
+  stop("The minimum number of cells specified is not a numeric value")
+}
+
+downsample_value = as.numeric(args[9]) 
+if(is.na(downsample_value)){
+  stop("The downsample value specified is not a numeric value")
+}
+downsample_stratified = as.logical(args[10])
+if(is.na(downsample_stratified)){
+  stop("The downsample stratified specified is not a logical value")
+}
+downsample_stratified = if(downsample_stratified) "label" else NULL
+
 names(query_paths) = query_names
 
 l = list()
@@ -20,7 +32,28 @@ l = list()
 # read reference 
 l[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
 #read labels 
-lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
+lab = data.table::fread(lab_path, header = T)
+#If the value is > 1 it will use it as an absolute value
+#If the value is a fraction it will downsample the fraction.
+# If the group has lower number of cells than the downsample_value the total 
+#amount of cells are retain for that cluster
+if(downsample_value != 0){
+  if(downsample_value >= 1){
+      lab = lab %>%  group_by(across(all_of(downsample_stratified))) %>% mutate(N = n()) %>% 
+        sample_n(size=if(unique(N) > downsample_value){downsample_value} else{N},replace = F) %>% 
+        select(-N)
+  } else{
+      lab = lab %>% group_by(across(all_of(downsample_stratified))) %>% 
+        dplyr::sample_frac(size = downsample_value,replace = F)
+  }
+  
+  l[['ref']] = l[['ref']][lab$V1,]
+  data.table::fwrite(data.frame(cells= lab$V1,
+                                label= lab$label),
+                     file = paste0(out, '/model/', reference_name, '/downsampled_reference_labels.csv'), sep = ',')
+}
+#do the convertion to rownames after since the column is needed to downsampling
+lab = lab %>% column_to_rownames('V1')
 
 if(min_cells > 0){
   rmv_labels = names(which(table(lab$label) < min_cells))

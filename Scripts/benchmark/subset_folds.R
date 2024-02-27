@@ -8,9 +8,31 @@ args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
 out_path = args[3]
+
 threads = as.numeric(args[4])
+if(is.na(threads)){
+  stop("The number threads specified is not a numeric value")
+}
+
 n_folds = as.numeric(args[5])
+if(is.na(n_folds)){
+  stop("The number of folds specified is not a numeric value")
+}
+
 min_cells = as.numeric(args[6])
+if(is.na(min_cells)){
+  stop("The minimum number of cells specified is not a numeric value")
+}
+
+downsample_value = as.numeric(args[7]) 
+if(is.na(downsample_value)){
+  stop("The downsample value specified is not a numeric value")
+}
+downsample_stratified = as.logical(args[8])
+if(is.na(downsample_stratified)){
+  stop("The downsample stratified specified is not a logical value")
+}
+downsample_stratified = if(downsample_stratified) "label" else NULL
 
 #--------------- Data -------------------
 
@@ -21,8 +43,26 @@ ref = data.table::fread(ref_path, nThread=threads, header=T, data.table=F) %>%
 message('@ DONE')
 
 # read reference labels
-labels = data.table::fread(lab_path, header=T, data.table=F) %>%
-         column_to_rownames('V1')
+labels = data.table::fread(lab_path, header=T, data.table=F) 
+
+if(downsample_value != 0){
+  if(downsample_value >= 1){
+    labels = labels %>%  group_by(across(all_of(downsample_stratified))) %>% mutate(N = n()) %>% 
+      sample_n(size=if(unique(N) > downsample_value){downsample_value} else{N},replace = F) %>% 
+      select(-N)
+  } else{
+    labels = labels %>% group_by(across(all_of(downsample_stratified))) %>% 
+      dplyr::sample_frac(size = downsample_value,replace = F) 
+  }
+  
+  ref = ref[labels$V1,]
+  data.table::fwrite(data.frame(cells= labels$V1,
+                                label= labels$label),
+                     file = paste0(out_path,'/downsampled_reference_labels.csv'), sep = ',')
+}
+#do the convertion to rownames after since the column is needed to downsampling
+labels = labels %>% column_to_rownames('V1')
+
 
 # check if cell names are in the same order in labels and ref
 order = all(as.character(rownames(labels)) == as.character(rownames(ref)))

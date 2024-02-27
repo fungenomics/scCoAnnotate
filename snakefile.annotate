@@ -46,6 +46,8 @@ rule preprocess:
     reference_name = "{reference}",
     query_names = samples,
     min_cells_per_cluster = config['min_cells_per_cluster']
+    downsample_value = config['downsample']['value']
+    downsample_stratified = config['downsample']['stratified']
   shell:
     """
     Rscript {params.basedir}/Scripts/preprocess.R \
@@ -57,6 +59,8 @@ rule preprocess:
     {params.reference_name} \
     "{params.query_names}" \
     "{params.min_cells_per_cluster}" \
+    "{params.downsample_value}" \
+    "{params.downsample_stratified}" \
     &> {log} 
     """
 

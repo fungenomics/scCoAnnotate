@@ -45,8 +45,8 @@ rule preprocess:
     convert_genes = config['convert_ref_mm_to_hg'],
     reference_name = "{reference}",
     query_names = samples,
-    min_cells_per_cluster = config['min_cells_per_cluster']
-    downsample_value = config['downsample']['value']
+    min_cells_per_cluster = config['min_cells_per_cluster'],
+    downsample_value = config['downsample']['value'],
     downsample_stratified = config['downsample']['stratified']
   shell:
     """
@@ -58,9 +58,9 @@ rule preprocess:
     {input.labfile} \
     {params.reference_name} \
     "{params.query_names}" \
-    "{params.min_cells_per_cluster}" \
-    "{params.downsample_value}" \
-    "{params.downsample_stratified}" \
+    {params.min_cells_per_cluster} \
+    {params.downsample_value} \
+    {params.downsample_stratified} \
     &> {log} 
     """
 

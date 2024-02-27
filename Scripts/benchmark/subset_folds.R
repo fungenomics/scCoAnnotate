@@ -28,12 +28,14 @@ downsample_value = as.numeric(args[7])
 if(is.na(downsample_value)){
   stop("The downsample value specified is not a numeric value")
 }
+print(class(downsample_value))
 downsample_stratified = as.logical(args[8])
 if(is.na(downsample_stratified)){
   stop("The downsample stratified specified is not a logical value")
 }
 downsample_stratified = if(downsample_stratified) "label" else NULL
-
+print(downsample_stratified)
+print(class(downsample_stratified))
 #--------------- Data -------------------
 
 # read reference matrix 
@@ -47,14 +49,12 @@ labels = data.table::fread(lab_path, header=T, data.table=F)
 
 if(downsample_value != 0){
   if(downsample_value >= 1){
-    labels = labels %>%  group_by(across(all_of(downsample_stratified))) %>% mutate(N = n()) %>% 
-      sample_n(size=if(unique(N) > downsample_value){downsample_value} else{N},replace = F) %>% 
-      select(-N)
+    labels = labels %>%  group_by(across(all_of(downsample_stratified))) %>% 
+      dplyr::slice_sample(n = downsample_value,replace = F)
   } else{
     labels = labels %>% group_by(across(all_of(downsample_stratified))) %>% 
-      dplyr::sample_frac(size = downsample_value,replace = F) 
+      dplyr::slice_sample(prop = downsample_value,replace = F) 
   }
-  
   ref = ref[labels$V1,]
   data.table::fwrite(data.frame(cells= labels$V1,
                                 label= labels$label),

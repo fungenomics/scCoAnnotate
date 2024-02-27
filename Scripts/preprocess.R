@@ -39,12 +39,11 @@ lab = data.table::fread(lab_path, header = T)
 #amount of cells are retain for that cluster
 if(downsample_value != 0){
   if(downsample_value >= 1){
-      lab = lab %>%  group_by(across(all_of(downsample_stratified))) %>% mutate(N = n()) %>% 
-        sample_n(size=if(unique(N) > downsample_value){downsample_value} else{N},replace = F) %>% 
-        select(-N)
+      lab = lab %>%  group_by(across(all_of(downsample_stratified))) %>% 
+        dplyr::slice_sample(n = downsample_value,replace = F)
   } else{
       lab = lab %>% group_by(across(all_of(downsample_stratified))) %>% 
-        dplyr::sample_frac(size = downsample_value,replace = F)
+        dplyr::slice_sample(prop = downsample_value,replace = F) 
   }
   
   l[['ref']] = l[['ref']][lab$V1,]

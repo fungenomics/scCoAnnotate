@@ -41,8 +41,8 @@ rule subset_folds:
     basedir = {workflow.basedir},
     outdir = config['output_dir_benchmark'] + "/{reference}",
     n_folds = config['benchmark']['n_folds'],
-    min_cells_per_cluster = config['min_cells_per_cluster']
-    downsample_value = config['downsample']['value']
+    min_cells_per_cluster = config['min_cells_per_cluster'],
+    downsample_value = config['downsample']['value'],
     downsample_stratified = config['downsample']['stratified']
   threads: 1
   resources:
@@ -55,8 +55,8 @@ rule subset_folds:
     {threads} \
     {params.n_folds} \
     {params.min_cells_per_cluster} \
-    "{params.downsample_value}" \
-    "{params.downsample_stratified}" \
+    {params.downsample_value} \
+    {params.downsample_stratified} \
     &> {log}
     """
 

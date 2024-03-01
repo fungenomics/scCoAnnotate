@@ -47,9 +47,6 @@ if(downsample_value != 0){
   }
   
   l[['ref']] = l[['ref']][lab$V1,]
-  data.table::fwrite(data.frame(cells= lab$V1,
-                                label= lab$label),
-                     file = paste0(out, '/model/', reference_name, '/downsampled_reference_labels.csv'), sep = ',')
 }
 #do the convertion to rownames after since the column is needed to downsampling
 lab = lab %>% column_to_rownames('V1')
@@ -61,6 +58,17 @@ if(min_cells > 0){
   #filtering the cells from the filtered classes
   l[['ref']] = l[['ref']][rownames(lab),]
 }
+
+save.df <- data.frame(cells= rownames(lab),
+                      label= lab$label)
+colnames(save.df)[1] <- ""
+data.table::fwrite(save.df,
+                   file = paste0(out, '/model/', reference_name, '/downsampled_labels.csv'),
+                   col.names = T,
+                   row.names=F,
+                   sep = ",")
+rm(save.df)
+
 # read query 
 for(i in 1:length(query_paths)){
   print(query_paths[i])

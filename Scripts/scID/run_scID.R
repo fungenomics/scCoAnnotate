@@ -15,6 +15,8 @@ lab_path = args[2]
 query_path = args[3]
 pred_path = args[4]
 threads = as.numeric(args[5])
+estimate_weights_from_target = as.boolean(args[6])
+logFC = as.logical(args[7])
 
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)
@@ -79,10 +81,10 @@ query <- scID:::counts_to_cpm(counts_gem = query)
 pred <- scid_multiclass(target_gem = query,
                                reference_gem = ref,
                                reference_clusters = label, 
-                               logFC = 0.5, #Default
+                               logFC = logFC, #Default
                                only_pos = FALSE, #Default
                                normalize_reference = FALSE, #I already normalized the reference
-                               estimate_weights_from_target = FALSE #Default
+                               estimate_weights_from_target = estimate_weights_from_target #Default
                                )
 
 pred_labels <- data.frame(cell = names(pred$labels),

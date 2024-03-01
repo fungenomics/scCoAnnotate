@@ -265,6 +265,9 @@ rule train_scClassify:
     model = config['output_dir'] + "/model/{reference}/scClassify/scClassify_model.Rda"
   params:
     basedir = {workflow.basedir},
+    topN = config['scClassify']['topN'], 
+    weightsCal = config['scClassify']['weightsCal'],
+    hopach_kmax = config['scClassify']['hopach_kmax']
   log:
     config['output_dir'] + "/model/{reference}/scClassify/scClassify.log"
   benchmark:
@@ -279,6 +282,9 @@ rule train_scClassify:
     {input.labfile} \
     {output.model} \
     {threads} \
+    {params.topN} \
+    {params.weightsCal} \
+    {params.hopach_kmax} \
     &> {log}
     """
 
@@ -289,7 +295,12 @@ rule predict_scClassify:
   output:
     pred = config['output_dir'] + "/{sample}/{reference}/scClassify/scClassify_pred.csv"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    algorithm = config['scClassify']['algorithm'],
+    similarity = config['scClassify']['similarity'],
+    prob_threshold = config['scClassify']['prob_threshold'],
+    cor_threshold_static = config['scClassify']['cor_threshold_static'],
+    cor_threshold_high = config['scClassify']['cor_threshold_high']
   log:
     config['output_dir'] + "/{sample}/{reference}/scClassify/scClassify.log"
   benchmark:
@@ -304,6 +315,11 @@ rule predict_scClassify:
     {input.model} \
     {output.pred} \
     {threads} \
+    {params.algorithm} \
+    {params.similarity} \
+    {params.prob_threshold} \
+    {params.cor_threshold_static} \
+    {params.cor_threshold_high} \
     &> {log}
     """
 
@@ -658,7 +674,8 @@ rule train_scLearn:
   output:
     model = config['output_dir'] + "/model/{reference}/scLearn/scLearn_model.Rda"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    bootstrap_times = config['scLearn']['bootstrap_times']
   log:
     config['output_dir'] + "/model/{reference}/scLearn/scLearn.log"
   benchmark:
@@ -764,7 +781,9 @@ rule run_scID:
   output:
     pred = config['output_dir'] + "/{sample}/{reference}/scID/scID_pred.csv"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    estimate_weights_from_target = config['scID']['estimate_weights_from_target'],
+    logFC = config['scID']['logFC']
   log:
     config['output_dir'] + "/{sample}/{reference}/scID/scID.log"
   benchmark:
@@ -779,6 +798,8 @@ rule run_scID:
 	    {input.query} \
 	    {output.pred} \
 	    {threads} \
+      {params.estimate_weights_from_target} \
+      {params.logFC} \
     &> {log}
     """
 

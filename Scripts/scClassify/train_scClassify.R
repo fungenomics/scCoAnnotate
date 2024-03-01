@@ -17,6 +17,9 @@ ref_path = args[1]
 lab_path = args[2]
 model_path = args[3]
 threads = as.numeric(args[4])
+topN = as.numeric(args[5])
+weightsCal = as.logical(args[6])
+hopach_kmax = as.numeric(args[7])
 
 # path for other outputs (depends on tools)
 out_path = dirname(model_path)
@@ -65,6 +68,9 @@ message('@ TRAINING MODEL')
 scClassify <- train_scClassify(
     exprsMat_train = as.matrix(ref),
     cellTypes_train = labels$label,
+    topN = topN,
+    weightsCal = weightsCal,
+    hopach_kmax = hopach_kmax,
     parallel = parallel,
     BPPARAM = bpparam,
     returnList = FALSE # so that cell type tree can be extracted

@@ -10,6 +10,7 @@ min_cells_per_cluster: 0
 downsample:
   value: 0
   stratified: False
+  
 #--- CONSENSUS -------
 
 # specify consensus tools to include, either 'all' ot list of tool names
@@ -41,6 +42,14 @@ scPred:
 
 scClassify:
   threads: 1 
+  topN: 50 
+  weightsCal: False 
+  hopach_kmax: 5 
+  algorithm: "WKNN"
+  similarity: "pearson"
+  prob_threshold: 0.7
+  cor_threshold_static: 0.5
+  cor_threshold_high: 0.7
 
 SciBet:
   threads: 1
@@ -70,9 +79,12 @@ ACTINN:
 
 scLearn:
   threads: 1
+  bootstrap_times: 10
 
 scID:
   threads: 1
+  estimate_weights_from_target: False
+  logFC: 0.5
 
 scAnnotate:
   threads: 1

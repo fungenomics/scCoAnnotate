@@ -15,6 +15,11 @@ query_path = args[1]
 model_path = args[2]
 pred_path = args[3]
 threads = as.numeric(args[4])
+algorithm = args[5]
+similarity = args[6]
+prob_threshold = as.numeric(args[7])
+cor_threshold_static = as.numeric(args[8])
+cor_threshold_high = as.numeric(args[9])
 
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)
@@ -55,6 +60,7 @@ if(threads > 1){
 message('@ PREDICTING QUERY')
 pred <- predict_scClassify(
     exprsMat_test = as.matrix(query),
+    algorithm = 
     trainRes = scClassify,
     parallel = parallel,
     BPPARAM = bpparam

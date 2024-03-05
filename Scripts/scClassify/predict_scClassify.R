@@ -60,7 +60,7 @@ if(threads > 1){
 message('@ PREDICTING QUERY')
 pred <- predict_scClassify(
     exprsMat_test = as.matrix(query),
-    algorithm = 
+    algorithm = algorithm,
     trainRes = scClassify,
     parallel = parallel,
     BPPARAM = bpparam

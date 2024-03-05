@@ -15,8 +15,8 @@ lab_path = args[2]
 query_path = args[3]
 pred_path = args[4]
 threads = as.numeric(args[5])
-estimate_weights_from_target = as.boolean(args[6])
-logFC = as.logical(args[7])
+estimate_weights_from_target = as.logical(args[6])
+logFC = as.numeric(args[7])
 
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)

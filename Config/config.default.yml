@@ -17,7 +17,7 @@ downsample:
 consensus_tools:
       - 'all'
 
-# specify consensus type, either 'majority' or numeric value 
+# specify consensus type, either 'majority', a numeric value, or 'CAWPE_T'
 consensus_type: 'majority'
 
 # alpha value for CAWPE calculation 

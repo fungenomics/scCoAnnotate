@@ -125,7 +125,7 @@ rule knit_report:
     tools = config['tools_to_run'], 
     consensus_tools = config['consensus_tools'],
     refs = list(config['references'].keys()),
-    marker_genes = config['marker_genes']
+    marker_genes = config['marker_genes'],
     cons_type = "{consensus_type}"
   threads: 1
   resources:

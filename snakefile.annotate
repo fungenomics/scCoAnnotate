@@ -126,6 +126,7 @@ rule knit_report:
     consensus_tools = config['consensus_tools'],
     refs = list(config['references'].keys()),
     marker_genes = config['marker_genes']
+    cons_type = "{consensus_type}"
   threads: 1
   resources:
   shell:
@@ -137,6 +138,7 @@ rule knit_report:
                           refs          = '{params.refs}',
                           output_dir    = '{params.output_dir}',
                           consensus     = '{input.pred}',
+                          cons_type     = '{params.cons_type}',
                           sample        = '{params.sample}',
                           marker_genes  = '{params.marker_genes}',
                           threads       = '{threads}',

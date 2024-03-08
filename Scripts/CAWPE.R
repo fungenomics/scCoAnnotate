@@ -49,7 +49,7 @@ ref_labels = unique((data.table::fread(ref_lab, header = T, fill=TRUE))$label)
 
 x = lapply(data, function(f){(f$cell)})
 
-# 
+# merge prob matrices and join with F1 scores
 data = bind_rows(data) %>% 
   select(cell, all_of(ref_labels), tool) %>%
   pivot_longer(!c('cell', 'tool'), 
@@ -79,10 +79,10 @@ pred = data %>%
 final_pred = pred %>% 
   group_by(cell) %>% 
   slice(which.max(CAWPE)) %>%
+  ungroup() %>%
+  left_join(top_pred, by = 'cell') %>% 
   rename(Consensus = class,
          cellname = cell) 
 
 # save consensus 
 data.table::fwrite(final_pred, summary_path, sep = '\t')
-
-nrow(data)

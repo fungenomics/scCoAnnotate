@@ -18,6 +18,7 @@ params:
     threads: ''
     marker_genes: ''
     query: ''
+    cons_type: ''
 ---
 
 ```{r setup, knitr_options, echo=F}
@@ -43,6 +44,13 @@ names(consensus) = basename(dirname(consensus))
 tools = c('Consensus',strsplit(params$tools, split = ' ')[[1]])
 cons_tools = c('Consensus',strsplit(params$cons_tools, split = ' ')[[1]])
 marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
+cons_type = params$cons_type
+
+# Ignore tools not included in the consensus for CAWPE report
+if(cons_type %in% c("CAWPE", "CAWPE_T")) {
+  tools = cons_tools
+}
+
 ```
 
 ```{r}

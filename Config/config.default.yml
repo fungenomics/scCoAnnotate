@@ -18,7 +18,8 @@ consensus_tools:
       - 'all'
 
 # specify consensus type, either 'majority', a numeric value, or 'CAWPE_T'
-consensus_type: 'majority'
+consensus_type: 
+    - 'majority'
 
 # alpha value for CAWPE calculation 
 alpha: 4

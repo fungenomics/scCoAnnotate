@@ -94,7 +94,7 @@ rule consensus:
     alpha = config["alpha"]
   shell:
     """
-    Rscript {params.basedir}/{params.consensus_file} \
+    Rscript {params.basedir}/Scripts/calculate_consensus.R \
     {params.sample} \
     {output.prediction_summary} \
     "{params.tools}" \

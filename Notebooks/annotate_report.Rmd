@@ -1,5 +1,5 @@
 ---
-title: "scCoAnnotate - `r params$sample`"
+title: "scCoAnnotate `r params$cons_type` - `r params$sample`"
 output: 
   html_document:
     df_print: paged
@@ -41,16 +41,16 @@ threads = as.numeric(params$threads)
 refs = strsplit(params$refs, split = ' ')[[1]]
 consensus = strsplit(params$consensus, split = ' ')[[1]]
 names(consensus) = basename(dirname(consensus))
-tools = c('Consensus',strsplit(params$tools, split = ' ')[[1]])
-cons_tools = c('Consensus',strsplit(params$cons_tools, split = ' ')[[1]])
+tools = c('Consensus', strsplit(params$tools, split = ' ')[[1]])
+cons_tools = strsplit(params$cons_tools, split = ' ')[[1]]
 marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 cons_type = params$cons_type
 
-# Ignore tools not included in the consensus for CAWPE report
-if(cons_type %in% c("CAWPE", "CAWPE_T")) {
-  tools = cons_tools
+if(cons_tools == 'all'){
+  cons_tools = c('Consensus', tools)
+}else{
+  cons_tools = c('Consensus', cons_tools)
 }
-
 ```
 
 ```{r}
@@ -199,6 +199,17 @@ feature_plot_seurat = function(seurat, genes){
   return(list)
 }
 
+feature_plot_seurat_meta = function(seurat, meta_cols){
+  list = list()
+
+  meta_cols = meta_cols[meta_cols %in% colnames(seurat@meta.data)]
+  for(mc in meta_cols){
+    p = FeaturePlot(seurat, features = mc, cols = c("#F2EFC7", "#BC412B"), order = T) + umap_theme + theme(legend.position = 'right') + ggtitle(mc)
+    list[[mc]] = p 
+  }  
+  return(list)
+}
+
 umap_plotly = function(seurat, meta_column, pal){
 
   p1 = cbind(seurat@reductions$umap@cell.embeddings, seurat@meta.data) %>%
@@ -213,7 +224,7 @@ umap_plotly = function(seurat, meta_column, pal){
   return(p2)
 }
 
-calculate_percentage_unresolved = function(pred, order){
+calculate_percentage_unresolved = function(pred, order, cons_tools){
   warn = pred %>% 
     select(order) %>%
     pivot_longer(order) %>% 
@@ -221,13 +232,15 @@ calculate_percentage_unresolved = function(pred, order){
     group_by(name) %>%
     count(value, .drop = F) %>%
     mutate(frac = n/sum(n)*100) %>%
-    filter(!(!name == 'Consensus'  & value == 'No Consensus')) %>%
+    filter(!(!name == 'Consensus' & value == 'No Consensus')) %>%
     filter(value %in% c('No Consensus', 'Unresolved')) %>%
+    mutate(in_cons = ifelse(name %in% cons_tools & name != 'Consensus', 'YES', '')) %>%
     mutate(warn = case_when(frac >= 70 ~ 'HIGH', 
                             frac < 70 & frac > 30 ~ 'MEDIUM',
                             frac <= 30 ~ 'LOW'))
    if(nrow(warn) != 0){
    warn = data.frame(TOOL = warn$name, 
+                     'IN CONSENSUS' = warn$in_cons,
                      LABEL = warn$value, 
                      PERCENTAGE = warn$frac, 
                      FLAG = warn$warn) %>%
@@ -243,8 +256,8 @@ calculate_percentage_unresolved = function(pred, order){
    
    warn$TOOL = cell_spec(warn$TOOL,
                          bold = ifelse(warn$TOOL == 'Consensus', T, F),
-             background = ifelse(warn$TOOL == 'Consensus', 'black', 'white'),
-             color = ifelse(warn$TOOL == 'Consensus', 'white', 'black'))
+                         background = ifelse(warn$TOOL == 'Consensus', 'black', 'white'),
+                         color = ifelse(warn$TOOL == 'Consensus', 'white', 'black'))
    }
    
    return(warn)
@@ -314,13 +327,13 @@ cat("\n")
 cat("  \n# Sample \n")
   
   cat("<h3>Clusters</h3>")
+  cat("\n")
   
   p = umap_plotly(query, 'seurat_clusters', cluster_pal)
   print(htmltools::tagList(p))
-
-  cat("\n")
   
   cat("<h3>Expression selected genes</h3>")
+  cat("\n")
   
   if(!length(marker_genes) == 0){
     l = feature_plot_seurat(query, marker_genes)
@@ -346,48 +359,55 @@ for(r in refs){
   cat("  \n## Prediction QC \n")
   
   cat("<h3>Percentage Unresolved</h3>")
+  cat("\n")
   
-  calculate_percentage_unresolved(list[[r]]$pred, order = tools) %>% 
+  calculate_percentage_unresolved(list[[r]]$pred, order = tools, cons_tools = cons_tools) %>% 
   kbl(escape = FALSE, row.names = F) %>% 
   kable_styling(position = "center") %>%
   print()
   
-  cat("\n")
-  
   cat("<h3>Correlation between tools</h3>")
-  
+  cat("\n")
+
   h = plot_tool_correlation_heatmap(query, tools = tools)
   draw(h)
   
+  cat("<h3>Percentage overlap between tools and consensus</h3>")  
   cat("\n")
-  
-  cat("<h3>Percentage overlap between tools and consensus</h3>")
-  
+
   h = plot_percentage_predicted_consensus_class(query, tools = tools) 
   draw(h)
 
   cat("\n")
-  
   cat("  \n## Prediction {.tabset} \n")
   
   for(t in tools){
     cat("  \n### ", t , " \n")
     
+
     cat("<h3>Top class per cluster</h3>")
-  
+    cat("\n")
+
     p = plot_bar_largest_group(query, t, fr = 0.1, pal = list[[r]]$pal)
     print(htmltools::tagList(p))
     
     cat("<h3>UMAP</h3>")
-    
     cat("\n")
 
     p = umap_plotly(query, t, list[[r]]$pal)
     print(htmltools::tagList(p))
 
-    cat("\n")
-    
+    if(t == 'Consensus' & params$cons_type %in% c('CAWPE_T', 'CAWPE_CT')){
+
+        cat("<h3>CAWPE Score</h3>")
+        cat("\n")
+
+        l = feature_plot_seurat_meta(query, 'CAWPE')
+        cowplot::plot_grid(plotlist = l, ncol = 2) %>% print()
+    }
+
     cat("<h3>UMAP per class</h3>")
+    cat("\n")
     
     l = color_class_seurat(query, t, list[[r]]$pal)
     if(length(l)< 9){

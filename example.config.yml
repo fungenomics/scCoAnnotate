@@ -37,6 +37,10 @@ tools_to_run:
 
 consensus_tools:
       - all
+
+consensus_type:
+     - Majority
+     - CAWPE_T
       
 # Benchmark parameters 
 benchmark:

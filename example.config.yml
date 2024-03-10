@@ -1,22 +1,22 @@
 # Example config for scCoAnnotate annotation and benchmarking workflow 
 
 # target directory 
-output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev
-output_dir_benchmark: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/benchmark
+output_dir: <path to annotation output>
+output_dir_benchmark: <path to benchmark output>
 
 # path to reference to train classifiers on (cell x gene raw counts)
 references: 
-      braindex1:
-            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
-            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
-      braindex2:
-            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
-            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
-
+      reference1:
+            expression: <patht to expression.csv>
+            labels: <patht to labels.csv>
+      reference2:
+            expression: <patht to expression.csv>
+            labels: <patht to labels.csv>
+            
 # path to query datasets (cell x gene raw counts)
 query_datasets:
-      ct_p3: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
-      ct_p0: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
+      sample1: <patht to expression.csv>
+      sample2: <patht to expression.csv>
 
 # classifiers to run
 tools_to_run:
@@ -39,10 +39,10 @@ consensus_tools:
       - all
 
 consensus_type:
-     - Majority
+     - majority
      - CAWPE_T
       
 # Benchmark parameters 
 benchmark:
-  n_folds: 10 
+  n_folds: 5 
 

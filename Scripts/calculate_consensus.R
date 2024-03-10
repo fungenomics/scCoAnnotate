@@ -61,7 +61,7 @@ for(f in files){
    l[[basename(dirname(f))]] = data.table::fread(f) 
 }
 
-consensus = l %>% reduce(left_join, by = "cell") %>% rename('cellname' = 'cell') %>% select(all_of(c('cell', tools)))
+consensus = l %>% reduce(left_join, by = "cell") %>% rename('cellname' = 'cell') %>% select(all_of(c('cellname', tools)))
 rm(l)
 
 tmp = harmonize_unresolved(consensus, ref_labels)

@@ -425,6 +425,11 @@ snakemake -s ${snakefile} --configfile ${config} --unlock
 snakemake -s ${snakefile} --configfile ${config} --rerun-incomplete 
 ```
 
+- Add `--keep-going` to allow independent rules to keep running when something fails 
+```bash
+snakemake -s ${snakefile} --configfile ${config} --keep-going
+```
+
 - Update time stamp on files to avoid rerunning rules if code has changed 
 ```bash
 snakemake -s ${snakefile} --configfile ${config} -c1 -R $(snakemake -s ${snakefile} --configfile ${config} -c1 --list-code-changes) --touch 

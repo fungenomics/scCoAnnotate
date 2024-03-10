@@ -30,6 +30,11 @@ alpha: 4
 # space separated string: "PDGFRA MOG GFAP RBFOX1"
 marker_genes: ""
 
+#--- BENCHMARK -------
+
+benchmark:
+  n_folds: 5 
+
 #---- TOOLS ----------
 SingleR:
   threads: 1 

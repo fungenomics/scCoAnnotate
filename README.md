@@ -207,10 +207,15 @@ tools_to_run:
       - tool1
       - tool2
 
-# consensus method
+# consensus tools 
 consensus_tools:
-      - all 
-      
+      - all
+
+# consensus method
+consensus_type:
+      - majority
+      - CAWPE_T
+
 # benchmark parameters 
 benchmark:
   n_folds: <number of folds to use in the benchmarking>
@@ -244,6 +249,27 @@ convert_ref_mm_to_hg: False
 consensus_type: 'majority'
 ```
 
+# :woman_judge: Consensus methods 
+
+scCoAnnotate offers two options for calculating the consensus between tools, Majority Vote and CAWPE (Cross-validation Accuracy Weighted Probabilistic Ensemble). The consensus method is specified in the config: 
+
+```
+# consensus method
+consensus_type:
+      - majority
+      - CAWPE_T
+```
+
+The pipeline will generate one table and one html report per consensus method. 
+
+## 1. Majority Vote 
+
+TO-DO: describe method 
+
+## 2. CAWPE 
+
+TO-DO: describe method 
+
 # :hatching_chick: Outputs 
 
 ## Output folder structure 
@@ -266,7 +292,6 @@ out/
 ```
 
 <!--- ## Output files --->
-
 
 # :gear: Installation and Dependencies
 
@@ -363,12 +388,6 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 - scAnnotate
 - scNym
 - CellTypist
-```
-
-## Single cell RNA reference + spatial RNA query
-
-```yaml
-- Tangram
 ```
 
 <!--- # :floppy_disk: Resources  --->

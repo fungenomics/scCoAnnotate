@@ -111,10 +111,6 @@ query_datasets:
 tools_to_run:
       - tool1
       - tool2
-
-# consensus method
-consensus_tools:
-      - all 
       
 # benchmark parameters 
 benchmark:
@@ -206,15 +202,6 @@ query_datasets:
 tools_to_run:
       - tool1
       - tool2
-
-# consensus tools 
-consensus_tools:
-      - all
-
-# consensus method
-consensus_type:
-      - majority
-      - CAWPE_T
 
 # benchmark parameters 
 benchmark:

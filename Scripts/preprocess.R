@@ -1,5 +1,6 @@
 
 library(tidyverse)
+set.seed(1234)
 
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]

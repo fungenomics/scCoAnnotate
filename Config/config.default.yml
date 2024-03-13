@@ -1,6 +1,8 @@
 
 #--- PREPROCESS ------
 
+output_dir_benchmark: ""
+
 # convert gene symbols in reference from mouse to human 
 convert_ref_mm_to_hg: False
 

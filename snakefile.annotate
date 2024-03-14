@@ -154,7 +154,7 @@ rule knit_report:
 rule train_SingleR:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/SingleR/SingleR_model.Rda"
   params:

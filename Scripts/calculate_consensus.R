@@ -70,7 +70,7 @@ for(f in files){
 consensus = l %>% reduce(left_join, by = "cell") %>% rename('cellname' = 'cell') %>% select(all_of(c('cellname', tools)))
 rm(l)
 
-if(consensus_type == 'majority'){
+if(consensus_type == 'majority' | min_agree > 1){
 
   tmp = harmonize_unresolved(consensus, ref_labels)
   tmp = tmp %>% select(all_of(consensus_tools))

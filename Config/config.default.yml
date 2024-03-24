@@ -3,29 +3,16 @@
 
 output_dir_benchmark: ""
 
-# convert gene symbols in reference from mouse to human 
-convert_ref_mm_to_hg: False
-
-# filter small clusters in reference 
-min_cells_per_cluster: 0
-
-downsample:
-  value: 0
-  stratified: False
-  
 #--- CONSENSUS -------
-
-# specify consensus tools to include, either 'all' ot list of tool names
-consensus_tools:
-      - 'all'
-
-# specify consensus type, either 'majority', a numeric value, or 'CAWPE_T'
-consensus_type: 
-    - 'majority'
-
-# alpha value for CAWPE calculation 
-alpha: 4
-
+consensus:
+  tools: 
+    - 'all'
+  type:
+    majority:
+      min_agree: [0]
+    CAWPE:
+      mode: [""]
+      alpha: [0]
 #--- NOTEBOOKS -------
 
 # genes of interest

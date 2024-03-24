@@ -19,6 +19,7 @@ params:
     marker_genes: ''
     query: ''
     cons_type: ''
+    ontologies: ''
 ---
 
 ```{r setup, knitr_options, echo=F}
@@ -37,19 +38,21 @@ library(kableExtra)
 plotly_empty() 
 
 # format notebook parameters 
+refs = as.character(params$refs)
 threads = as.numeric(params$threads)
-refs = strsplit(params$refs, split = ' ')[[1]]
+ontologies = strsplit(params$ontologies, split = ' ')[[1]]
 consensus = strsplit(params$consensus, split = ' ')[[1]]
-names(consensus) = basename(dirname(consensus))
-tools = c('Consensus', strsplit(params$tools, split = ' ')[[1]])
+names(consensus) <- str_replace(basename(consensus), "^Prediction_Summary_", "") %>% str_replace("\\.tsv$", "")
+
+tools = strsplit(params$tools, split = ' ')[[1]]
 cons_tools = strsplit(params$cons_tools, split = ' ')[[1]]
 marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 cons_type = params$cons_type
 
 if(cons_tools == 'all'){
-  cons_tools = c('Consensus', tools)
+  cons_tools = c(tools)
 }else{
-  cons_tools = c('Consensus', cons_tools)
+  cons_tools = c(cons_tools)
 }
 ```
 
@@ -281,16 +284,15 @@ umap_theme = theme(aspect.ratio = 1,
 # read prediction summary for each reference 
 list = list()
 
-for(r in refs){
-  list[[r]]$lab = data.table::fread(paste0(params$output_dir, '/model/', r, '/labels.csv'), header = T, fill = T)
+for(ont in ontologies){
+  list[[ont]]$lab = data.table::fread(paste0(params$output_dir, '/model/', refs, '/ontology/labels_',ont,'.csv'), header = T, fill = T) %>% as.data.frame()
  
-  list[[r]]$pred = data.table::fread(consensus[r]) %>% 
-                       harmonize_unresolved(., list[[r]]$lab) 
+  list[[ont]]$pred = data.table::fread(consensus[ont]) %>% 
+                       harmonize_unresolved(., list[[ont]]$lab) 
 
   # create reference pal
-  list[[r]]$pal = create_color_pal(list[[r]]$lab$label)
+  list[[ont]]$pal = create_color_pal(list[[ont]]$lab$label)
 
-  #save(list[[r]]$pal, file = paste0(params$output_dir, '/model/', r, '/class_pal.Rda'))
 }
 
 # read expression matrix for sample  
@@ -348,11 +350,11 @@ cat("  \n# Sample \n")
 
 cat("\n")
 
-for(r in refs){
+for(ont in ontologies){
   
-  query = AddMetaData(query, list[[r]]$pred)
+  query = AddMetaData(query, list[[ont]]$pred)
   
-  cat("  \n#",  r, "{.tabset} \n")
+  cat("  \n#",  ont, "{.tabset} \n")
   
   cat("\n")
   
@@ -360,8 +362,9 @@ for(r in refs){
   
   cat("<h3>Percentage Unresolved</h3>")
   cat("\n")
-  
-  calculate_percentage_unresolved(list[[r]]$pred, order = tools, cons_tools = cons_tools) %>% 
+  tool_list <- c(grep(pattern = "^Consensus_",x = colnames(list[[ont]]$pred),value = T),tools)
+  cons_tool_list <- c(grep(pattern = "^Consensus_",x = colnames(list[[ont]]$pred),value = T),cons_tools)
+  calculate_percentage_unresolved(list[[ont]]$pred, order = tool_list, cons_tools = cons_tool_list) %>% 
   kbl(escape = FALSE, row.names = F) %>% 
   kable_styling(position = "center") %>%
   print()
@@ -369,47 +372,43 @@ for(r in refs){
   cat("<h3>Correlation between tools</h3>")
   cat("\n")
 
-  h = plot_tool_correlation_heatmap(query, tools = tools)
+  h = plot_tool_correlation_heatmap(query, tools = tool_list)
   draw(h)
   
   cat("<h3>Percentage overlap between tools and consensus</h3>")  
   cat("\n")
-
-  h = plot_percentage_predicted_consensus_class(query, tools = tools) 
-  draw(h)
-
+  
   cat("\n")
   cat("  \n## Prediction {.tabset} \n")
-  
-  for(t in tools){
+  for(t in tool_list){
     cat("  \n### ", t , " \n")
     
 
     cat("<h3>Top class per cluster</h3>")
     cat("\n")
 
-    p = plot_bar_largest_group(query, t, fr = 0.1, pal = list[[r]]$pal)
+    p = plot_bar_largest_group(query, t, fr = 0.1, pal = list[[ont]]$pal)
     print(htmltools::tagList(p))
     
     cat("<h3>UMAP</h3>")
     cat("\n")
 
-    p = umap_plotly(query, t, list[[r]]$pal)
+    p = umap_plotly(query, t, list[[ont]]$pal)
     print(htmltools::tagList(p))
-
-    if(t == 'Consensus' & params$cons_type %in% c('CAWPE_T', 'CAWPE_CT')){
-
+  
+    if(grepl(pattern = "^Consensus_CAWPE_",x = t)){
+      
         cat("<h3>CAWPE Score</h3>")
         cat("\n")
 
-        l = feature_plot_seurat_meta(query, 'CAWPE')
+        l = feature_plot_seurat_meta(query, gsub(pattern = "^Consensus",replacement = "CAWPE",x = t))
         cowplot::plot_grid(plotlist = l, ncol = 2) %>% print()
     }
 
     cat("<h3>UMAP per class</h3>")
     cat("\n")
     
-    l = color_class_seurat(query, t, list[[r]]$pal)
+    l = color_class_seurat(query, t, list[[ont]]$pal)
     if(length(l)< 9){
       cowplot::plot_grid(plotlist = l[1:9], ncol = 3) %>% print()
     }else{

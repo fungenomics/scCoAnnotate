@@ -34,6 +34,7 @@ if(is.na(downsample_stratified)){
   stop("The downsample stratified specified is not a logical value")
 }
 downsample_stratified = if(downsample_stratified) "label" else NULL
+
 print(downsample_stratified)
 print(class(downsample_stratified))
 #--------------- Data -------------------
@@ -56,9 +57,6 @@ if(downsample_value != 0){
       dplyr::slice_sample(prop = downsample_value,replace = F) 
   }
   ref = ref[labels$V1,]
-  data.table::fwrite(data.frame(cells= labels$V1,
-                                label= labels$label),
-                     file = paste0(out_path,'/downsampled_reference_labels.csv'), sep = ',')
 }
 #do the convertion to rownames after since the column is needed to downsampling
 labels = labels %>% column_to_rownames('V1')
@@ -74,6 +72,10 @@ if(min_cells > 0){
   #filtering the cells from the filtered classes
   ref = ref[rownames(labels),]
 }
+
+data.table::fwrite(data.frame(cells= rownames(labels),
+                              label= labels$label),
+                   file = paste0(out_path,'/downsampled_reference_labels.csv'), sep = ',')
 
 # throw error if order is not the same 
 if(!order){
@@ -127,4 +129,27 @@ for (i in 1:n_folds){
   data.table::fwrite(train_labels, paste0(out_path, '/fold', i, '/train_labels.csv'))
 }
 
+# dir.create(paste0(out_path, '/ontology/'))
+lab = data.frame(label = unique(labels$label))
+data.table::fwrite(lab,
+                   file = paste0(out_path, '/ontology/labels_base.csv'),
+                   sep = ',')
 
+# for(ont in ontology_columns){
+#   print(ont)
+#   if(ont == 'base'){
+#     lab = data.frame(label = unique(labels$label))
+#     data.table::fwrite(lab, 
+#                        file = paste0(out, '/', reference_name, '/ontology/labels_base.csv'),
+#                        sep = ',')  
+#   } else{
+#     if(ontology_path != ''){
+#       ref_ontology = data.table::fread(ontology_path) %>% as.data.frame()
+#       ## Here it needs an step to check if this ontology can be generated (no one label on ontology going to one orignial label)
+#       lab = data.frame(label = unique(ref_ontology[,ont,drop=T]))
+#       data.table::fwrite(lab,
+#                          paste0(out, '/', reference_name, '/ontology/labels_',ont,'.csv'),
+#                          sep = '\t')
+#     }   
+#   }
+# }

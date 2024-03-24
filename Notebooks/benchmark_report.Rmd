@@ -10,6 +10,7 @@ output:
     code_folding: hide
 params: 
     tools: ''
+    min_agree: ''
     ref_name: ''
     pred_path: ''
     fold: ''
@@ -128,8 +129,8 @@ col_fun = circlize::colorRamp2(c(0,
                                 range(df)[2]/2, 
                                 range(df)[2]), 
                                  c("#3B5B91", "#F2EFC7", "#CC0007")) 
-
-split = c('Consensus', rep('tools', length(tools)-1))
+cons_number = length(grep(pattern = "^Consensus_",x = tools))
+split = c(rep("Consensus",cons_number), rep('tools', length(tools)-cons_number))
 
 h = Heatmap(df,
             name = paste('Mean ', stat),
@@ -140,9 +141,9 @@ h = Heatmap(df,
             row_names_gp = gpar(fontsize = 12),
             show_column_dend = F,
             show_row_dend = F, 
-	    row_split = split,
-	    cluster_row_slices = F, 
-	    row_title = NULL)
+	          row_split = split,
+	          cluster_row_slices = F, 
+	          row_title = NULL)
 
 return(h)
 }
@@ -204,7 +205,8 @@ get_all_stats = function(x){
 ```
 
 ```{r}
-tools = c('Consensus', strsplit(params$tools, split = ' ')[[1]])
+min_agree = strsplit(params$min_agree, split = ' ')[[1]]
+tools = c(paste0('Consensus_',min_agree), strsplit(params$tools, split = ' ')[[1]])
 fold = as.numeric(params$fold)
 ```
 

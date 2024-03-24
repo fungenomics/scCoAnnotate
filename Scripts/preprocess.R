@@ -26,6 +26,10 @@ if(is.na(downsample_stratified)){
 }
 downsample_stratified = if(downsample_stratified) "label" else NULL
 
+ontology_path = args[11]
+ontology_columns = strsplit(args[12], split = ' ')[[1]]
+print(ontology_path)
+print(ontology_columns)
 names(query_paths) = query_names
 
 l = list()
@@ -164,6 +168,25 @@ for(q in query_names){
 
 # save unique labels (for downstream report color pal)
 # lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
-lab = data.frame(label = unique(lab$label))
-data.table::fwrite(lab, file = paste0(out, '/model/', reference_name, '/labels.csv'), sep = ',')
-
+# lab = data.frame(label = unique(lab$label))
+# data.table::fwrite(lab, file = paste0(out, '/model/', reference_name, '/labels.csv'), sep = ',')
+dir.create(paste0(out, '/model/', reference_name, '/ontology/'))
+for(ont in ontology_columns){
+  print(ont)
+  if(ont == 'base'){
+    lab = data.frame(label = unique(lab$label))
+    data.table::fwrite(lab, 
+                       file = paste0(out, '/model/', reference_name, '/ontology/labels_base.csv'),
+                       sep = ',')  
+    
+  } else{
+    if(ontology_path != ''){
+      ref_ontology = data.table::fread(ontology_path) %>% as.data.frame()
+      ## Here it needs an step to check if this ontology can be generated (no one label on ontology going to one orignial label)
+      lab = data.frame(label = unique(ref_ontology[,ont,drop=T]))
+      data.table::fwrite(lab,
+                         paste0(out, '/model/', reference_name, '/ontology/labels_',ont,'.csv'),
+                         sep = '\t')
+    }   
+  }
+}

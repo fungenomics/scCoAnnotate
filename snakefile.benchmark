@@ -14,6 +14,31 @@ n_folds = list(range(1, config['benchmark']['n_folds']+1))
 now = datetime.now()
 dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
+# Get the downsampling values for the references
+for ref_downsample in config['references'].keys():
+  try: 
+    config["references"][ref_downsample]['min_cells_per_cluster']
+  #If was not specified set to default (0)
+  except: 
+    config["references"][ref_downsample]['min_cells_per_cluster'] = 0
+  try: 
+    config["references"][ref_downsample]['downsample']['value']
+    config["references"][ref_downsample]['downsample']['stratified']
+  #If was not specified set to default (value = 0, stratified = False)
+  except: 
+    config["references"][ref_downsample]["downsample"] = {}
+    config["references"][ref_downsample]['downsample']['value'] = 0
+    config["references"][ref_downsample]['downsample']['stratified'] = False
+  try: 
+    config["references"][ref_downsample]["ontology"]["ontology_path"] = ''
+    config["references"][ref_downsample]["ontology"]["ontology_column"] = ["base"]
+  #If any ontology was specified, filled the config with black ('') and the ontology_path is ["base"]
+  #If only the ontology_path was specified, add the ["base"] and all the ontology columns 
+  #If both the ontology_path and the ontology_column were specified, add the ["base"]
+  except: 
+    config["references"][ref_downsample]["ontology"] = {}
+    config["references"][ref_downsample]["ontology"]["ontology_path"] = ''
+    config["references"][ref_downsample]["ontology"]["ontology_column"] = ["base"]
 #----------------------------------------------------
 #  Final rule all 
 #----------------------------------------------------
@@ -34,16 +59,18 @@ rule subset_folds:
   output:
     training_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train.csv", folds_index = n_folds),
     labfile = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train_labels.csv", folds_index = n_folds),
-    test_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/test.csv", folds_index = n_folds)
+    test_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/test.csv", folds_index = n_folds),
+    lab_ontology = config['output_dir_benchmark'] + "/{reference}/ontology/labels_base.csv"
   log:
     config['output_dir_benchmark'] + "/{reference}/subset_folds.log"
   params:
     basedir = {workflow.basedir},
     outdir = config['output_dir_benchmark'] + "/{reference}",
+    reference_name = "{reference}",
     n_folds = config['benchmark']['n_folds'],
-    min_cells_per_cluster = config['min_cells_per_cluster'],
-    downsample_value = config['downsample']['value'],
-    downsample_stratified = config['downsample']['stratified']
+    min_cells_per_cluster = lambda wildcards:config["references"][wildcards.reference]['min_cells_per_cluster'],
+    downsample_value = lambda wildcards:config["references"][wildcards.reference]['downsample']['value'],
+    downsample_stratified = lambda wildcards:config["references"][wildcards.reference]['downsample']['stratified']
   threads: 1
   resources:
   shell:
@@ -80,6 +107,7 @@ rule knit_report:
     pred_path = config['output_dir_benchmark'] + "/{reference}", 
     n_folds = config['benchmark']['n_folds'],
     tools = config['tools_to_run'],
+    min_agree = config['consensus']['type']['majority']['min_agree'],
     ref_name = "{reference}"
   resources:
   shell:
@@ -89,6 +117,7 @@ rule knit_report:
             params = list(tools = '{params.tools}',
                           ref_name = '{params.ref_name}',
                           pred_path = '{params.pred_path}',
+                          min_agree = '{params.min_agree}',
                           fold = '{params.n_folds}'),
             output_file = '{output.report_path}')" \
     &> {log}
@@ -109,10 +138,13 @@ rule consensus:
   params:
     basedir = {workflow.basedir},
     tools = config['tools_to_run'],
-    consensus_tools = config['consensus_tools'],
+    consensus_tools = config['consensus']['tools'],
     consensus_type = 'majority',
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
-    sample = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}"
+    labfile = config['output_dir_benchmark'] + "/{reference}/ontology/labels_base.csv",
+    sample = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}",
+    min_agree = config["consensus"]["type"]["majority"]["min_agree"],
+    ontology_label = 'base'
+    #ontology_path = ''
   shell:
     """
     Rscript {params.basedir}/Scripts/calculate_consensus.R \
@@ -122,6 +154,8 @@ rule consensus:
     "{params.consensus_tools}" \
     "{params.consensus_type}" \
     {params.labfile} \
+    "{params.min_agree}" \
+    "{params.ontology_label}" \
     &> {log}
     """
 

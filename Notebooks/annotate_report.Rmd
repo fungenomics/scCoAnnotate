@@ -49,7 +49,7 @@ cons_tools = strsplit(params$cons_tools, split = ' ')[[1]]
 marker_genes = strsplit(params$marker_genes, split = ' ')[[1]]
 cons_type = params$cons_type
 
-if(cons_tools == 'all'){
+if(cons_tools[1] == 'all'){
   cons_tools = c(tools)
 }else{
   cons_tools = c(cons_tools)

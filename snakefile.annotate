@@ -133,7 +133,7 @@ rule consensus:
   output:
     prediction_summary = config['output_dir'] + "/{sample}/{reference}/{consensus_type}/Prediction_Summary_{ontology}.tsv"
   log: 
-    config["output_dir"] + "/{sample}/{reference}/Gatherpreds.{consensus_type}.{ontology}.log"
+    config["output_dir"] + "/{sample}/{reference}/{consensus_type}/Gatherpreds.{ontology}.log"
   params:
     basedir = {workflow.basedir}, 
     tools = config['tools_to_run'],

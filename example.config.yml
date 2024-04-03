@@ -7,8 +7,16 @@ output_dir_benchmark: <path to benchmark output>
 # path to reference to train classifiers on (cell x gene raw counts)
 references: 
       reference1:
-            expression: <patht to expression.csv>
+            expression: <patht to expression.csv>0
             labels: <patht to labels.csv>
+            ontology:
+              ontology_path: <patht to ontology.csv>0
+              ontology_column: <ontology_column to use>
+            downsample:
+                  value: 500 
+                  stratified: True
+            min_cells_per_cluster: 100
+            convert_ref_mm_to_hg: False
       reference2:
             expression: <patht to expression.csv>
             labels: <patht to labels.csv>
@@ -35,13 +43,15 @@ tools_to_run:
       - scNym
       - CellTypist
 
-consensus_tools:
-      - all
-
-consensus_type:
-     - majority
-     - CAWPE_T
-      
+consensus:
+  tools: 
+    - 'all'
+  type:
+    majority:
+      min_agree: [5,6]
+    CAWPE:
+      mode: ['CAWPE_T','CAWPE_CT']
+      alpha: [2,3,4]      
 # Benchmark parameters 
 benchmark:
   n_folds: 5 

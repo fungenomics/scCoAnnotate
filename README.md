@@ -337,7 +337,7 @@ pkg = c("SingleCellExperiment",
         "scAnnotate",
         "Orthology.eg.db",
         "org.Mm.eg.db",
-        "org.Hg.eg.db",
+        "org.Hs.eg.db",
         "scater")
 
 BiocManager::install(pkg)

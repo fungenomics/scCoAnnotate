@@ -134,21 +134,21 @@ tools_to_run:
 
 # consensus method
 consensus:
-  tools: 
-    - 'all'
-  type:
-    majority:
-     # (ex: [2]     [2,3,4])
-      min_agree: <minimum agreemeent to use>
-    CAWPE:
-      #(ex: ['CAWPE_T'], ['CAWPE_T','CAWPE_CT'])
-      mode: <CAWPE MODE>
-      #(ex: [4], [2,3,4])
-      alpha: <alpha value>
+      tools: 
+            - 'all'
+      type:
+            majority:
+                  # (ex: [2]     [2,3,4])
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  #(ex: ['CAWPE_T'], ['CAWPE_T','CAWPE_CT'])
+                  mode: <CAWPE MODE>
+                  #(ex: [4], [2,3,4])
+                  alpha: <alpha value>
 
 # benchmark parameters 
 benchmark:
-  n_folds: <number of folds to use in the benchmarking>
+      n_folds: <number of folds to use in the benchmarking>
 ```
 
 See: [Changing Default Parameters](##changing-default-parameters)
@@ -203,7 +203,7 @@ The order of overwriting parameters are as follows:
 
 This section is found in the default config: 
 
-```ymal
+```yaml
 scHPL:
   threads: 1
   classifier: 'svm'
@@ -219,31 +219,42 @@ output_dir: <output directory for the annotation workflow>
 output_dir_benchmark: <output directory for the benchmarking workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
-references: 
-      <reference name>:
-            expression: <path to cell x gene matrix>
-            labels: <path to cell x label matrix>
-      <reference name>:
-            expression: <path to cell x gene matrix>
-            labels: <path to cell x label matrix>
+### Description of some non-tool specific parameters 
 
-# path to query datasets (cell x gene raw counts)
-query_datasets:
-      <sample1>: <path to sample1 cell x gene matrix>
-      <sample2>: <path to sample2 cell x gene matrix>
+references:
+      <reference_name>:
+            convert_ref_mm_to_hg: False
+            ontology:
+                  ontology_path: <path to ontology.csv>
+                  ontology_column: <ontology_column to use>
+            downsample:
+                  value: 500
+                  stratified: True
+            min_cells_per_cluster: 100
 
 # classifiers to run
 tools_to_run:
       - tool1
       - tool2
 
+# consensus method
+consensus:
+      tools: 
+            - 'all'
+      type:
+            majority:
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  mode: <CAWPE MODE>
+                  alpha: <alpha value>
+
 # benchmark parameters 
 benchmark:
-  n_folds: <number of folds to use in the benchmarking>
+      n_folds: <number of folds to use in the benchmarking>
 
 # additional parameters
 scHPL:
-  threshold: 0.25 
+      threshold: 0.25 
 ```
 
 ### Option 2: Copy the whole default config and add it as an extra config file in the snakemake command  
@@ -266,8 +277,8 @@ snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
 # convert gene symbols in reference from mouse to human 
 convert_ref_mm_to_hg: False
 
-# specify consensus type, either 'majority' or numeric value 
-consensus_type: 'majority'
+# TODO: add new example
+
 ```
 
 # :woman_judge: Consensus methods 
@@ -285,11 +296,11 @@ The pipeline will generate one table and one html report per consensus method.
 
 ## 1. Majority Vote 
 
-TO-DO: describe method 
+TODO: describe method 
 
 ## 2. CAWPE 
 
-TO-DO: describe method 
+TODO: describe method 
 
 # :hatching_chick: Outputs 
 

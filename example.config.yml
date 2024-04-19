@@ -1,58 +1,60 @@
 # Example config for scCoAnnotate annotation and benchmarking workflow 
 
 # target directory 
-output_dir: <path to annotation output>
-output_dir_benchmark: <path to benchmark output>
+output_dir: <output directory for the annotation workflow>
+output_dir_benchmark: <output directory for the benchmarking workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
-references: 
-      reference1:
-            expression: <patht to expression.csv>0
-            labels: <patht to labels.csv>
-            ontology:
-              ontology_path: <patht to ontology.csv>0
-              ontology_column: <ontology_column to use>
-            downsample:
-                  value: 500 
-                  stratified: True
-            min_cells_per_cluster: 100
+### Description of some non-tool specific parameters 
+
+references:
+      <reference_name>:
+            # Convert gene symbols in reference from mouse to human
+            # Accepted values: True, False
             convert_ref_mm_to_hg: False
-      reference2:
-            expression: <patht to expression.csv>
-            labels: <patht to labels.csv>
-            
-# path to query datasets (cell x gene raw counts)
-query_datasets:
-      sample1: <patht to expression.csv>
-      sample2: <patht to expression.csv>
+            # The ontology permits to specify different level of labels granularity.
+            # These parameters are optional
+            ontology:
+                  # Path to the csv containing the ontology path. Each column represents a different
+                  # granularity of labels. The columns should be named.
+                  ontology_path: <path to ontology.csv>
+                  # The column name(s) of the granularity to use, from the ontology file.
+                  # This parameter can take multiple column names, therefore they should be put in a list
+                  # (ex: ['level']     ['level1', 'level2'])
+                  ontology_column: <ontology_column to use>
+            # Some references are too big and cannot be used efficiently
+            # the following parameters permit to downsample the reference
+            downsample:
+                  # The number of cells to downsample to
+                  # If the value is > 1, it specifies the number of cells to select (ex: 500 will select 500 cells)
+                  # If the value is < 1, it is interpreted as a fraction of cells to keep (ex: 0.25 will select 25% of the cells)
+                  value: 500
+                  # Should the sample keep the same stratification as the complete dataset?
+                  # Accepted values: True, False
+                  stratified: True
+            # The minimal number of cells that each cluster should have, in the reference
+            # Clusters with less cells will be filtered out from the reference
+            min_cells_per_cluster: 100
 
 # classifiers to run
 tools_to_run:
-      - scPred
-      - SingleR
-      - scClassify
-      - SciBet
-      - singleCellNet
-      - scHPL
-      - SVMlinear
-      - Correlation
-      - scLearn
-      - ACTINN
-      - scID
-      - scAnnotate
-      - scNym
-      - CellTypist
+      - tool1
+      - tool2
 
+# consensus method
 consensus:
-  tools: 
-    - 'all'
-  type:
-    majority:
-      min_agree: [5,6]
-    CAWPE:
-      mode: ['CAWPE_T','CAWPE_CT']
-      alpha: [2,3,4]      
-# Benchmark parameters 
-benchmark:
-  n_folds: 5 
+        tools: 
+            - 'all'
+        type:
+            majority:
+                  # (ex: [2]     [2,3,4])
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  #(ex: ['CAWPE_T'], ['CAWPE_T','CAWPE_CT'])
+                  mode: <CAWPE MODE>
+                  #(ex: [4], [2,3,4])
+                  alpha: <alpha value>
 
+# benchmark parameters 
+benchmark:
+      n_folds: <number of folds to use in the benchmarking>

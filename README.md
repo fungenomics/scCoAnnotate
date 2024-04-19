@@ -151,10 +151,6 @@ benchmark:
   n_folds: <number of folds to use in the benchmarking>
 ```
 
-# :woman_judge: Consensus methods 
-
-scCoAnnotate offers two options for calculating the consensus between tools, Majority Vote and CAWPE (Cross-validation Accuracy Weighted Probabilistic Ensemble). The consensus method is specified in the config: 
-
 See: [Changing Default Parameters](##changing-default-parameters)
 
 ### 5. Prepare HPC submission script

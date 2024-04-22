@@ -72,6 +72,27 @@ getmode = function(v, min = 1){
   }
 }
 
+getmode_max = function(v){
+  uniqv = unique(v)
+  matches = tabulate(match(v, uniqv))
+  max_match = max(matches) / sum(matches)
+  return(max_match)
+}
+
+getmode_entropy = function(v){
+  uniqv = unique(v)
+  matches = tabulate(match(v, uniqv))
+  matches <- matches / sum(matches)
+  entropy = -sum(matches*log2(matches),na.rm = T)
+  ## Normalizing by the number of labels to make it  [0,1]
+  entropy = entropy / log2(length(matches))
+  #If NAN is because it assgined everything to the same category
+  if(is.na(entropy)){
+    entropy <- 0
+  }
+  return(entropy)
+}
+
 CAWPE = function(x, alpha = 4){
   (as.numeric(x['F1'])^alpha)*as.numeric(x['prob'])
 }
@@ -106,6 +127,8 @@ if(consensus_type == 'majority' & all(min_agree != 0)){
   for(mn_ag in min_agree){
     consensus[,paste0("Consensus_",as.character(mn_ag))] <- apply(tmp, 1, getmode, min = mn_ag)
   }
+  consensus[,"majority_MaxVote"] <- apply(tmp, 1, getmode_max)
+  consensus[,"majority_Entropy"] <- apply(tmp, 1, getmode_entropy)
   rm(tmp)
 }else if(consensus_type == "CAWPE" & all(alpha != 0)){
   ref_labels <- data.table::fread(glue('{dirname(ref_lab)}/labels_base.csv'), header = T, fill=TRUE) %>% as.data.frame()
@@ -148,12 +171,19 @@ if(consensus_type == 'majority' & all(min_agree != 0)){
          summarise(CAWPE = sum(CAWPE)) %>%
          ungroup() %>% 
          group_by(cellname) %>% 
-        dplyr::slice(which.max(CAWPE)) %>%
+         mutate(prop = CAWPE / sum(CAWPE)) %>% 
+         mutate(entropy = ifelse(test = length(class) > 1,
+                                 yes = (-sum(prop * log2(prop),na.rm = T))/log2(length(class)),
+                                 no = 0)) %>% 
+         # mutate(entropy = ifelse(is.nan(entropy),yes = 0,no = entropy)) %>% 
+         group_by(cellname) %>%
+         dplyr::slice(which.max(CAWPE)) %>%
          rename(Consensus = class)  %>% 
          as.data.frame
       rownames(data) <- data$cellname
       # get final prediction by max CAWPE value 
       consensus[,paste0("CAWPE_",CW_tp,"_",aph)] = data[consensus$cellname,"CAWPE",drop=T]
+      consensus[,paste0("CAWPE_entropy_",CW_tp,"_",aph)] = data[consensus$cellname,"entropy",drop=T]
       consensus[,paste0("Consensus_",CW_tp,"_",aph)] = data[consensus$cellname,"Consensus",drop=T]
      } else{
        ref_ontology = data.table::fread(ontology_path) %>% as.data.frame()
@@ -172,22 +202,32 @@ if(consensus_type == 'majority' & all(min_agree != 0)){
          group_by(cellname, ontology) %>% 
          summarise(CAWPE = mean(CAWPE)) %>% 
          group_by(cellname) %>% 
+         mutate(prop = CAWPE / sum(CAWPE)) %>% 
+         mutate(entropy = ifelse(test = length(ontology) > 1,
+                                 yes = (-sum(prop * log2(prop),na.rm = T))/log2(length(ontology)),
+                                 no = 0)) %>% 
+         # mutate(entropy = ifelse(is.nan(entropy),yes = 0,no = entropy)) %>% 
+         group_by(cellname) %>%
          dplyr::slice(which.max(CAWPE)) %>%
          rename(Consensus = ontology)  %>% 
          as.data.frame
         rownames(data) <- data$cellname
         # get final prediction by max CAWPE value 
         consensus[,paste0("CAWPE_",CW_tp,"_",aph)] = data[consensus$cellname,"CAWPE",drop=T]
+        consensus[,paste0("CAWPE_entropy_",CW_tp,"_",aph)] = data[consensus$cellname,"entropy",drop=T]
         consensus[,paste0("Consensus_",CW_tp,"_",aph)] = data[consensus$cellname,"Consensus",drop=T]
-        consensus[,tools] <- lapply(consensus[,tools,drop=F],
-                                    FUN = function(x){
-                                      apply_ontology(df_ontology = ref_ontology,
-                                                     pred = x,
-                                                     from = 'labels',
-                                                     to = ontology_columns)
-                                    }
-                                    )
      }
+    }
+    if(ontology_columns != 'base'){
+      print("@Modifying the original tool labels to ontology")
+    consensus[,tools] <- lapply(consensus[,tools,drop=F],
+                                FUN = function(x){
+                                  apply_ontology(df_ontology = ref_ontology,
+                                                 pred = x,
+                                                 from = 'labels',
+                                                 to = ontology_columns)
+                                }
+    )
     }
   }
   

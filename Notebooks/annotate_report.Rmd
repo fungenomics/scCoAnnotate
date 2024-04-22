@@ -401,7 +401,13 @@ for(ont in ontologies){
         cat("<h3>CAWPE Score</h3>")
         cat("\n")
 
-        l = feature_plot_seurat_meta(query, gsub(pattern = "^Consensus",replacement = "CAWPE",x = t))
+        l = feature_plot_seurat_meta(query, c(gsub(pattern = "^Consensus",replacement = "CAWPE",x = t), gsub(pattern = "^Consensus",replacement = "CAWPE_entropy",x = t)))
+        cowplot::plot_grid(plotlist = l, ncol = 2) %>% print()
+    } 
+    if(cons_type == 'majority'){
+      cat("<h3>Majority Score</h3>")
+        cat("\n")
+        l = feature_plot_seurat_meta(query, c("majority_MaxVote","majority_Entropy"))
         cowplot::plot_grid(plotlist = l, ncol = 2) %>% print()
     }
 

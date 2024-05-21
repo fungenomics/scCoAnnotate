@@ -1,5 +1,12 @@
 
 library(tidyverse)
+
+initial.options = commandArgs(trailingOnly = FALSE)
+file.arg.name = "--file="
+script.name = sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)]) 
+
+source(paste0(dirname(script.name), "/Functions/functions.R"))
+
 set.seed(1234)
 
 args = commandArgs(trailingOnly = TRUE)
@@ -20,68 +27,50 @@ downsample_value = as.numeric(args[9])
 if(is.na(downsample_value)){
   stop("The downsample value specified is not a numeric value")
 }
-downsample_stratified = as.logical(args[10])
-if(is.na(downsample_stratified)){
+
+downsample_per_class = as.logical(args[10])
+if(is.na(downsample_per_class)){
   stop("The downsample stratified specified is not a logical value")
 }
-downsample_stratified = if(downsample_stratified) "label" else NULL
 
 ontology_path = args[11]
 ontology_columns = strsplit(args[12], split = ' ')[[1]]
-print(ontology_path)
-print(ontology_columns)
+
 names(query_paths) = query_names
 
-l = list()
+# ----- PREPROCESS REFERENCE ----------------------
+data = list()
 
 # read reference 
-l[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
+data[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
+
 #read labels 
-lab = data.table::fread(lab_path, header = T)
-#If the value is > 1 it will use it as an absolute value
-#If the value is a fraction it will downsample the fraction.
-# If the group has lower number of cells than the downsample_value the total 
-#amount of cells are retain for that cluster
+lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
+
+# downsample 
 if(downsample_value != 0){
-  if(downsample_value >= 1){
-      lab = lab %>%  group_by(across(all_of(downsample_stratified))) %>% 
-        dplyr::slice_sample(n = downsample_value,replace = F)
-  } else{
-      lab = lab %>% group_by(across(all_of(downsample_stratified))) %>% 
-        dplyr::slice_sample(prop = downsample_value,replace = F) 
-  }
-  
-  l[['ref']] = l[['ref']][lab$V1,]
+  lab = downsample_labels(lab, downsample_per_class, downsample_value)
 }
-#do the convertion to rownames after since the column is needed to downsampling
-lab = lab %>% column_to_rownames('V1')
 
+# remove small clusters 
 if(min_cells > 0){
-  rmv_labels = names(which(table(lab$label) < min_cells))
-  lab = lab %>% filter((!label %in% rmv_labels))
-  message(paste0(paste0(rmv_labels,collapse = '-'),' classes were remove because of lower number of cells (< ',as.character(min_cells),')'))
-  #filtering the cells from the filtered classes
-  l[['ref']] = l[['ref']][rownames(lab),]
+  lab = remove_small_clusters(lab, min_cells)
 }
 
-save.df <- data.frame(cells= rownames(lab),
-                      label= lab$label)
+
+# filter reference for donwsampled cells 
+data[['ref']] = data[['ref']][rownames(lab),]
+
+# save downsampled lables 
+save.df <- data.frame(cells= rownames(lab), label= lab$label)
 colnames(save.df)[1] <- ""
+
 data.table::fwrite(save.df,
                    file = paste0(out, '/model/', reference_name, '/downsampled_labels.csv'),
                    col.names = T,
                    row.names=F,
                    sep = ",")
 rm(save.df)
-
-# read query 
-for(i in 1:length(query_paths)){
-  print(query_paths[i])
-  tmp = data.table::fread(query_paths[i], header = T) %>% column_to_rownames('V1')
-  query = names(query_paths)[i]
-  print(query)
-  l[[query]] = tmp
-}
 
 # if specified by user, convert reference gene names from mouse to human
 if(convert_genes){
@@ -94,21 +83,12 @@ if(convert_genes){
   library(org.Hs.eg.db)
   library(WGCNA)
 
-  mapfun = function(mousegenes){
-    gns    = mapIds(org.Mm.eg.db, mousegenes, "ENTREZID", "SYMBOL")
-    mapped = AnnotationDbi::select(Orthology.eg.db, gns, "Homo_sapiens","Mus_musculus")
-    naind  = is.na(mapped$Homo_sapiens)
-    hsymb  = mapIds(org.Hs.eg.db, as.character(mapped$Homo_sapiens[!naind]), "SYMBOL", "ENTREZID")
-    out    = data.frame(Mouse_symbol = mousegenes, mapped, Human_symbol = NA)
-    out$Human_symbol[!naind] = hsymb
-    return(out)
-  }
-
   # convert
-  hg = mapfun(colnames(l[['ref']])) %>% dplyr::select(Mouse_symbol, Human_symbol) 
+  hg = mapfun(colnames(data[['ref']])) %>% dplyr::select(Mouse_symbol, Human_symbol) 
   
   # output list of mouse genes that were not converted
   not_converted = hg %>% filter(is.na(Human_symbol)) %>% .$Mouse_symbol
+  
   data.table::fwrite(as.list(not_converted), file = paste0(out, '/model/', reference_name, '/genes_not_converted.csv'), sep = ',')
 
   # throw error if more than threshold % genes not converted
@@ -118,7 +98,7 @@ if(convert_genes){
   }
 
   # modify reference matrix to contain converted genes
-  l[['ref']] = l[['ref']] %>%
+  data[['ref']] = l[['ref']] %>%
     transposeBigData() %>%
     rownames_to_column('Mouse_symbol') %>%
     inner_join(hg %>% filter(!is.na(Human_symbol)), 
@@ -129,8 +109,22 @@ if(convert_genes){
 
 }
 
+# ----- QUERY --------------------------------
+
+# read query 
+for(i in 1:length(query_paths)){
+  print(query_paths[i])
+  tmp = data.table::fread(query_paths[i], header = T) %>% column_to_rownames('V1')
+  query = names(query_paths)[i]
+  
+  print(query)
+  data[[query]] = tmp
+}
+
+# ----- GENE INTERSECT ------------------------
+
 # get genes for each data frame (colnames)
-genes = lapply(l, function(x){(colnames(x))})
+genes = lapply(data, function(x){(colnames(x))})
 
 # reduce set of genes to the intersect 
 common_genes = Reduce(intersect,genes)
@@ -141,7 +135,7 @@ threshold = 0.25
 frac = lapply(genes, function(x){length(common_genes)/length(x)})
 
 if(any(frac < threshold)){
-  names(frac) = names(l)
+  names(frac) = names(data)
   print(frac)
   stop(paste0("@ In at least one provided dataset (ref or query), less than ",threshold*100,"% of genes appear in common gene set. See above for the fraction of genes from each dataset appearing in common gene set (note: samples with few genes will have higher fractions)"))
 }
@@ -150,43 +144,38 @@ if(any(frac < threshold)){
 data.table::fwrite(data.frame('common_genes' = common_genes), file = paste0(out, '/model/', reference_name, '/common_genes.csv'))
 
 # filter each data set for common genes
-l = lapply(l, function(x){x[,common_genes]})
+data = lapply(data, function(x){x[,common_genes]})
+
+#----- SAVE DATA ----------------------------------------
 
 # save reference 
-tmp = l[['ref']] %>% rownames_to_column()
+tmp = data[['ref']] %>% rownames_to_column()
 colnames(tmp)[1] = " "
+
 data.table::fwrite(tmp, file = paste0(out, '/model/', reference_name, '/expression.csv'), sep = ',')
 
 # save query 
-query_names = names(l)[!names(l) == 'ref']
+query_names = names(data)[!names(data) == 'ref']
 for(q in query_names){
   print(q)
-  tmp = l[[q]] %>% rownames_to_column()
+  
+  tmp = data[[q]] %>% rownames_to_column()
   colnames(tmp)[1] = " "
+  
   data.table::fwrite(tmp, file = paste0(out, '/', q, '/', reference_name, '/expression.csv'), sep = ',')
 }
 
-# save unique labels (for downstream report color pal)
-# lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
-# lab = data.frame(label = unique(lab$label))
-# data.table::fwrite(lab, file = paste0(out, '/model/', reference_name, '/labels.csv'), sep = ',')
-dir.create(paste0(out, '/model/', reference_name, '/ontology/'))
-for(ont in ontology_columns){
-  print(ont)
-  if(ont == 'base'){
-    lab = data.frame(label = unique(lab$label))
-    data.table::fwrite(lab, 
-                       file = paste0(out, '/model/', reference_name, '/ontology/labels_base.csv'),
-                       sep = ',')  
-    
-  } else{
-    if(ontology_path != ''){
-      ref_ontology = data.table::fread(ontology_path) %>% as.data.frame()
-      ## Here it needs an step to check if this ontology can be generated (no one label on ontology going to one orignial label)
-      lab = data.frame(label = unique(ref_ontology[,ont,drop=T]))
-      data.table::fwrite(lab,
-                         paste0(out, '/model/', reference_name, '/ontology/labels_',ont,'.csv'),
-                         sep = '\t')
-    }   
-  }
+#----- SAVE BASE ONTOLOGY ------------------------------
+
+if(length(ontology_columns) == 1 & ontology_columns[1] == 'label'){
+  
+  dir.create(paste0(out, '/model/', reference_name, '/ontology/'), recursive = T)
+  
+  lab = data.frame(label = unique(lab$label))
+
+  data.table::fwrite(lab, 
+                     file = paste0(out, '/model/', reference_name, '/ontology/ontology.csv'),
+                     sep = ',')
 }
+
+#--------------------------------------------------------

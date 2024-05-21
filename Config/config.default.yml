@@ -11,8 +11,10 @@ consensus:
     majority:
       min_agree: [0]
     CAWPE:
-      mode: [""]
       alpha: [0]
+      mode: ""
+      accuracy_metric: "F1"
+
 #--- NOTEBOOKS -------
 
 # genes of interest

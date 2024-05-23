@@ -96,4 +96,9 @@ CellTypist:
   feature_selection: 'True'
   majority_voting: 'True'
   threshold: 0.5
+
+Seurat:
+  threads: 1
+  nPC_computed: 50
+  nPC_used: 30
 #-----------------

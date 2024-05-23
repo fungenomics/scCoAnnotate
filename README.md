@@ -728,3 +728,19 @@ Predicting:
   * `predicted_labels.csv`: The prediction for each cell, if majority_voting was true it has the information of the majority_voting labels AND the predicted_labels.
   * Generates some embedding plots.
   * An `.h5ad` object that has all the previous information (with the embeddings too) in a `.h5ad` object.
+  
+## Seurat
+
+Documentation written by: Tomas Vega Waichman    
+
+Date written: 2024-05-23
+
+The Seurat workflow was generated following the tutorial provided below:
+https://satijalab.org/seurat/articles/integration_mapping#cell-type-classification-using-an-integrated-reference
+
+This methods is a integration method. So it integrate the reference with the query and use a kNN approach to transfer the labels from the nearest neighborg from the ref to the query. 
+* Input for `Seurat` is raw counts for both reference and query. Both the reference and the query are normalized using `Seurat::NormalizeData()`.
+* Training and prediction were separated. The training part is actually a preprocessing of the reference, were is normalized and PCA are calculated. The PC are uses to calculate the distances between ref and query cells.
+* The number of PC computed could be specified by the user (`nPC_computed`, default 50).
+* The number of PC used to the kNN could be specified by the user (`nPC_used`, default 30).
+* Then in the prediction script the query is processed and the labels transfered.

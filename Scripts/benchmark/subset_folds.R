@@ -129,27 +129,7 @@ for (i in 1:n_folds){
   data.table::fwrite(train_labels, paste0(out_path, '/fold', i, '/train_labels.csv'))
 }
 
-# dir.create(paste0(out_path, '/ontology/'))
 lab = data.frame(label = unique(labels$label))
 data.table::fwrite(lab,
-                   file = paste0(out_path, '/ontology/labels_base.csv'),
+                   file = paste0(out_path, '/ontology/ontology.csv'),
                    sep = ',')
-
-# for(ont in ontology_columns){
-#   print(ont)
-#   if(ont == 'base'){
-#     lab = data.frame(label = unique(labels$label))
-#     data.table::fwrite(lab, 
-#                        file = paste0(out, '/', reference_name, '/ontology/labels_base.csv'),
-#                        sep = ',')  
-#   } else{
-#     if(ontology_path != ''){
-#       ref_ontology = data.table::fread(ontology_path) %>% as.data.frame()
-#       ## Here it needs an step to check if this ontology can be generated (no one label on ontology going to one orignial label)
-#       lab = data.frame(label = unique(ref_ontology[,ont,drop=T]))
-#       data.table::fwrite(lab,
-#                          paste0(out, '/', reference_name, '/ontology/labels_',ont,'.csv'),
-#                          sep = '\t')
-#     }   
-#   }
-# }

@@ -36,7 +36,7 @@ for ref_downsample in config['references'].keys():
     config["references"][ref_downsample]['downsample']['value'] = 0
     config["references"][ref_downsample]['downsample']['stratified'] = False
 
-func.set_ontology_parameters(config)
+#func.set_ontology_parameters(config)
 print(config)
 
 #----------------------------------------------------
@@ -60,7 +60,7 @@ rule subset_folds:
     training_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train.csv", folds_index = n_folds),
     labfile = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train_labels.csv", folds_index = n_folds),
     test_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/test.csv", folds_index = n_folds),
-    lab_ontology = config['output_dir_benchmark'] + "/{reference}/ontology/labels_base.csv"
+    lab_ontology = config['output_dir_benchmark'] + "/{reference}/ontology/ontology.csv"
   log:
     config['output_dir_benchmark'] + "/{reference}/subset_folds.log"
   params:
@@ -140,10 +140,9 @@ rule consensus:
     tools = config['tools_to_run'],
     consensus_tools = config['consensus']['tools'],
     consensus_type = 'majority',
-    labfile = config['output_dir_benchmark'] + "/{reference}/ontology/labels_base.csv",
     sample = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}",
     min_agree = config["consensus"]["type"]["majority"]["min_agree"],
-    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"], 
+    ontology_path = config['output_dir_benchmark'] + "/{reference}/ontology/ontology.csv", 
     ontology_label = "label"
   shell:
     """
@@ -941,6 +940,64 @@ rule predict_CellTypist:
     {params.majority_voting} \
     &> {log}
     """
+    
+#----------------------------------------------------
+#   Seurat 
+#----------------------------------------------------
+
+rule train_Seurat:
+  input:
+    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
+    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+  output:
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_model.Rda"
+  params:
+    basedir = {workflow.basedir},
+    nPC_computed = config['Seurat']['nPC_computed']
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_train_benchmark.txt"
+  threads: 
+    config['Seurat']['threads']
+  resources:
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/Seurat/train_Seurat.R \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.nPC_computed} \
+    &> {log}
+    """
+rule predict_Seurat:
+  input:
+    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_model.Rda"
+  output:
+    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    nPC_used = config['Seurat']['nPC_used']
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_predict_benchmark.txt"
+  threads: 
+    config['Seurat']['threads']
+  resources:
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/Seurat/predict_Seurat.R \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {threads} \
+    {params.nPC_used} \
+    &> {log}
+    """
+
 
 #----------------------------------------------------
 #   The End 

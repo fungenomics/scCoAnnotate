@@ -38,19 +38,21 @@ def set_ontology_parameters(config):
       
       try:
         config["references"][ref]["ontology"]["ontology_column"]
-      
+
       except:
         columns = pd.read_csv(config["references"][ref]["ontology"]["ontology_path"], nrows=0).columns.tolist()
-        config["references"][ref]["ontology"]["ontology_column"] = columns
-        return
-    
+        config["references"][ref]["ontology"]["ontology_column"] = columns[1:]
+
     except: 
       config["references"][ref]["ontology"] = {}
       config["references"][ref]["ontology"]["ontology_path"] = config['output_dir'] + "/model/" + ref + "/ontology/ontology.csv"
       config["references"][ref]["ontology"]["ontology_column"] = ['label']
-      return
+      continue 
     
-    config["references"][ref]["ontology"]["ontology_column"] = ['label'] + config["references"][ref]["ontology"]["ontology_column"] 
+    if not isinstance(config["references"][ref]["ontology"]["ontology_column"], list): 
+      config["references"][ref]["ontology"]["ontology_column"] = [config["references"][ref]["ontology"]["ontology_column"]]
+    
+    config["references"][ref]["ontology"]["ontology_column"] = ['label'] + config["references"][ref]["ontology"]["ontology_column"]
 
 # return consensus methods 
 def get_consensus_methods(config): 

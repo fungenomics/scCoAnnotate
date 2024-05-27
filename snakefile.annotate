@@ -24,6 +24,10 @@ samples = list(config['query_datasets'].keys())
 # get consensus methods to run 
 consensus_run = func.get_consensus_methods(config)
 
+# get tools to run
+tools_to_run = func.get_tools_to_run(config)
+consensus_tools = func.get_consensus_tools(config)
+print(consensus_tools)
 # set defult parameters
 func.set_downsampling_parameters(config)
 func.set_ontology_parameters(config)
@@ -93,15 +97,15 @@ rule preprocess:
 rule consensus:
   input:
     results = expand(config["output_dir"] + "/{{sample}}/{{reference}}/{tool}/{tool}_pred.csv",
-                     tool=config['tools_to_run'])
+                     tool=tools_to_run)
   output:
     prediction_summary = config['output_dir'] + "/{sample}/{reference}/{consensus_type}/Prediction_Summary_{ontology}.tsv"
   log: 
     config["output_dir"] + "/{sample}/{reference}/{consensus_type}/Gatherpreds.{ontology}.log"
   params:
     basedir = {workflow.basedir}, 
-    tools = config['tools_to_run'],
-    consensus_tools = config['consensus']['tools'],
+    tools = tools_to_run,
+    consensus_tools = consensus_tools,
     consensus_type = "{consensus_type}",
     sample = config["output_dir"] + "/{sample}/{reference}/",
     min_agree = config["consensus"]["type"]["majority"]["min_agree"],
@@ -149,8 +153,8 @@ rule knit_report:
     basedir = {workflow.basedir},
     output_dir = config['output_dir'], 
     sample = "{sample}",
-    tools = config['tools_to_run'], 
-    consensus_tools = config['consensus']['tools'],
+    tools = tools_to_run, 
+    consensus_tools = consensus_tools,
     refs = "{reference}",
     ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
     ontology_columns = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"],
@@ -241,14 +245,14 @@ rule train_scPred:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
     labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
-    model = config['output_dir'] + "/model/{reference}/scPred/scPred_model.Rda"
+    model = config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}.Rda"
   params:
     basedir = {workflow.basedir},
-    classifier = config['scPred']['classifier'],
+    classifier = "{classifier}"
   log: 
-    config['output_dir'] + "/model/{reference}/scPred/scPred.log"
+    config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir'] + "/model/{reference}/scPred/scPred_train_benchmark.txt"
+    config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}_train_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources: 
@@ -266,15 +270,16 @@ rule train_scPred:
 rule predict_scPred:
   input:
     query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
-    model = config['output_dir'] + "/model/{reference}/scPred/scPred_model.Rda"
+    model = config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}.Rda"
   output:
-    pred = config['output_dir'] + "/{sample}/{reference}/scPred/scPred_pred.csv"
+    pred = config['output_dir'] + "/{sample}/{reference}/scPred_{classifier}/scPred_{classifier}_pred.csv"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    classifier = "{classifier}"
   log: 
-    config['output_dir'] + "/{sample}/{reference}/scPred/scPred.log"
+    config['output_dir'] + "/{sample}/{reference}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir'] + "/{sample}/{reference}/scPred/scPred_predict_benchmark.txt"
+    config['output_dir'] + "/{sample}/{reference}/scPred_{classifier}/scPred_{classifier}_predict_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources: 
@@ -285,8 +290,15 @@ rule predict_scPred:
     {input.model} \
     {output.pred} \
     {threads} \
+    {params.classifier} \
     &> {log}
     """
+    
+rule gather_scPred:
+  input:
+    expand(config['output_dir'] + "/{{sample}}/{{reference}}/scPred_{classifier}/scPred_{classifier}_pred.csv",
+    classifier = config['scPred']['classifier'])
+    
 #----------------------------------------------------
 #   scClassify
 #----------------------------------------------------

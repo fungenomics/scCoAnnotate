@@ -70,4 +70,27 @@ def get_consensus_methods(config):
 
   return consensus_run
 
+# return the tools to run adding the models to scPred
+def get_tools_to_run(config):
+  tools_run = config['tools_to_run']
+  if "scPred" in tools_run:
+    method = config['scPred']['classifier']
+    if not isinstance(method, list):
+        #Convert into a list
+        method = [method]
+    tools_to_run = [tool + "_" + m if tool == "scPred" else tool for tool in tools_run for m in (method if tool == "scPred" else [""])]
+  else:
+    tools_to_run = tools_run
+  return(tools_to_run)
 
+# return the tools to run adding the models to scPred
+def get_consensus_tools(config):
+  consensus_to_run = config['consensus']['tools']
+  if 'all' != consensus_to_run:
+    if "scPred" in consensus_to_run:
+      method = config['scPred']['classifier']
+      if not isinstance(method, list):
+          #Convert into a list
+          method = [method]
+      consensus_to_run = [tool + "_" + m if tool == "scPred" else tool for tool in consensus_to_run for m in (method if tool == "scPred" else [""])]
+  return(consensus_to_run)

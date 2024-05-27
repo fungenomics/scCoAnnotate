@@ -11,7 +11,7 @@ query_path = args[1]
 model_path = args[2]
 pred_path = args[3]
 threads = as.numeric(args[4])
-
+model_type = args[5]
 # get path for other output
 out_path = dirname(pred_path)
 
@@ -50,7 +50,7 @@ head(query$scpred_prediction)
 query$scpred_prediction = gsub("_minus", "-", query$scpred_prediction)
 pred_labs = data.frame(cell = colnames(query),
                        scPred = query$scpred_prediction)
-
+colnames(pred_labs)[2] = paste0('scPred_',model_type)
 # write prediction 
 data.table::fwrite(pred_labs, file = pred_path)
 
@@ -61,6 +61,6 @@ colnames(prob_mat) = gsub("_minus", "-", colnames(prob_mat))
 colnames(prob_mat)[1] = ""
 
 # write probability matrix 
-data.table::fwrite(prob_mat, file = paste0(out_path, '/scPred_pred_score.csv'))
+data.table::fwrite(prob_mat, file = paste0(out_path, '/scPred_',model_type,'_pred_score.csv'))
 
 #----------------------------------------

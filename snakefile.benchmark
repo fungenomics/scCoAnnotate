@@ -20,6 +20,13 @@ n_folds = list(range(1, config['benchmark']['n_folds']+1))
 now = datetime.now()
 dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
+# get tools to run
+tools_to_run = func.get_tools_to_run(config)
+consensus_tools = func.get_consensus_tools(config)
+
+print(tools_to_run)
+print(consensus_tools)
+# set defult parameters
 # Get the downsampling values for the references
 for ref_downsample in config['references'].keys():
   try: 
@@ -35,9 +42,6 @@ for ref_downsample in config['references'].keys():
     config["references"][ref_downsample]["downsample"] = {}
     config["references"][ref_downsample]['downsample']['value'] = 0
     config["references"][ref_downsample]['downsample']['stratified'] = False
-
-#func.set_ontology_parameters(config)
-print(config)
 
 #----------------------------------------------------
 #  Final rule all 
@@ -95,7 +99,7 @@ rule knit_report:
   input: 
     pred = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/{tool}/{tool}_pred.csv", 
                   folds_index = n_folds, 
-                  tool = config['tools_to_run']),
+                  tool = tools_to_run),
     consensus = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/Prediction_Summary.tsv",
                 folds_index = n_folds)
   output: 
@@ -106,7 +110,7 @@ rule knit_report:
     basedir = {workflow.basedir},
     pred_path = config['output_dir_benchmark'] + "/{reference}", 
     n_folds = config['benchmark']['n_folds'],
-    tools = config['tools_to_run'],
+    tools = tools_to_run,
     min_agree = config['consensus']['type']['majority']['min_agree'],
     ref_name = "{reference}"
   resources:
@@ -130,15 +134,15 @@ rule knit_report:
 rule consensus:
   input:
     results = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{{folds_index}}/{tool}/{tool}_pred.csv",
-                     tool=config['tools_to_run'])
+                     tool=tools_to_run)
   output:
     prediction_summary = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Prediction_Summary.tsv"
   log:
     config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Gatherpreds.log"
   params:
     basedir = {workflow.basedir},
-    tools = config['tools_to_run'],
-    consensus_tools = config['consensus']['tools'],
+    tools = tools_to_run,
+    consensus_tools = consensus_tools,
     consensus_type = 'majority',
     sample = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}",
     min_agree = config["consensus"]["type"]["majority"]["min_agree"],
@@ -164,17 +168,17 @@ rule consensus:
 
 rule train_scPred:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{fold}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{fold}/train_labels.csv"
+    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
+    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{fold}/scPred/scPred_model.Rda"
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.Rda"
   params:
     basedir = {workflow.basedir},
-    classifier = config['scPred']['classifier']
+    classifier = "{classifier}"
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{fold}/scPred/scPred.log"
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{fold}/scPred/scPred_train_benchmark.txt"
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_train_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources:
@@ -192,15 +196,16 @@ rule train_scPred:
 rule predict_scPred:
   input:
     query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred/scPred_model.Rda" 
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.Rda" 
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred/scPred_pred.csv" 
+    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_pred.csv" 
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    classifier = "{classifier}"
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred/scPred.log"
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred/scPred_predict_benchmark.txt"
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_predict_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources:
@@ -211,9 +216,15 @@ rule predict_scPred:
     {input.model} \
     {output.pred} \
     {threads} \
+    {params.classifier} \
     &> {log}
     """
 
+rule gather_scPred:
+  input:
+    expand(config['output_dir_benchmark'] + "/{{reference}}/fold{{folds_index}}/scPred_{classifier}/scPred_{classifier}_pred.csv",
+    classifier = config['scPred']['classifier'])
+    
 #----------------------------------------------------
 #   SingleR 
 #----------------------------------------------------

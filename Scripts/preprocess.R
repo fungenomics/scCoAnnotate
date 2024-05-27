@@ -109,7 +109,7 @@ if(convert_genes){
 # read query 
 for(i in 1:length(query_paths)){
   print(query_paths[i])
-  tmp = get_matrix_query(query_path = query_paths[i])
+  tmp = get_data_query(query_path = query_paths[i])
   query = names(query_paths)[i]
   print(query)
   data[[query]] = tmp

@@ -54,8 +54,7 @@ rule all:
 
 rule subset_folds:   
   input:
-    reference = lambda wildcards:config['references'][wildcards.reference]['expression'],
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    reference = lambda wildcards:config['references'][wildcards.reference]['expression']
   output:
     training_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train.csv", folds_index = n_folds),
     labfile = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train_labels.csv", folds_index = n_folds),
@@ -65,6 +64,7 @@ rule subset_folds:
     config['output_dir_benchmark'] + "/{reference}/subset_folds.log"
   params:
     basedir = {workflow.basedir},
+    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     outdir = config['output_dir_benchmark'] + "/{reference}",
     reference_name = "{reference}",
     n_folds = config['benchmark']['n_folds'],
@@ -77,7 +77,7 @@ rule subset_folds:
     """
     Rscript {params.basedir}/Scripts/benchmark/subset_folds.R \
     {input.reference} \
-    {input.labfile} \
+    {params.labfile} \
     {params.outdir} \
     {threads} \
     {params.n_folds} \

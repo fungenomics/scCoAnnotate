@@ -4,6 +4,12 @@ library(tidyverse)
 
 set.seed(1234)
 
+initial.options = commandArgs(trailingOnly = FALSE)
+file.arg.name = "--file="
+script.name = sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)]) 
+
+source(paste0(dirname(dirname(script.name)), "/Functions/functions.R"))
+
 args = commandArgs(trailingOnly = TRUE)
 ref_path = args[1]
 lab_path = args[2]
@@ -38,17 +44,17 @@ downsample_stratified = if(downsample_stratified) "label" else NULL
 print(downsample_stratified)
 print(class(downsample_stratified))
 #--------------- Data -------------------
-
 # read reference matrix 
 message('@ READ REF')
-ref = data.table::fread(ref_path, nThread=threads, header=T, data.table=F) %>%
-      column_to_rownames('V1')
+tmp <- get_data_reference(ref_path = ref_path,
+                          lab_path = lab_path)
+ref     <- tmp$exp
+labels  <- tmp$lab
+rm(tmp)
 message('@ DONE')
 
-# read reference labels
-labels = data.table::fread(lab_path, header=T, data.table=F) 
-
 if(downsample_value != 0){
+  labels$V1 <- rownames(labels)
   if(downsample_value >= 1){
     labels = labels %>%  group_by(across(all_of(downsample_stratified))) %>% 
       dplyr::slice_sample(n = downsample_value,replace = F)
@@ -57,10 +63,9 @@ if(downsample_value != 0){
       dplyr::slice_sample(prop = downsample_value,replace = F) 
   }
   ref = ref[labels$V1,]
+  #do the conversion to rownames after since the column is needed to perform downsampling
+  labels = labels %>% column_to_rownames('V1')
 }
-#do the convertion to rownames after since the column is needed to downsampling
-labels = labels %>% column_to_rownames('V1')
-
 
 # check if cell names are in the same order in labels and ref
 order = all(as.character(rownames(labels)) == as.character(rownames(ref)))

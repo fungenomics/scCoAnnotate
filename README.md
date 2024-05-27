@@ -38,7 +38,7 @@ module load scCoAnnotate/2.0
 
 ### 2. Prepare reference
 
-The input format for the references is a **cell x gene matrix** (.csv) of raw counts and a **cell x label matrix** (.csv).   
+The input format for the references could be a **cell x gene matrix** (.csv) of raw counts and a **cell x label matrix** (.csv).   
 
 Both the **cell x gene matrix** and **cell x label matrix** need the first column to be the cell names in matching order with an empty column name.
 
@@ -59,10 +59,15 @@ cell2,label1
 cell3,label3
 cell4,label2
 ```
+Also, the input format for the reference could be a **Seurat** or **SingleCellExperiment** object. 
+In the expression the path to the object should be specified (formats .rda, .rds). And in the labels the metadata column used for the labels.
+If the format for the expression is .rda or .rds it assumes that the labels is a vector where it's the column name.
+In the **Seurat** objects are compatible until v4. 
+In the **SingleCellExperiment** it assumes that the raw counts is in the 'counts' assay.
 
 ### 3. Prepare query samples
 
-The input format for the query samples is a **cell x gene matrix** (.csv) of raw counts. 
+The input format for the query samples could be a **cell x gene matrix** (.csv) of raw counts. 
 
 The first column needs to be the cell names with an empty column name.
 
@@ -74,6 +79,12 @@ cell2,0,12,56
 cell3,0,17,12
 cell4,54,20,61
 ```
+
+Also, the input format for the reference could be a **Seurat** or **SingleCellExperiment** object. 
+In the expression the path to the object should be specified (formats .rda, .rds). And in the labels the metadata column used for the labels.
+In the **Seurat** objects are compatible until v4. 
+In the **SingleCellExperiment** it assumes that the raw counts is in the 'counts' assay.
+
 
 ### 4. Prepare config file
 

@@ -1,5 +1,74 @@
 
 #-------- PREPROCESSING ------------------------------------
+# load and rename the Rdata objects
+loadRDa <- function(fileName){
+  #loads an RData file, and returns it
+  load(fileName)
+  get(ls()[ls() != "fileName"])
+}
+
+# get the expression matrix and labels from the reference. 
+# check if it's a .csv, Seurat or SingleCellExperiment object.
+get_data_reference <- function(ref_path,
+                               lab_path){
+  ref_ext <- tools::file_ext(ref_path) %>% str_to_lower
+  if(ref_ext == 'csv'){ #If the expression is csv it assumes that the labels is csv
+    if(tools::file_ext(lab_path) != 'csv'){
+      stop('@ Labels should be provided as a .csv data.frame')
+    }
+    
+    # read reference 
+    mtx = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
+    #read labels   
+    lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')  
+  } else if(ref_ext %in% c('rda','rdata','rds')){ #If the rda rdata rds it assumes that the label is a vector of column name
+    if(ref_ext %in% c('rda','rdata')){
+      sce <- loadRDa(ref_path)
+    } else if(ref_ext %in% c('rds')){
+      sce <- readRDS(ref_path)
+    }
+    if(is(sce,'Seurat')){
+      mtx <- sce@assays$RNA@counts %>% as.matrix %>% t() %>% as.data.frame()
+      lab <- data.frame(row.names = colnames(sce),
+                        label = sce@meta.data[,lab_path,drop=T])
+    } else if(class(sce) %in% c('SingleCellExperiment','LoomCellExperiment')){
+      mtx <- assay(sce,'counts') %>% as.matrix() %>% t() %>% as.data.frame()
+      lab <- data.frame(row.names = colnames(sce),
+                        label = colData(sce)[,lab_path,drop=T])
+    } else{
+      stop("@ Object is not Seurat (v4) nor SingleCellExperiment")
+    }
+  } else{
+    stop('@ Formats provided are not compatible. Acceptable formats are .csv, Seurat (v4) object, SingleCellExperiment object (.rds,.rdata)')
+  }
+  return(list(exp = mtx,
+              lab = lab)
+  )
+}
+# get the expression matrix from the query and extract them if the input is a Seurat or SingleCellExperiment object
+get_data_query <- function(query_path){
+  query_ext <- tools::file_ext(query_path) %>% str_to_lower
+  if(query_ext == 'csv'){ #If the expression is csv it assumes that the labels is csv
+    # read reference 
+    mtx = data.table::fread(query_path, header = T) %>% column_to_rownames('V1')
+  } else if(query_ext %in% c('rda','rdata','rds')){ #If the rda rdata rds it assumes that the label is a vector of column name
+    if(query_ext %in% c('rda','rdata')){
+      sce <- loadRDa(query_path)
+    } else if(query_ext %in% c('rds')){
+      sce <- readRDS(query_path)
+    }
+    if(is(sce,'Seurat')){
+      mtx <- sce@assays$RNA@counts %>% as.matrix %>% t %>% as.data.frame()
+    } else if(class(sce) %in% c('SingleCellExperiment','LoomCellExperiment')){
+      mtx <- assay(sce,'counts') %>% as.matrix() %>% t() %>% as.data.frame()
+    } else{
+      stop("@ Object is not Seurat (v4) nor SingleCellExperiment")
+    }
+  } else{
+    stop('@ Formats provided are not compatible. Acceptable formats are .csv, Seurat object, SingleCellExperiment object (.rds,.rdata)')
+  }
+  return(mtx)
+}
 
 # convert mouse to human gene names 
 mapfun = function(mousegenes){

@@ -49,7 +49,6 @@ rule all:
 rule preprocess:
   input:
     reference = lambda wildcards:config['references'][wildcards.reference]['expression'],
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     query = config['query_datasets'].values()
   output:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
@@ -59,6 +58,7 @@ rule preprocess:
     config['output_dir'] + "/model/{reference}/preprocess.log"
   params:
     basedir = {workflow.basedir},
+    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     out = config['output_dir'],
     convert_genes = lambda wildcards:config["references"][wildcards.reference]['convert_ref_mm_to_hg'],
     reference_name = "{reference}",
@@ -75,7 +75,7 @@ rule preprocess:
     "{input.query}" \
     {params.out} \
     {params.convert_genes} \
-    {input.labfile} \
+    {params.labfile} \
     {params.reference_name} \
     "{params.query_names}" \
     {params.min_cells_per_cluster} \

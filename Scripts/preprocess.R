@@ -39,14 +39,12 @@ ontology_columns = strsplit(args[12], split = ' ')[[1]]
 names(query_paths) = query_names
 
 # ----- PREPROCESS REFERENCE ----------------------
-data = list()
-
-# read reference 
-data[['ref']] = data.table::fread(ref_path, header = T) %>% column_to_rownames('V1')
-
-#read labels 
-lab = data.table::fread(lab_path, header = T) %>% column_to_rownames('V1')
-
+tmp <- get_data_reference(ref_path = ref_path,
+                          lab_path = lab_path)
+data <- list()
+data[['ref']] <- tmp$exp
+lab           <- tmp$lab
+rm(tmp)
 # downsample 
 if(downsample_value != 0){
   lab = downsample_labels(lab, downsample_per_class, downsample_value)
@@ -56,8 +54,6 @@ if(downsample_value != 0){
 if(min_cells > 0){
   lab = remove_small_clusters(lab, min_cells)
 }
-
-
 # filter reference for donwsampled cells 
 data[['ref']] = data[['ref']][rownames(lab),]
 
@@ -110,13 +106,11 @@ if(convert_genes){
 }
 
 # ----- QUERY --------------------------------
-
 # read query 
 for(i in 1:length(query_paths)){
   print(query_paths[i])
-  tmp = data.table::fread(query_paths[i], header = T) %>% column_to_rownames('V1')
+  tmp = get_matrix_query(query_path = query_paths[i])
   query = names(query_paths)[i]
-  
   print(query)
   data[[query]] = tmp
 }

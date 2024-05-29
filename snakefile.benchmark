@@ -998,6 +998,99 @@ rule predict_Seurat:
     &> {log}
     """
 
+#----------------------------------------------------
+#   scPoli
+#----------------------------------------------------
+
+rule train_scPoli:
+  input:
+    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
+    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+  output:
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_model.pkl"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_train_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scPoli/train_scPoli.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    &> {log}
+    """
+
+rule predict_scPoli:
+  input:
+    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_model.pkl"
+  output:
+    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_pred.csv"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_predict_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scPoli/predict_scPoli.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   scANVI
+#----------------------------------------------------
+
+rule train_scANVI:
+  input:
+    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
+    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+  output:
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/model.pt"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI_train_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scANVI/train_scANVI.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    &> {log}
+    """
+
+rule predict_scANVI:
+  input:
+    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/model.pt"
+  output:
+    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = config['scANVI']['threshold']
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI_predict_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scANVI/predict_scANVI.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {params.threshold} \
+    &> {log}
+    """
 
 #----------------------------------------------------
 #   The End 

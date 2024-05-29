@@ -101,4 +101,7 @@ Seurat:
   threads: 1
   nPC_computed: 50
   nPC_used: 30
+
+scANVI:
+  threshold: 0.5
 #-----------------

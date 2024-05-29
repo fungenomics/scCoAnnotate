@@ -45,6 +45,7 @@ data <- list()
 data[['ref']] <- tmp$exp
 lab           <- tmp$lab
 rm(tmp)
+
 # downsample 
 if(downsample_value != 0){
   lab = downsample_labels(lab, downsample_per_class, downsample_value)
@@ -106,11 +107,14 @@ if(convert_genes){
 }
 
 # ----- QUERY --------------------------------
+
 # read query 
 for(i in 1:length(query_paths)){
+  
   print(query_paths[i])
   tmp = get_data_query(query_path = query_paths[i])
   query = names(query_paths)[i]
+  
   print(query)
   data[[query]] = tmp
 }

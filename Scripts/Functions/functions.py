@@ -7,7 +7,6 @@ def set_gene_conversion_parameters(config):
     except:
       config["references"][ref]['convert_ref_mm_to_hg'] = False
 
-
 # set parameters related to downsampling 
 def set_downsampling_parameters(config):
   for ref in config['references'].keys():
@@ -15,7 +14,7 @@ def set_downsampling_parameters(config):
       config["references"][ref]['min_cells_per_cluster']
     except: 
       config["references"][ref]['min_cells_per_cluster'] = 0
-   
+
     try: 
       config["references"][ref]['downsample']['value']
     except: 
@@ -23,9 +22,10 @@ def set_downsampling_parameters(config):
       config["references"][ref]['downsample']['value'] = 0
 
     try:
-      config["references"][ref]['downsample']['per_class']
+      config["references"][ref]['downsample']['stratified']
     except:	
-      config["references"][ref]['downsample']['per_class'] = False
+      config["references"][ref]['downsample']['stratified'] = False
+
 
 # set parameters related to ontology 
 def set_ontology_parameters(config):
@@ -94,3 +94,4 @@ def get_consensus_tools(config):
           method = [method]
       consensus_to_run = [tool + "_" + m if tool == "scPred" else tool for tool in consensus_to_run for m in (method if tool == "scPred" else [""])]
   return(consensus_to_run)
+

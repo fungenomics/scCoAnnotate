@@ -20,28 +20,15 @@ n_folds = list(range(1, config['benchmark']['n_folds']+1))
 now = datetime.now()
 dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
+# set defult parameters
+func.set_downsampling_parameters(config)
+func.set_ontology_parameters(config)
+
+#print(config )
+
 # get tools to run
 tools_to_run = func.get_tools_to_run(config)
 consensus_tools = func.get_consensus_tools(config)
-
-print(tools_to_run)
-print(consensus_tools)
-# set defult parameters
-# Get the downsampling values for the references
-for ref_downsample in config['references'].keys():
-  try: 
-    config["references"][ref_downsample]['min_cells_per_cluster']
-  #If was not specified set to default (0)
-  except: 
-    config["references"][ref_downsample]['min_cells_per_cluster'] = 0
-  try: 
-    config["references"][ref_downsample]['downsample']['value']
-    config["references"][ref_downsample]['downsample']['stratified']
-  #If was not specified set to default (value = 0, stratified = False)
-  except: 
-    config["references"][ref_downsample]["downsample"] = {}
-    config["references"][ref_downsample]['downsample']['value'] = 0
-    config["references"][ref_downsample]['downsample']['stratified'] = False
 
 #----------------------------------------------------
 #  Final rule all 
@@ -112,7 +99,8 @@ rule knit_report:
     n_folds = config['benchmark']['n_folds'],
     tools = tools_to_run,
     min_agree = config['consensus']['type']['majority']['min_agree'],
-    ref_name = "{reference}"
+    ref_name = "{reference}",
+    accuracy_metric = "F1"
   resources:
   shell:
     """
@@ -122,7 +110,8 @@ rule knit_report:
                           ref_name = '{params.ref_name}',
                           pred_path = '{params.pred_path}',
                           min_agree = '{params.min_agree}',
-                          fold = '{params.n_folds}'),
+                          fold = '{params.n_folds}',
+                          accuracy_metric = '{params.accuracy_metric}'),
             output_file = '{output.report_path}')" \
     &> {log}
     """

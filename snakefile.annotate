@@ -28,6 +28,7 @@ consensus_run = func.get_consensus_methods(config)
 tools_to_run = func.get_tools_to_run(config)
 consensus_tools = func.get_consensus_tools(config)
 print(consensus_tools)
+
 # set defult parameters
 func.set_downsampling_parameters(config)
 func.set_ontology_parameters(config)
@@ -69,7 +70,7 @@ rule preprocess:
     query_names = samples,
     min_cells_per_cluster = lambda wildcards:config["references"][wildcards.reference]['min_cells_per_cluster'],
     downsample_value = lambda wildcards:config["references"][wildcards.reference]['downsample']['value'],
-    downsample_per_class = lambda wildcards:config["references"][wildcards.reference]['downsample']['per_class'],
+    downsample_per_class = lambda wildcards:config["references"][wildcards.reference]['downsample']['stratified'],
     ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
     ontology_column = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"]
   shell:
@@ -109,11 +110,12 @@ rule consensus:
     consensus_type = "{consensus_type}",
     sample = config["output_dir"] + "/{sample}/{reference}/",
     min_agree = config["consensus"]["type"]["majority"]["min_agree"],
-    f1_file = config["output_dir_benchmark"] + "/{reference}/report/metrics.csv",
+    metrics_file = config["output_dir_benchmark"] + "/{reference}/report/metrics.csv",
     CAWPE_mode = config["consensus"]["type"]["CAWPE"]["mode"],
     alpha = config["consensus"]["type"]["CAWPE"]["alpha"],
     ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"], 
-    ontology_label = "{ontology}"
+    ontology_label = "{ontology}",
+    accuracy_metric = config["consensus"]["type"]["CAWPE"]["accuracy_metric"]
   shell:
     """
     Rscript {params.basedir}/Scripts/calculate_consensus.R \
@@ -125,9 +127,10 @@ rule consensus:
     "{params.min_agree}" \
     "{params.ontology_label}" \
     "{params.ontology_path}" \
-    {params.f1_file} \
+    {params.metrics_file} \
     "{params.CAWPE_mode}" \
     "{params.alpha}" \
+    "{params.accuracy_metric}" \
     &> {log}
     """  
 

@@ -91,13 +91,6 @@ model.train(
 # soft True to get the probability matrix (if I put false it only returns the label where it gets the highest prob)
 pred_proba = model.predict(soft = True)                                   
 
-print('@ WRITTING PREDICTIONS')
-pred_df = pd.DataFrame({'cell': query.obs_names,
-                       'scANVI': pred_proba['labels']['preds']})
-
-df = pd.DataFrame(pred_proba,
-                  index = query.obs_names)
-
 # Create a new column 'max_column' with the column name containing the maximum value for each row
 df['pred_label'], df['proba_label'] = zip(*df.apply(get_max_column_and_value, axis=1))
 

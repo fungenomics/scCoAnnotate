@@ -48,7 +48,7 @@ rm(tmp)
 
 # downsample 
 if(downsample_value != 0){
-  lab = downsample_labels(lab, downsample_per_class, downsample_value)
+  lab = downsample(lab, downsample_per_class, downsample_value)
 }
 
 # remove small clusters 

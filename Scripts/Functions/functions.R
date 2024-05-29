@@ -109,7 +109,7 @@ mapfun = function(mousegenes){
     return(out)
 }
 
-downsample = function(labels, downsample_per_class, downsample_value = 1){
+downsample = function(labels, downsample_stratified, downsample_value = 1){
   
   downsample_stratified = if(downsample_stratified) "label" else NULL
   

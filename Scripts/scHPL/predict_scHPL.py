@@ -61,7 +61,7 @@ sc.pp.log1p(query)
 
 #----------- Predict scHPL --------
 
-pred = predict.predict_labels(testdata= query.X,
+pred,prob = predict.predict_labels(testdata= query.X,
                               tree = scHPL_model,
                               threshold = threshold)
 
@@ -71,7 +71,8 @@ pred_labels = pd.DataFrame({'cell': query.obs_names, 'scHPL': pred})
 pred_labels.to_csv(out_path, index = False)
 print('@ DONE')
 #----------------------------------------
-
+### The prob only return the probabilities of the label assigned, so it's not usefull for CAWPE.
+## Then we keep doing the same procedure of making the binary matrix.
 # make binary output matrix
 pred_labels['prob'] = 1
 pred_labels = pred_labels.pivot_table(index=pred_labels.columns[0], columns='scHPL', values='prob', fill_value=0).reset_index()

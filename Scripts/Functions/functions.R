@@ -37,7 +37,8 @@ loadRDa <- function(fileName){
 # get the expression matrix and labels from the reference. 
 # check if it's a .csv, Seurat or SingleCellExperiment object.
 get_data_reference <- function(ref_path,
-                               lab_path){
+                               lab_path,
+                               batch_path = NULL){
   ref_ext <- tools::file_ext(ref_path) %>% str_to_lower
   if(ref_ext == 'csv'){ #If the expression is csv it assumes that the labels is csv
     if(tools::file_ext(lab_path) != 'csv'){
@@ -58,10 +59,20 @@ get_data_reference <- function(ref_path,
       mtx <- sce@assays$RNA@counts %>% as.matrix %>% t() %>% as.data.frame()
       lab <- data.frame(row.names = colnames(sce),
                         label = sce@meta.data[,lab_path,drop=T])
+      
+      if(!is.null(batch_path)){
+        lab$batch <- sce@meta.data[,batch_path,drop=T]
+      }
+      
     } else if(class(sce) %in% c('SingleCellExperiment','LoomCellExperiment')){
       mtx <- assay(sce,'counts') %>% as.matrix() %>% t() %>% as.data.frame()
       lab <- data.frame(row.names = colnames(sce),
                         label = colData(sce)[,lab_path,drop=T])
+      
+      if(!is.null(batch_path)){
+        lab$batch <- colData(sce)[,batch_path,drop=T]
+      }
+      
     } else{
       stop("@ Object is not Seurat (v4) nor SingleCellExperiment")
     }
@@ -122,7 +133,7 @@ downsample = function(labels, downsample_stratified, downsample_value = 1){
   }else{
       labels = labels %>% 
                rownames_to_column('cell') %>%
-               roup_by(across(all_of(downsample_stratified))) %>% 
+               group_by(across(all_of(downsample_stratified))) %>% 
                dplyr::slice_sample(prop = downsample_value,replace = F) %>%
                column_to_rownames('cell')
   }
@@ -232,13 +243,11 @@ CAWPE = function(x, alpha = 4){
 
 
 get_cawpe_columns = function(CAWPE_type){
-  for(CW_tp in CAWPE_type){
     if(CW_tp == 'CAWPE_T'){
       cols = c('tool')
     }else if(CW_tp == 'CAWPE_CT'){
       cols = c('tool', 'class')
     }
-  } 
   return(cols) 
 }
 

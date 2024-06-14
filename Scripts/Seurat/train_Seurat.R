@@ -37,14 +37,27 @@ if(!order){
 # make Seurat object (transpose ref first)
 ref = transposeBigData(ref, blocksize = 10000)
 seurat_ref = CreateSeuratObject(counts = ref,
-                            meta.data = labels)
+                                meta.data = labels)
 
+
+# if('batch' %in% colnames(seurat_ref@meta.data)){
+#   seurat_ref[["RNA"]] <- base::split(seurat_ref[['RNA']],
+#                                f = seurat_ref$batch)
+# }
 # Normalize seurat using default "LogNormalize" method
 seurat_ref = NormalizeData(seurat_ref)
 seurat_ref = FindVariableFeatures(seurat_ref)
 seurat_ref = ScaleData(seurat_ref)
 seurat_ref = RunPCA(seurat_ref,
                     npcs = nPC_computed)
+
+# ## If the batch on the reference were specified, performs an integration
+# seurat_ref <- IntegrateLayers(object = seurat_ref,
+#                               method = FastMNNIntegration,
+#                               orig.reduction = "pca",
+#                               new.reduction = "integrated.cca",
+#                               verbose = TRUE)
+
 
 # save the pre-processed object
 message('@ SAVE MODEL')

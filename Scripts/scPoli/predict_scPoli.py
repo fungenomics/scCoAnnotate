@@ -73,7 +73,7 @@ sc.pp.normalize_total(query, target_sum=1e4)
 # Logarithmize the data:
 sc.pp.log1p(query)
 
-query.obs['condition'] = 'query'
+query.obs['batch'] = 'query'
 query.obs['labels'] = 'Unknown'
 
 #----------- Predict scPoli --------

@@ -21,6 +21,7 @@ now = datetime.now()
 dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
 # set defult parameters
+func.set_reference_batch_parameters(config)
 func.set_downsampling_parameters(config)
 func.set_ontology_parameters(config)
 
@@ -56,6 +57,7 @@ rule subset_folds:
   params:
     basedir = {workflow.basedir},
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
+    batch_path = lambda wildcards:config['references'][wildcards.reference]['batch'],
     outdir = config['output_dir_benchmark'] + "/{reference}",
     reference_name = "{reference}",
     n_folds = config['benchmark']['n_folds'],
@@ -75,6 +77,7 @@ rule subset_folds:
     {params.min_cells_per_cluster} \
     {params.downsample_value} \
     {params.downsample_stratified} \
+    {params.batch_path} \
     &> {log}
     """
 
@@ -995,6 +998,61 @@ rule predict_Seurat:
     {output.pred} \
     {threads} \
     {params.nPC_used} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   Symphony 
+#----------------------------------------------------
+
+rule train_Symphony:
+  input:
+    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
+    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+  output:
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_model.Rda"
+  params:
+    basedir = {workflow.basedir},
+    nPC_computed = config['Symphony']['nPC_computed']
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_train_benchmark.txt"
+  threads: 
+    config['Symphony']['threads']
+  resources:
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/Symphony/train_Symphony.R \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.nPC_computed} \
+    &> {log}
+    """
+rule predict_Symphony:
+  input:
+    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
+    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_model.Rda"
+  output:
+    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+  log:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony.log"
+  benchmark:
+    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_predict_benchmark.txt"
+  threads: 
+    config['Symphony']['threads']
+  resources:
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/Symphony/predict_Symphony.R \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {threads} \
     &> {log}
     """
 

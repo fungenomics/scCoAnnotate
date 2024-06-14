@@ -43,25 +43,32 @@ order = all(labels.index == ref.index)
 if not order:
   sys.exit("@ Order of cells in reference and labels do not match")
     
+if 'batch' not in labels.columns:
+  ## batch_key could not be None
+  labels['batch'] = 'reference'
+else:
+  ## Just in case I add the prefix to be aware that is from the reference
+  labels['batch'] = 'ref_' + labels['batch']
+  print('@ Running with batches')
+
+
 adata = ad.AnnData(X = ref,
                    obs = dict(obs_names=ref.index.astype(str),
-                              labels=labels.label),
+                              labels=labels.label,
+                              batch = labels.batch),
                    var = dict(var_names=ref.columns.astype(str))
                    )
 
 ## This step is necessary according to the authors
 adata = remove_sparsity(adata)
 
-## condition_key could not be None
-adata.obs['condition'] = 'reference'
-
-condition_key = 'condition'
+batch_key = 'batch'
 cell_type_key = 'labels'
 
 #------------- Train scANVI -------------
 # The data should be raw for scANVI and scVI
 sca.models.SCVI.setup_anndata(adata,
-                              batch_key=condition_key,
+                              batch_key=batch_key,
                               labels_key=cell_type_key)
 
 vae = sca.models.SCVI(

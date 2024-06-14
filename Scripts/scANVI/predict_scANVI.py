@@ -69,7 +69,7 @@ query = ad.AnnData(X = query,
 ## This step is necessary according to the authors
 query = remove_sparsity(query)
 
-query.obs['condition'] = 'query'
+query.obs['batch'] = 'query'
 query.obs['labels'] = "Unknown"
 
 #----------- Predict scANVI --------
@@ -92,15 +92,15 @@ model.train(
 pred_proba = model.predict(soft = True)                                   
 
 # Create a new column 'max_column' with the column name containing the maximum value for each row
-df['pred_label'], df['proba_label'] = zip(*df.apply(get_max_column_and_value, axis=1))
+pred_proba['pred_label'], pred_proba['proba_label'] = zip(*pred_proba.apply(get_max_column_and_value, axis=1))
 
 # Create a new column 'unknown_max_column' to store 'max_column' as 'unknown' if 'max_value' is lower than the threshold
-df['pred_label_reject'] = df.apply(lambda row: 'Unknown' if row['proba_label'] < threshold else row['pred_label'], axis=1)
+pred_proba['pred_label_reject'] = pred_proba.apply(lambda row: 'Unknown' if row['proba_label'] < threshold else row['pred_label'], axis=1)
 
 
 print('@ WRITTING PREDICTIONS')
-pred_df = pd.DataFrame({'cell': df.index,
-                       'scANVI': df.pred_label_reject})
+pred_df = pd.DataFrame({'cell': pred_proba.index,
+                       'scANVI': pred_proba.pred_label_reject})
 pred_df.to_csv(out_path,
                index = False)
 print('@ DONE')
@@ -111,7 +111,7 @@ print('@ DONE')
 # Save the prob matrix
 print('@ WRITTING PROB MATRIX ')
 filename = out_other_path + '/scANVI_pred_score.csv'
-df.to_csv(filename,
+pred_proba.to_csv(filename,
           index=True) #True because we want to conserve the rownames (cells)
 print('@ DONE ')
 

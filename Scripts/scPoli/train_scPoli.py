@@ -39,13 +39,23 @@ labels = pd.read_csv(lab_path,
 # check if cell names are in the same order in labels and ref
 order = all(labels.index == ref.index)
 
+
 # throw error if order is not the same 
 if not order:
   sys.exit("@ Order of cells in reference and labels do not match")
-    
+
+if 'batch' not in labels.columns:
+  ## batch_key could not be None
+  labels['batch'] = 'reference'
+else:
+  ## Just in case I add the prefix to be aware that is from the reference
+  labels['batch'] = 'ref_' + labels['batch']
+  print('@ Running with batches')
+  
 adata = ad.AnnData(X = ref,
                    obs = dict(obs_names=ref.index.astype(str),
-                              labels=labels.label),
+                              labels=labels.label,
+                              batch = labels.batch),
                    var = dict(var_names=ref.columns.astype(str))
                    )
 
@@ -59,10 +69,7 @@ sc.pp.normalize_total(adata, target_sum=1e4)
 # Logarithmize the data:
 sc.pp.log1p(adata)
 
-## condition_key could not be None
-adata.obs['condition'] = 'reference'
-
-condition_key = 'condition'
+batch_key = 'batch'
 cell_type_key = 'labels'
 early_stopping_kwargs = {
     "early_stopping_metric": "val_prototype_loss",
@@ -76,7 +83,7 @@ early_stopping_kwargs = {
 #------------- Train scPoli -------------
 scpoli_model = scPoli(
     adata=adata,
-    condition_keys=condition_key,
+    condition_keys=batch_key,
     cell_type_keys=cell_type_key,
     embedding_dims=5,
     recon_loss='nb',

@@ -27,6 +27,7 @@ CAWPE_type = strsplit(args[10], split = ' ')[[1]]
 alpha = as.numeric(strsplit(args[11], split = ' ')[[1]])
 metric = args[12]
 
+print(CAWPE_type)
 
 
 if(consensus_tools[1] == 'all'){
@@ -45,7 +46,7 @@ consensus = read_prediction_files(pred_path, tools = tools)
 print(head(consensus))
 
 # read ontology
-ontology = data.table::fread(ontology_path, sep = ",") 
+ontology = data.table::fread(ontology_path, sep = ",") %>% as.data.frame
 
 check_ontology_hierarchy(ontology)
 
@@ -83,12 +84,15 @@ if(consensus_type == 'majority' & all(min_agree != 0)){
                           recursive = T, 
                           full.names = T)
     
+   for(CW_tp in CAWPE_type){
     # get the column names to group by (just tool or tool + label)
-    cols = get_cawpe_columns(CAWPE_type)
+    cols = get_cawpe_columns(CW_tp)
     
     # read metrics table
     print(metric)
-    metrics_file = data.table::fread(metrics_path, check.names = F, sep = ",")
+    metrics_file = data.table::fread(metrics_path,
+                                     check.names = F,
+                                     sep = ",")
 
     print(head(metrics_file))
     
@@ -111,12 +115,11 @@ if(consensus_type == 'majority' & all(min_agree != 0)){
      
     print(head(metrics_file))
 
+    for(aph in alpha){
     # read probability matrixes
     data = lapply(prob_files, function(f){data.table::fread(f, check.names = F) %>% 
-                                          rename(cellname = V1) %>% 
-                                          mutate(tool = basename(dirname(f)))})
-
-    for(aph in alpha){
+          rename(cellname = V1) %>% 
+          mutate(tool = basename(dirname(f)))})
 
       # merge prob matrices and join with metric scores
       data = bind_rows(data) %>% 
@@ -161,25 +164,24 @@ if(consensus_type == 'majority' & all(min_agree != 0)){
        
        print('here')
       
-      consensus[, paste0("CAWPE_",CAWPE_type,"_",aph)]         = data[consensus$cellname, "CAWPE", drop=T]
-      consensus[, paste0("CAWPE_entropy_",CAWPE_type,"_",aph)] = data[consensus$cellname, "entropy", drop=T]
-      consensus[, paste0("Consensus_",CAWPE_type,"_",aph)]     = data[consensus$cellname, "Consensus", drop=T]
+      consensus[, paste0("CAWPE_",CW_tp,"_",aph)]         = data[consensus$cellname, "CAWPE", drop=T]
+      consensus[, paste0("CAWPE_entropy_",CW_tp,"_",aph)] = data[consensus$cellname, "entropy", drop=T]
+      consensus[, paste0("Consensus_",CW_tp,"_",aph)]     = data[consensus$cellname, "Consensus", drop=T]
 
      
      }
-       
-    print("@Modifying the original tool labels to ontology")
-    consensus[,tools] = lapply(consensus[,tools,drop=F],
-                                FUN = function(x){
-                                  apply_ontology(df_ontology = ontology,
-                                                 pred = x,
-                                                 from = 'label',
-                                                 to = ontology_column)
-                                }
-    )
-
-
+   }
 }
+
+print("@Modifying the original tool labels to ontology")
+consensus[,tools] = lapply(consensus[,tools,drop=F],
+                           FUN = function(x){
+                             apply_ontology(df_ontology = ontology,
+                                            pred = x,
+                                            from = 'label',
+                                            to = ontology_column)
+                           }
+)
 
 data.table::fwrite(consensus, summary_path, sep = '\t')
 

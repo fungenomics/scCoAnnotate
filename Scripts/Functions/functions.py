@@ -7,6 +7,14 @@ def set_gene_conversion_parameters(config):
     except:
       config["references"][ref]['convert_ref_mm_to_hg'] = False
 
+# set parameters related to batch 
+def set_reference_batch_parameters(config):
+  for ref in config['references'].keys():
+    try:
+      config["references"][ref]['batch']
+    except:
+      config["references"][ref]['batch'] = None
+
 # set parameters related to downsampling 
 def set_downsampling_parameters(config):
   for ref in config['references'].keys():

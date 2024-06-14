@@ -38,9 +38,16 @@ ontology_columns = strsplit(args[12], split = ' ')[[1]]
 
 names(query_paths) = query_names
 
+batch_path = args[13]
+if(batch_path == 'None'){
+  batch_path = NULL
+}
+
+print(batch_path)
 # ----- PREPROCESS REFERENCE ----------------------
 tmp <- get_data_reference(ref_path = ref_path,
-                          lab_path = lab_path)
+                          lab_path = lab_path,
+                          batch_path = batch_path)
 data <- list()
 data[['ref']] <- tmp$exp
 lab           <- tmp$lab
@@ -59,7 +66,9 @@ if(min_cells > 0){
 data[['ref']] = data[['ref']][rownames(lab),]
 
 # save downsampled lables 
-save.df <- data.frame(cells= rownames(lab), label= lab$label)
+save.df <- data.frame(cells= rownames(lab), 
+                      lab)
+
 colnames(save.df)[1] <- ""
 
 data.table::fwrite(save.df,

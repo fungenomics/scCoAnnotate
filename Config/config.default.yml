@@ -104,4 +104,8 @@ Seurat:
 
 scANVI:
   threshold: 0.5
+  
+Symphony:
+  threads: 1
+  nPC_computed: 50
 #-----------------

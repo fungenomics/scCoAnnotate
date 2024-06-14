@@ -41,47 +41,51 @@ if(is.na(downsample_stratified)){
 }
 downsample_stratified = if(downsample_stratified) "label" else NULL
 
+batch_path = args[9]
+if(batch_path == 'None'){
+  batch_path = NULL
+}
+
+print(batch_path)
 print(downsample_stratified)
 print(class(downsample_stratified))
 #--------------- Data -------------------
 # read reference matrix 
 message('@ READ REF')
 tmp <- get_data_reference(ref_path = ref_path,
-                          lab_path = lab_path)
+                          lab_path = lab_path,
+                          batch_path = batch_path)
 ref     <- tmp$exp
 labels  <- tmp$lab
 rm(tmp)
 message('@ DONE')
 
+# downsample 
 if(downsample_value != 0){
-  labels$V1 <- rownames(labels)
-  if(downsample_value >= 1){
-    labels = labels %>%  group_by(across(all_of(downsample_stratified))) %>% 
-      dplyr::slice_sample(n = downsample_value,replace = F)
-  } else{
-    labels = labels %>% group_by(across(all_of(downsample_stratified))) %>% 
-      dplyr::slice_sample(prop = downsample_value,replace = F) 
-  }
-  ref = ref[labels$V1,]
-  #do the conversion to rownames after since the column is needed to perform downsampling
-  labels = labels %>% column_to_rownames('V1')
+  labels = downsample(labels, downsample_per_class, downsample_value)
 }
 
+# remove small clusters 
+if(min_cells > 0){
+  labels = remove_small_clusters(labels, min_cells)
+}
+
+ref =  ref[rownames(labels),]
+
+# save downsampled lables 
+save.df <- data.frame(cells= rownames(labels), 
+                      labels)
+
+colnames(save.df)[1] <- ""
+
+data.table::fwrite(save.df,
+                   file = paste0(out_path,'/downsampled_reference_labels.csv'),
+                   col.names = T,
+                   row.names=F,
+                   sep = ",")
+rm(save.df)
 # check if cell names are in the same order in labels and ref
 order = all(as.character(rownames(labels)) == as.character(rownames(ref)))
-
-if(min_cells > 0){
-  rmv_labels = names(which(table(labels$label) < min_cells))
-  labels = labels %>% filter((!label %in% rmv_labels))
-  message(paste0(paste0(rmv_labels,collapse = '-'),' classes were remove because of lower number of cells (< ',as.character(min_cells),')'))
-  #filtering the cells from the filtered classes
-  ref = ref[rownames(labels),]
-}
-
-data.table::fwrite(data.frame(cells= rownames(labels),
-                              label= labels$label),
-                   file = paste0(out_path,'/downsampled_reference_labels.csv'), sep = ',')
-
 # throw error if order is not the same 
 if(!order){
     stop("@ Order of cells in reference and labels do not match")

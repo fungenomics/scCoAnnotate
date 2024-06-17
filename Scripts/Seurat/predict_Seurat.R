@@ -1,5 +1,5 @@
 # load libraries and arguments 
-library(tidyverse)
+library(tibble)
 library(data.table)
 library(Seurat)
 library(WGCNA)
@@ -13,7 +13,7 @@ model_path = args[2]
 pred_path = args[3]
 threads = as.numeric(args[4])
 nPC_used = as.numeric(args[5])
-
+integration_method <- args[6]
 # get path for other output
 out_path = dirname(pred_path)
 
@@ -30,15 +30,26 @@ message('@ LOAD MODEL')
 load(model_path)
 message('@ DONE')
 
+pca.use <- 'pca'
+if('integrated.dim' %in% names(seurat_ref@reductions)){
+  message('@Using integration')
+  pca.use <- 'integrated.dim'
+}
+
 # Transpose query 
 query = transposeBigData(query, blocksize = 10000)
 seurat_query = CreateSeuratObject(counts = query)
 
 # Normalize seurat using default "LogNormalize" method
 seurat_query = NormalizeData(seurat_query)
-seurat_query.anchors <- FindTransferAnchors(reference = seurat_ref, query = seurat_query, dims = 1:nPC_used,
-                                        reference.reduction = "pca")
-predictions <- TransferData(anchorset = seurat_query.anchors, refdata = seurat_ref$label, dims = 1:nPC_used)
+seurat_query.anchors <- FindTransferAnchors(reference = seurat_ref,
+                                            query = seurat_query,
+                                            dims = 1:nPC_used,
+                                            reference.reduction = pca.use)
+
+predictions <- TransferData(anchorset = seurat_query.anchors,
+                            refdata = seurat_ref$label,
+                            dims = 1:nPC_used)
 
 # extract predictions table and format
 message('@ FORMATTING PREDICTIONS')

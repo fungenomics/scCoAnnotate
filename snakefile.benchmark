@@ -956,7 +956,8 @@ rule train_Seurat:
     model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_model.Rda"
   params:
     basedir = {workflow.basedir},
-    nPC_computed = config['Seurat']['nPC_computed']
+    nPC_computed = config['Seurat']['nPC_computed'],
+    integration_method = config['Seurat']['integration_method']
   log:
     config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat.log"
   benchmark:
@@ -966,14 +967,18 @@ rule train_Seurat:
   resources:
   shell:
     """
+    source /opt/conda/etc/profile.d/conda.sh && conda activate seurat5 && \
     Rscript {params.basedir}/Scripts/Seurat/train_Seurat.R \
     {input.reference} \
     {input.labfile} \
     {output.model} \
     {threads} \
     {params.nPC_computed} \
-    &> {log}
+    {params.integration_method} \
+    &> {log} \
+    conda deactivate
     """
+    
 rule predict_Seurat:
   input:
     query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
@@ -992,13 +997,15 @@ rule predict_Seurat:
   resources:
   shell:
     """
+    source /opt/conda/etc/profile.d/conda.sh && conda activate seurat5 && \
     Rscript {params.basedir}/Scripts/Seurat/predict_Seurat.R \
     {input.query} \
     {input.model} \
     {output.pred} \
     {threads} \
     {params.nPC_used} \
-    &> {log}
+    &> {log} \
+    conda deactivate
     """
 
 #----------------------------------------------------

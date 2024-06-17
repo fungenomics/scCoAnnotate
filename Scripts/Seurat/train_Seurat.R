@@ -1,5 +1,5 @@
 # load libraries and arguments 
-library(tidyverse)
+library(tibble)
 library(data.table)
 library(Seurat)
 library(WGCNA)
@@ -13,6 +13,7 @@ lab_path = args[2]
 out_path = args[3]
 threads = as.numeric(args[4])
 nPC_computed = as.numeric(args[5])
+integration_method <- args[6]
 
 #--------------- Data -------------------
 # read reference matrix and transpose  
@@ -27,7 +28,7 @@ labels = data.table::fread(lab_path, header=T, data.table=F) %>%
 
 
 # check if cell names are in the same order in labels and ref
-order = all(as.character(rownames(labels)) == as.character(rownames(ref)))
+  order = all(as.character(rownames(labels)) == as.character(rownames(ref)))
 
 # throw error if order is not the same 
 if(!order){
@@ -40,10 +41,13 @@ seurat_ref = CreateSeuratObject(counts = ref,
                                 meta.data = labels)
 
 
-# if('batch' %in% colnames(seurat_ref@meta.data)){
-#   seurat_ref[["RNA"]] <- base::split(seurat_ref[['RNA']],
-#                                f = seurat_ref$batch)
-# }
+if('batch' %in% colnames(seurat_ref@meta.data)){
+  message('Running with batches')
+  seurat_ref$batch <- paste0('ref_',seurat_ref$batch)
+  seurat_ref[["RNA"]] <- base::split(seurat_ref[['RNA']],
+                               f = seurat_ref$batch)
+}
+
 # Normalize seurat using default "LogNormalize" method
 seurat_ref = NormalizeData(seurat_ref)
 seurat_ref = FindVariableFeatures(seurat_ref)
@@ -51,14 +55,17 @@ seurat_ref = ScaleData(seurat_ref)
 seurat_ref = RunPCA(seurat_ref,
                     npcs = nPC_computed)
 
-# ## If the batch on the reference were specified, performs an integration
-# seurat_ref <- IntegrateLayers(object = seurat_ref,
-#                               method = FastMNNIntegration,
-#                               orig.reduction = "pca",
-#                               new.reduction = "integrated.cca",
-#                               verbose = TRUE)
+if('batch' %in% colnames(seurat_ref@meta.data)){
+  message(paste0('@Integrating using ',integration_method))
+  # ## If the batch on the reference were specified, performs an integration
+  seurat_ref <- IntegrateLayers(object = seurat_ref,
+                                method = integration_method,
+                                orig.reduction = "pca",
+                                new.reduction = 'integrated.dim',
+                                verbose = TRUE)
+}
 
-
+## If integration were done the 'integrated.cca' will exist in the object
 # save the pre-processed object
 message('@ SAVE MODEL')
 save(seurat_ref,
@@ -66,4 +73,3 @@ save(seurat_ref,
 message('@ DONE')
 
 #----------------------------------------
-

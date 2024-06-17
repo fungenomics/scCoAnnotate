@@ -32,7 +32,7 @@ print(consensus_tools)
 # set defult parameters
 func.set_reference_batch_parameters(config)
 func.set_downsampling_parameters(config)
-func.set_ontology_parameters(config)
+func.set_ontology_parameters(config, config["output_dir"])
 func.set_gene_conversion_parameters(config)
 
 print(config)

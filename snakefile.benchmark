@@ -23,7 +23,7 @@ dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 # set defult parameters
 func.set_reference_batch_parameters(config)
 func.set_downsampling_parameters(config)
-func.set_ontology_parameters(config)
+func.set_ontology_parameters(config, config["output_dir_benchmark"])
 
 #print(config )
 

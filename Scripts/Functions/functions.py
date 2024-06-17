@@ -36,7 +36,7 @@ def set_downsampling_parameters(config):
 
 
 # set parameters related to ontology 
-def set_ontology_parameters(config):
+def set_ontology_parameters(config, path):
   import pandas as pd
   
   for ref in config['references'].keys():
@@ -53,7 +53,7 @@ def set_ontology_parameters(config):
 
     except: 
       config["references"][ref]["ontology"] = {}
-      config["references"][ref]["ontology"]["ontology_path"] = config['output_dir'] + "/model/" + ref + "/ontology/ontology.csv"
+      config["references"][ref]["ontology"]["ontology_path"] = path + "/model/" + ref + "/ontology/ontology.csv"
       config["references"][ref]["ontology"]["ontology_column"] = ['label']
       continue 
     

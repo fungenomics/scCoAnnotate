@@ -975,7 +975,7 @@ rule train_Seurat:
     {threads} \
     {params.nPC_computed} \
     {params.integration_method} \
-    &> {log} \
+    &> {log} && \
     conda deactivate
     """
     
@@ -1004,7 +1004,7 @@ rule predict_Seurat:
     {output.pred} \
     {threads} \
     {params.nPC_used} \
-    &> {log} \
+    &> {log} && \
     conda deactivate
     """
 

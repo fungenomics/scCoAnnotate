@@ -1195,5 +1195,61 @@ rule predict_scANVI:
     """
 
 #----------------------------------------------------
+#   CellBlast
+#----------------------------------------------------
+
+rule train_CellBlast:
+  input:
+    reference = config['output_dir'] + "/model/{reference}/expression.csv",
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
+  output:
+    model = config['output_dir'] + "/model/{reference}/CellBlast/models/ref.h5ad"
+  params:
+    basedir = {workflow.basedir},
+    n_models = config['CellBlast']['n_models']
+  log:
+    config['output_dir'] + "/model/{reference}/CellBlast/CellBlast.log"
+  benchmark:
+    config['output_dir'] + "/model/{reference}/CellBlast/CellBlast_train_benchmark.txt"
+  threads: 
+    config['CellBlast']['threads']
+  shell:
+    """
+    python {params.basedir}/Scripts/CellBlast/train_CellBlast.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.n_models} \
+    &> {log}
+    """
+
+rule predict_CellBlast:
+  input:
+    query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
+    model = config['output_dir'] + "/model/{reference}/CellBlast/models/ref.h5ad"
+  output:
+    pred = config['output_dir'] + "/{sample}/{reference}/CellBlast/CellBlast_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = config['CellBlast']['threshold']
+  log:
+    config['output_dir'] + "/{sample}/{reference}/CellBlast/CellBlast.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/{reference}/CellBlast/CellBlast_predict_benchmark.txt"
+  threads: 
+    config['CellBlast']['threads']
+  shell:
+    """
+    python {params.basedir}/Scripts/CellBlast/predict_CellBlast.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {params.threshold} \
+    {threads} \
+    &> {log}
+    """
+
+#----------------------------------------------------
 #   The End 
 #----------------------------------------------------

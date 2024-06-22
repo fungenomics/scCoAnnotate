@@ -109,4 +109,9 @@ scANVI:
 Symphony:
   threads: 1
   nPC_computed: 50
+
+CellBlast:
+  threads: 1
+  threshold: 0.5
+  n_models: 4
 #-----------------

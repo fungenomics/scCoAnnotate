@@ -32,9 +32,9 @@ print(consensus_tools)
 # set defult parameters
 func.set_reference_batch_parameters(config)
 func.set_downsampling_parameters(config)
-func.set_ontology_parameters(config, config["output_dir"])
+func.set_ontology_parameters(config, mode = 'annotation')
 func.set_gene_conversion_parameters(config)
-
+func.set_benchmark_directory(config, mode = 'annotation')
 print(config)
 
 #----------------------------------------------------
@@ -113,7 +113,7 @@ rule consensus:
     consensus_type = "{consensus_type}",
     sample = config["output_dir"] + "/{sample}/{reference}/",
     min_agree = config["consensus"]["type"]["majority"]["min_agree"],
-    metrics_file = config["output_dir_benchmark"] + "/{reference}/report/metrics.csv",
+    metrics_file =  lambda wildcards:(f'{config["references"][wildcards.reference]["output_dir_benchmark"]}/'f'{wildcards.reference}/report/metrics_label.csv'),
     CAWPE_mode = config["consensus"]["type"]["CAWPE"]["mode"],
     alpha = config["consensus"]["type"]["CAWPE"]["alpha"],
     ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"], 

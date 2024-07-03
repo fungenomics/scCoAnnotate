@@ -23,22 +23,32 @@ dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 # set defult parameters
 func.set_reference_batch_parameters(config)
 func.set_downsampling_parameters(config)
-func.set_ontology_parameters(config, config["output_dir_benchmark"])
 
-#print(config )
+func.set_ontology_parameters(config,mode = 'benchmarking')
 
 # get tools to run
 tools_to_run = func.get_tools_to_run(config)
 consensus_tools = func.get_consensus_tools(config)
 
+func.set_benchmark_directory(config,mode = 'benchmarking')
+print(config)
+
 #----------------------------------------------------
 #  Final rule all 
 #----------------------------------------------------
 
+def all_function():
+    return [
+        f"{output_dir_benchmark}/{reference}/report/{dt_string}.benchmark_report_{ontology}.html"
+        for reference in config['references'].keys()
+        for output_dir_benchmark in [config["references"][reference]["output_dir_benchmark"]]
+        for ontology in config["references"][reference]["ontology"]["ontology_column"]
+    ]
+    
+print(all_function())
 rule all:
   input: 
-      expand(config['output_dir_benchmark'] + "/{reference}/report/" + dt_string + '.benchmark_report.html', 
-             reference = config['references'].keys())
+      all_function()
 
 #----------------------------------------------------
 #  Subset Folds 
@@ -48,22 +58,23 @@ rule subset_folds:
   input:
     reference = lambda wildcards:config['references'][wildcards.reference]['expression']
   output:
-    training_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train.csv", folds_index = n_folds),
-    labfile = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/train_labels.csv", folds_index = n_folds),
-    test_data = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/test.csv", folds_index = n_folds),
-    lab_ontology = config['output_dir_benchmark'] + "/{reference}/ontology/ontology.csv"
+    training_data = expand("{{output_dir_benchmark}}/{{reference}}/fold{folds_index}/train.csv", folds_index = n_folds),
+    labfile = expand("{{output_dir_benchmark}}/{{reference}}/fold{folds_index}/train_labels.csv", folds_index = n_folds),
+    test_data = expand("{{output_dir_benchmark}}/{{reference}}/fold{folds_index}/test.csv", folds_index = n_folds)
   log:
-    config['output_dir_benchmark'] + "/{reference}/subset_folds.log"
+    "{output_dir_benchmark}/{reference}/subset_folds.log"
   params:
     basedir = {workflow.basedir},
     labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     batch_path = lambda wildcards:config['references'][wildcards.reference]['batch'],
-    outdir = config['output_dir_benchmark'] + "/{reference}",
+    outdir = "{output_dir_benchmark}/{reference}",
     reference_name = "{reference}",
     n_folds = config['benchmark']['n_folds'],
     min_cells_per_cluster = lambda wildcards:config["references"][wildcards.reference]['min_cells_per_cluster'],
     downsample_value = lambda wildcards:config["references"][wildcards.reference]['downsample']['value'],
-    downsample_stratified = lambda wildcards:config["references"][wildcards.reference]['downsample']['stratified']
+    downsample_stratified = lambda wildcards:config["references"][wildcards.reference]['downsample']['stratified'],
+    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
+    ontology_column = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"]
   threads: 1
   resources:
   shell:
@@ -77,6 +88,8 @@ rule subset_folds:
     {params.min_cells_per_cluster} \
     {params.downsample_value} \
     {params.downsample_stratified} \
+    "{params.ontology_path}" \
+    "{params.ontology_column}" \
     {params.batch_path} \
     &> {log}
     """
@@ -87,23 +100,25 @@ rule subset_folds:
 
 rule knit_report:
   input: 
-    pred = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/{tool}/{tool}_pred.csv", 
+    pred = expand("{{output_dir_benchmark}}/{{reference}}/fold{folds_index}/{tool}/{tool}_pred.csv", 
                   folds_index = n_folds, 
                   tool = tools_to_run),
-    consensus = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{folds_index}/Prediction_Summary.tsv",
+    consensus = expand("{{output_dir_benchmark}}/{{reference}}/fold{folds_index}/Prediction_Summary_{{ontology}}.tsv",
                 folds_index = n_folds)
   output: 
-    report_path = config['output_dir_benchmark'] + "/{reference}/report/" + dt_string + '.benchmark_report.html'
+    report_path = "{output_dir_benchmark}/{reference}/report/" + dt_string + '.benchmark_report_{ontology}.html'
   log:
-    config['output_dir_benchmark'] + "/{reference}/report/report.log"
+    "{output_dir_benchmark}/{reference}/report/report_{ontology}.log"
   params:
     basedir = {workflow.basedir},
-    pred_path = config['output_dir_benchmark'] + "/{reference}", 
+    pred_path = "{output_dir_benchmark}/{reference}", 
     n_folds = config['benchmark']['n_folds'],
     tools = tools_to_run,
     min_agree = config['consensus']['type']['majority']['min_agree'],
     ref_name = "{reference}",
-    accuracy_metric = "F1"
+    accuracy_metric = "F1",
+    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
+    ontology_columns = "{ontology}",
   resources:
   shell:
     """
@@ -114,7 +129,9 @@ rule knit_report:
                           pred_path = '{params.pred_path}',
                           min_agree = '{params.min_agree}',
                           fold = '{params.n_folds}',
-                          accuracy_metric = '{params.accuracy_metric}'),
+                          accuracy_metric = '{params.accuracy_metric}',
+                          ontology_path = '{params.ontology_path}',
+                          ontology_columns = '{params.ontology_columns}'),
             output_file = '{output.report_path}')" \
     &> {log}
     """
@@ -125,21 +142,21 @@ rule knit_report:
 
 rule consensus:
   input:
-    results = expand(config['output_dir_benchmark'] + "/{{reference}}/fold{{folds_index}}/{tool}/{tool}_pred.csv",
+    results = expand("{{output_dir_benchmark}}/{{reference}}/fold{{folds_index}}/{tool}/{tool}_pred.csv",
                      tool=tools_to_run)
   output:
-    prediction_summary = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Prediction_Summary.tsv"
+    prediction_summary = "{output_dir_benchmark}/{reference}/fold{folds_index}/Prediction_Summary_{ontology}.tsv"
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Gatherpreds.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Gatherpreds.{ontology}.log"
   params:
     basedir = {workflow.basedir},
     tools = tools_to_run,
     consensus_tools = consensus_tools,
     consensus_type = 'majority',
-    sample = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}",
+    sample = "{output_dir_benchmark}/{reference}/fold{folds_index}",
     min_agree = config["consensus"]["type"]["majority"]["min_agree"],
-    ontology_path = config['output_dir_benchmark'] + "/{reference}/ontology/ontology.csv", 
-    ontology_label = "label"
+    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"], 
+    ontology_label = "{ontology}"
   shell:
     """
     Rscript {params.basedir}/Scripts/calculate_consensus.R \
@@ -160,17 +177,17 @@ rule consensus:
 
 rule train_scPred:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.Rda"
   params:
     basedir = {workflow.basedir},
     classifier = "{classifier}"
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_train_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources:
@@ -187,17 +204,17 @@ rule train_scPred:
 
 rule predict_scPred:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.Rda" 
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.Rda" 
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_pred.csv" 
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_pred.csv" 
   params:
     basedir = {workflow.basedir},
     classifier = "{classifier}"
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPred_{classifier}/scPred_{classifier}_predict_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources:
@@ -214,7 +231,7 @@ rule predict_scPred:
 
 rule gather_scPred:
   input:
-    expand(config['output_dir_benchmark'] + "/{{reference}}/fold{{folds_index}}/scPred_{classifier}/scPred_{classifier}_pred.csv",
+    expand("{{output_dir_benchmark}}/{{reference}}/fold{{folds_index}}/scPred_{classifier}/scPred_{classifier}_pred.csv",
     classifier = config['scPred']['classifier'])
     
 #----------------------------------------------------
@@ -223,16 +240,16 @@ rule gather_scPred:
 
 rule train_SingleR:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SingleR/SingleR_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SingleR/SingleR_model.Rda"
   params:
     basedir = {workflow.basedir},
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SingleR/SingleR.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SingleR/SingleR.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SingleR/SingleR_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SingleR/SingleR_train_benchmark.txt"
   threads: 
     config['SingleR']['threads']
   resources:
@@ -248,16 +265,16 @@ rule train_SingleR:
 
 rule predict_SingleR:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SingleR/SingleR_model.Rda" 
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SingleR/SingleR_model.Rda" 
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SingleR/SingleR_pred.csv" 
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/SingleR/SingleR_pred.csv" 
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SingleR/SingleR.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SingleR/SingleR.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SingleR/SingleR_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SingleR/SingleR_predict_benchmark.txt"
   threads: 
     config['SingleR']['threads']
   resources:
@@ -277,19 +294,19 @@ rule predict_SingleR:
 
 rule train_scClassify:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scClassify/scClassify_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scClassify/scClassify_model.Rda"
   params:
     basedir = {workflow.basedir},
     topN = config['scClassify']['topN'], 
     weightsCal = config['scClassify']['weightsCal'],
     hopach_kmax = config['scClassify']['hopach_kmax']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scClassify/scClassify.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scClassify/scClassify.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scClassify/scClassify_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scClassify/scClassify_train_benchmark.txt"
   threads: 
     config['scClassify']['threads']
   resources:
@@ -308,10 +325,10 @@ rule train_scClassify:
 
 rule predict_scClassify:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scClassify/scClassify_model.Rda" 
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scClassify/scClassify_model.Rda" 
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scClassify/scClassify_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scClassify/scClassify_pred.csv"
   params:
     basedir = {workflow.basedir}, 
     algorithm = config['scClassify']['algorithm'],
@@ -320,9 +337,9 @@ rule predict_scClassify:
     cor_threshold_static = config['scClassify']['cor_threshold_static'],
     cor_threshold_high = config['scClassify']['cor_threshold_high']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scClassify/scClassify.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scClassify/scClassify.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scClassify/scClassify_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scClassify/scClassify_predict_benchmark.txt"
   threads: 
     config['scClassify']['threads']
   resources:
@@ -347,16 +364,16 @@ rule predict_scClassify:
 
 rule train_SciBet:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SciBet/SciBet_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SciBet/SciBet_model.Rda"
   params:
     basedir = {workflow.basedir},
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SciBet/SciBet.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SciBet/SciBet.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SciBet/SciBet_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SciBet/SciBet_train_benchmark.txt"
   threads: 
     config['SciBet']['threads']
   resources:
@@ -372,16 +389,16 @@ rule train_SciBet:
 
 rule predict_SciBet:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SciBet/SciBet_model.Rda" 
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SciBet/SciBet_model.Rda" 
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SciBet/SciBet_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/SciBet/SciBet_pred.csv"
   params:
       basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SciBet/SciBet.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SciBet/SciBet.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SciBet/SciBet_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SciBet/SciBet_predict_benchmark.txt"
   threads: 
     config['SciBet']['threads']
   resources:
@@ -401,16 +418,16 @@ rule predict_SciBet:
 
 rule train_SVMlinear:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVMlinear/SVMlinear_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SVMlinear/SVMlinear_model.Rda"
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVMlinear/SVMlinear.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVMlinear/SVMlinear.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVMlinear/SVMlinear_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVMlinear/SVMlinear_train_benchmark.txt"
   threads: 
     config['SVMlinear']['threads']
   resources:
@@ -426,18 +443,18 @@ rule train_SVMlinear:
 
 rule predict_SVMlinear:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVMlinear/SVMlinear_model.Rda"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SVMlinear/SVMlinear_model.Rda"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVMlinear/SVMlinear_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/SVMlinear/SVMlinear_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = config['SVMlinear']['threshold'],
     tool_name = config['SVMlinear']['classifier']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVMlinear/SVMlinear.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVMlinear/SVMlinear.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVMlinear/SVMlinear_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVMlinear/SVMlinear_predict_benchmark.txt"
   threads:  
     config['SVMlinear']['threads']
   resources:
@@ -459,16 +476,16 @@ rule predict_SVMlinear:
 
 rule train_SVC:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_model.pkl"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SVC/SVC_model.pkl"
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVC/SVC.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVC/SVC_train_benchmark.txt"
   threads: 
     config['SVC']['threads']
   resources:
@@ -485,18 +502,18 @@ rule train_SVC:
 
 rule predict_SVC:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_model.pkl"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/SVC/SVC_model.pkl"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/SVC/SVC_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = config['SVC']['threshold'],
     tool_name = config['SVC']['classifier']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVC/SVC.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/SVC/SVC_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/SVC/SVC_predict_benchmark.txt"
   threads: 
     config['SVC']['threads']
   resources:
@@ -518,17 +535,17 @@ rule predict_SVC:
 
 rule train_singleCellNet:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/singleCellNet/singleCellNet_model.Rda"
   params:
     basedir = {workflow.basedir},
     nTrees = config['singleCellNet']['nTrees']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/singleCellNet/singleCellNet.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/singleCellNet/singleCellNet_train_benchmark.txt"
   threads: 
     config['singleCellNet']['threads']
   resources:
@@ -545,16 +562,16 @@ rule train_singleCellNet:
 
 rule predict_singleCellNet:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet_model.Rda" 
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/singleCellNet/singleCellNet_model.Rda" 
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/singleCellNet/singleCellNet_pred.csv"
   params:
       basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/singleCellNet/singleCellNet.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/singleCellNet/singleCellNet_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/singleCellNet/singleCellNet_predict_benchmark.txt"
   threads: 
     config['singleCellNet']['threads']
   resources:
@@ -574,16 +591,16 @@ rule predict_singleCellNet:
 
 rule train_Correlation:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Correlation/Correlation_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/Correlation/Correlation_model.Rda"
   params:
     basedir = {workflow.basedir},
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Correlation/Correlation.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Correlation/Correlation.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Correlation/Correlation_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Correlation/Correlation_train_benchmark.txt"
   threads: 
     config['Correlation']['threads']
   resources:
@@ -598,16 +615,16 @@ rule train_Correlation:
     """
 rule predict_Correlation:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Correlation/Correlation_model.Rda"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/Correlation/Correlation_model.Rda"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Correlation/Correlation_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/Correlation/Correlation_pred.csv"
   params:
       basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Correlation/Correlation.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Correlation/Correlation.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Correlation/Correlation_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Correlation/Correlation_predict_benchmark.txt"
   threads: 
     config['Correlation']['threads']
   resources:
@@ -627,17 +644,17 @@ rule predict_Correlation:
 
 rule train_scLearn: 
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scLearn/scLearn_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scLearn/scLearn_model.Rda"
   params:
     basedir = {workflow.basedir},
     bootstrap_times = config['scLearn']['bootstrap_times']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scLearn/scLearn.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scLearn/scLearn.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scLearn/scLearn_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scLearn/scLearn_train_benchmark.txt"
   threads: 
     config['scLearn']['threads']
   resources:
@@ -654,16 +671,16 @@ rule train_scLearn:
 
 rule predict_scLearn:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scLearn/scLearn_model.Rda"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scLearn/scLearn_model.Rda"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scLearn/scLearn_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scLearn/scLearn_pred.csv"
   params:
       basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scLearn/scLearn.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scLearn/scLearn.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scLearn/scLearn_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scLearn/scLearn_predict_benchmark.txt"
   threads: 
     config['scLearn']['threads']
   resources:
@@ -683,18 +700,18 @@ rule predict_scLearn:
 
 rule train_scHPL:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scHPL/scHPL_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scHPL/scHPL_model.Rda"
   params:
     basedir = {workflow.basedir},
     classifier = config['scHPL']['classifier'],
     dimred = config['scHPL']['dimred']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scHPL/scHPL.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scHPL/scHPL.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scHPL/scHPL_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scHPL/scHPL_train_benchmark.txt"
   threads: 
     config['scHPL']['threads']
   resources:
@@ -711,17 +728,17 @@ rule train_scHPL:
 
 rule predict_scHPL:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scHPL/scHPL_model.Rda"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scHPL/scHPL_model.Rda"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scHPL/scHPL_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scHPL/scHPL_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = config['scHPL']['threshold']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scHPL/scHPL.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scHPL/scHPL.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scHPL/scHPL_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scHPL/scHPL_predict_benchmark.txt"
   threads: 
     config['scHPL']['threads']
   resources:
@@ -741,16 +758,16 @@ rule predict_scHPL:
 
 rule train_ACTINN:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/ACTINN/ACTINN_model.pkl"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/ACTINN/ACTINN_model.pkl"
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/ACTINN/ACTINN.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/ACTINN/ACTINN.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/ACTINN/ACTINN_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/ACTINN/ACTINN_predict_benchmark.txt"
   threads: 
     config['ACTINN']['threads']
   shell:
@@ -764,16 +781,16 @@ rule train_ACTINN:
 
 rule predict_ACTINN:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/ACTINN/ACTINN_model.pkl"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/ACTINN/ACTINN_model.pkl"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/ACTINN/ACTINN_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/ACTINN/ACTINN_pred.csv"
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/ACTINN/ACTINN.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/ACTINN/ACTINN.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/ACTINN/ACTINN_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/ACTINN/ACTINN_predict_benchmark.txt"
   threads: 
     config['ACTINN']['threads']
   resources:
@@ -793,19 +810,19 @@ rule predict_ACTINN:
 
 rule run_scID:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv",
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv",
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scID/scID_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scID/scID_pred.csv"
   params:
     basedir = {workflow.basedir},
     estimate_weights_from_target = config['scID']['estimate_weights_from_target'],
     logFC = config['scID']['logFC']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scID/scID.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scID/scID.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scID/scID_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scID/scID_benchmark.txt"
   threads: 
     config['scID']['threads']
   shell:
@@ -827,18 +844,18 @@ rule run_scID:
 
 rule run_scAnnotate:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv",
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv",
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scAnnotate/scAnnotate_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scAnnotate/scAnnotate_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = 0.5
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scAnnotate/scAnnotate.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scAnnotate/scAnnotate.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scAnnotate/scAnnotate_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scAnnotate/scAnnotate_benchmark.txt"
   threads: 
     config['scAnnotate']['threads']
   shell:
@@ -859,18 +876,18 @@ rule run_scAnnotate:
 
 rule run_scNym:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv",
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv",
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scNym/scNym_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scNym/scNym_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = 0.5
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scNym/scNym.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scNym/scNym.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scNym/scNym_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scNym/scNym_benchmark.txt"
   threads: 
     config['scNym']['threads']
   shell:
@@ -890,17 +907,17 @@ rule run_scNym:
 
 rule train_CellTypist:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_model.pkl"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/CellTypist/CellTypist_model.pkl"
   params:
     basedir = {workflow.basedir},
     feature_selection = config['CellTypist']['feature_selection']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellTypist/CellTypist.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellTypist/CellTypist_train_benchmark.txt"
   threads: 
     config['CellTypist']['threads']
   resources:
@@ -917,18 +934,18 @@ rule train_CellTypist:
 
 rule predict_CellTypist:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_model.pkl"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/CellTypist/CellTypist_model.pkl"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/CellTypist/CellTypist_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = config['CellTypist']['threshold'],
     majority_voting = config['CellTypist']['majority_voting']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellTypist/CellTypist.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellTypist/CellTypist_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellTypist/CellTypist_predict_benchmark.txt"
   threads: 
     config['CellTypist']['threads']
   resources:
@@ -950,18 +967,18 @@ rule predict_CellTypist:
 
 rule train_Seurat:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/Seurat/Seurat_model.Rda"
   params:
     basedir = {workflow.basedir},
     nPC_computed = config['Seurat']['nPC_computed'],
     integration_method = config['Seurat']['integration_method']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Seurat/Seurat.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Seurat/Seurat_train_benchmark.txt"
   threads: 
     config['Seurat']['threads']
   resources:
@@ -981,17 +998,17 @@ rule train_Seurat:
     
 rule predict_Seurat:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_model.Rda"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/Seurat/Seurat_model.Rda"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/Seurat/Seurat_pred.csv"
   params:
     basedir = {workflow.basedir},
     nPC_used = config['Seurat']['nPC_used']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Seurat/Seurat.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Seurat/Seurat_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Seurat/Seurat_predict_benchmark.txt"
   threads: 
     config['Seurat']['threads']
   resources:
@@ -1014,17 +1031,17 @@ rule predict_Seurat:
 
 rule train_Symphony:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_model.Rda"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/Symphony/Symphony_model.Rda"
   params:
     basedir = {workflow.basedir},
     nPC_computed = config['Symphony']['nPC_computed']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Symphony/Symphony.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Symphony/Symphony_train_benchmark.txt"
   threads: 
     config['Symphony']['threads']
   resources:
@@ -1040,16 +1057,16 @@ rule train_Symphony:
     """
 rule predict_Symphony:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_model.Rda"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/Symphony/Symphony_model.Rda"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/Symphony/Symphony_pred.csv"
   params:
     basedir = {workflow.basedir},
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Symphony/Symphony.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/Symphony/Symphony_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/Symphony/Symphony_predict_benchmark.txt"
   threads: 
     config['Symphony']['threads']
   resources:
@@ -1069,16 +1086,16 @@ rule predict_Symphony:
 
 rule train_scPoli:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_model.pkl"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scPoli/scPoli_model.pkl"
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPoli/scPoli.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPoli/scPoli_train_benchmark.txt"
   shell:
     """
     python {params.basedir}/Scripts/scPoli/train_scPoli.py \
@@ -1090,16 +1107,16 @@ rule train_scPoli:
 
 rule predict_scPoli:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_model.pkl"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scPoli/scPoli_model.pkl"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scPoli/scPoli_pred.csv"
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPoli/scPoli.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scPoli/scPoli_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scPoli/scPoli_predict_benchmark.txt"
   shell:
     """
     python {params.basedir}/Scripts/scPoli/predict_scPoli.py \
@@ -1115,16 +1132,16 @@ rule predict_scPoli:
 
 rule train_scANVI:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/model.pt"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scANVI/model.pt"
   params:
     basedir = {workflow.basedir}
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scANVI/scANVI.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scANVI/scANVI_train_benchmark.txt"
   shell:
     """
     python {params.basedir}/Scripts/scANVI/train_scANVI.py \
@@ -1136,17 +1153,17 @@ rule train_scANVI:
 
 rule predict_scANVI:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/model.pt"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/scANVI/model.pt"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/scANVI/scANVI_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = config['scANVI']['threshold']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scANVI/scANVI.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/scANVI/scANVI_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/scANVI/scANVI_predict_benchmark.txt"
   shell:
     """
     python {params.basedir}/Scripts/scANVI/predict_scANVI.py \
@@ -1164,17 +1181,17 @@ rule predict_scANVI:
 
 rule train_CellBlast:
   input:
-    reference = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train.csv",
-    labfile = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/train_labels.csv"
+    reference = "{output_dir_benchmark}/{reference}/fold{folds_index}/train.csv",
+    labfile = "{output_dir_benchmark}/{reference}/fold{folds_index}/train_labels.csv"
   output:
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellBlast/models/ref.h5ad"
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/CellBlast/models/ref.h5ad"
   params:
     basedir = {workflow.basedir},
     n_models = config['CellBlast']['n_models']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellBlast/CellBlast.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellBlast/CellBlast.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellBlast/CellBlast_train_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellBlast/CellBlast_train_benchmark.txt"
   threads: 
     config['CellBlast']['threads']
   shell:
@@ -1190,17 +1207,17 @@ rule train_CellBlast:
 
 rule predict_CellBlast:
   input:
-    query = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/test.csv",
-    model = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellBlast/models/ref.h5ad"
+    query = "{output_dir_benchmark}/{reference}/fold{folds_index}/test.csv",
+    model = "{output_dir_benchmark}/{reference}/fold{folds_index}/CellBlast/models/ref.h5ad"
   output:
-    pred = config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellBlast/CellBlast_pred.csv"
+    pred = "{output_dir_benchmark}/{reference}/fold{folds_index}/CellBlast/CellBlast_pred.csv"
   params:
     basedir = {workflow.basedir},
     threshold = config['CellBlast']['threshold']
   log:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellBlast/CellBlast.log"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellBlast/CellBlast.log"
   benchmark:
-    config['output_dir_benchmark'] + "/{reference}/fold{folds_index}/CellBlast/CellBlast_predict_benchmark.txt"
+    "{output_dir_benchmark}/{reference}/fold{folds_index}/CellBlast/CellBlast_predict_benchmark.txt"
   threads: 
     config['CellBlast']['threads']
   shell:

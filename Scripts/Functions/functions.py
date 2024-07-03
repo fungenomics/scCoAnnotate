@@ -15,6 +15,20 @@ def set_reference_batch_parameters(config):
     except:
       config["references"][ref]['batch'] = None
 
+# set parameters related to benchmarking directory 
+def set_benchmark_directory(config,mode):
+  import sys 
+  for ref in config['references'].keys():
+    try:
+      config["references"][ref]['output_dir_benchmark']
+    except:
+      if mode == 'annotation':
+        if (config["consensus"]["type"]["CAWPE"]["alpha"][0] != 0) & (config["consensus"]["type"]["CAWPE"]["mode"] != ""):
+          sys.exit("@ For running CAWPE the output directory of the benchmarking pipeline should be specified")
+        else:
+          config["references"][ref]['output_dir_benchmark'] = ""
+      else:
+        sys.exit("@ In the benchmarking pipeline, all the directories should be specified")
 # set parameters related to downsampling 
 def set_downsampling_parameters(config):
   for ref in config['references'].keys():
@@ -36,7 +50,7 @@ def set_downsampling_parameters(config):
 
 
 # set parameters related to ontology 
-def set_ontology_parameters(config, path):
+def set_ontology_parameters(config,mode):
   import pandas as pd
   
   for ref in config['references'].keys():
@@ -53,7 +67,10 @@ def set_ontology_parameters(config, path):
 
     except: 
       config["references"][ref]["ontology"] = {}
-      config["references"][ref]["ontology"]["ontology_path"] = path + "/model/" + ref + "/ontology/ontology.csv"
+      if mode == 'annotation':
+        config["references"][ref]["ontology"]["ontology_path"] = config["output_dir"] + "/model/" + ref + "/ontology/ontology.csv"
+      else:
+        config["references"][ref]["ontology"]["ontology_path"] = config["references"][ref]['output_dir_benchmark'] + "/" + ref + '/ontology/ontology.csv'
       config["references"][ref]["ontology"]["ontology_column"] = ['label']
       continue 
     

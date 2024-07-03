@@ -15,6 +15,8 @@ params:
     pred_path: ''
     fold: ''
     accuracy_metric: ''
+    ontology_path: ''
+    ontology_columns: ''
     wd: !r getwd()
 ---
 
@@ -36,6 +38,10 @@ min_agree = strsplit(params$min_agree, split = ' ')[[1]]
 tools = c(paste0('Consensus_',min_agree), strsplit(params$tools, split = ' ')[[1]])
 fold = as.numeric(params$fold)
 accuracy_metric = params$accuracy_metric
+ontology_columns = params$ontology_columns
+ontology = data.table::fread(params$ontology_path,
+                             sep = ",",
+                             header = T) %>% as.data.frame()
 ```
 
 ```{r}
@@ -46,11 +52,15 @@ for(n in 1:fold){
    
    # read tru lables 
    true = data.table::fread(paste0(params$pred_path, '/fold', n, '/test_labels.csv'), header = T) %>%
-           column_to_rownames('V1') %>%
-           mutate(label = factor(label, ordered = TRUE))
-
+           column_to_rownames('V1')
+   true[,'label'] <- apply_ontology(df_ontology = ontology,
+                                    pred = true[,'label',drop=T],
+                                    from = 'label',
+                                    to = ontology_columns)
+   true <- true %>% mutate(label = factor(label,
+                                          ordered = TRUE)) 
    # read prediction summary for fold
-   pred = data.table::fread(paste0(params$pred_path, '/fold', n, '/Prediction_Summary.tsv'), header = T)%>%
+   pred = data.table::fread(paste0(params$pred_path, '/fold', n, '/Prediction_Summary_',ontology_columns,'.tsv'), header = T)%>%
            column_to_rownames('cellname')
 
    for(t in tools){
@@ -67,11 +77,11 @@ for(n in 1:fold){
 }
 
 # save list object with all stats 
-save(list, file=paste0(params$pred_path, '/report/stats.Rda'))
+save(list, file=paste0(params$pred_path, '/report/stats_',ontology_columns,'.Rda'))
 
 # save accuracy metrics as table 
 accuracy_metric_res = lapply(list, function(x){lapply(x, get_all_stats) %>% bind_rows()}) %>% bind_rows()
-data.table::fwrite(accuracy_metric_res, file=paste0(params$pred_path, '/report/metrics.csv'))
+data.table::fwrite(accuracy_metric_res, file=paste0(params$pred_path, '/report/metrics_',ontology_columns,'.csv'))
 ```
 
 ```{r}

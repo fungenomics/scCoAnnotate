@@ -45,7 +45,9 @@ plotly_empty()
 refs = as.character(params$refs)
 threads = as.numeric(params$threads)
 ontology_columns = strsplit(params$ontology_columns, split = ' ')[[1]]
-ontology = data.table::fread(params$ontology_path, sep = ",") %>% as.data.frame()
+ontology = data.table::fread(params$ontology_path,
+                             sep = ",",
+                             header = T) %>% as.data.frame()
 
 consensus = strsplit(params$consensus, split = ' ')[[1]]
 names(consensus) = str_replace(basename(consensus), "^Prediction_Summary_", "") %>% str_replace("\\.tsv$", "")

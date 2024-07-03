@@ -46,7 +46,9 @@ consensus = read_prediction_files(pred_path, tools = tools)
 print(head(consensus))
 
 # read ontology
-ontology = data.table::fread(ontology_path, sep = ",") %>% as.data.frame
+ontology = data.table::fread(ontology_path,
+                             sep = ",",
+                             header = T) %>% as.data.frame
 
 check_ontology_hierarchy(ontology)
 

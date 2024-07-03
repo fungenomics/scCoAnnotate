@@ -41,7 +41,10 @@ if(is.na(downsample_stratified)){
 }
 downsample_stratified = if(downsample_stratified) "label" else NULL
 
-batch_path = args[9]
+ontology_path = args[9]
+ontology_columns = strsplit(args[10], split = ' ')[[1]]
+
+batch_path = args[11]
 if(batch_path == 'None'){
   batch_path = NULL
 }
@@ -49,6 +52,8 @@ if(batch_path == 'None'){
 print(batch_path)
 print(downsample_stratified)
 print(class(downsample_stratified))
+print(ontology_path)
+print(ontology_columns)
 #--------------- Data -------------------
 # read reference matrix 
 message('@ READ REF')
@@ -138,7 +143,16 @@ for (i in 1:n_folds){
   data.table::fwrite(train_labels, paste0(out_path, '/fold', i, '/train_labels.csv'))
 }
 
-lab = data.frame(label = unique(labels$label))
-data.table::fwrite(lab,
-                   file = paste0(out_path, '/ontology/ontology.csv'),
-                   sep = ',')
+
+#----- SAVE BASE ONTOLOGY ------------------------------
+
+if(length(ontology_columns) == 1 & ontology_columns[1] == 'label'){
+  dir.create(paste0(out_path, '/ontology/'), recursive = T)
+  lab = data.frame(label = unique(labels$label))
+  
+  data.table::fwrite(lab, 
+                     file = paste0(out_path, '/ontology/ontology.csv'),
+                     sep = ',')
+}
+
+#--------------------------------------------------------

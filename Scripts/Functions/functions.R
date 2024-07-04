@@ -576,7 +576,7 @@ df %>%
 }
 
 # plot average stat for all tools 
-plot_mean_tool = function(list, stat, tools){
+plot_mean_tool = function(list, stat, tools, train_lab){
 
 df = lapply(list, function(x){lapply(x, get_stat, stat = stat) %>% bind_rows()})
 
@@ -589,12 +589,25 @@ df = bind_rows(df) %>%
 
 df[is.na(df)] = 0
 
+count = train_lab %>% 
+        count(label) %>%
+        column_to_rownames('label') %>% 
+        as.matrix()
+
+count = count[order(match(rownames(count), colnames(df))), , drop = FALSE]
+
 col_fun = circlize::colorRamp2(c(0, 
                                 range(df)[2]/2, 
                                 range(df)[2]), 
-                                 c("#3B5B91", "#F2EFC7", "#CC0007")) 
+                                 c("#3B5B91", "#F2EFC7", "#CC0007"))
+
 cons_number = length(grep(pattern = "^Consensus_",x = tools))
 split = c(rep("Consensus",cons_number), rep('tools', length(tools)-cons_number))
+
+save(count, file = '/lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-apptainer/count.test.Rda')
+save(df, file = '/lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-apptainer/df.test.Rda')
+
+ha = columnAnnotation('N Cells' = anno_barplot(count, border = F, gp = gpar(fill = '#596475', col = '#596475')))
 
 h = Heatmap(df,
             name = paste('Mean ', stat),
@@ -607,6 +620,7 @@ h = Heatmap(df,
             show_row_dend = F, 
             row_split = split,
             cluster_row_slices = F, 
+            top_annotation = ha,
             row_title = NULL)
 
 return(h)

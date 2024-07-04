@@ -53,12 +53,14 @@ for(n in 1:fold){
    # read tru lables 
    true = data.table::fread(paste0(params$pred_path, '/fold', n, '/test_labels.csv'), header = T) %>%
            column_to_rownames('V1')
+
    true[,'label'] <- apply_ontology(df_ontology = ontology,
                                     pred = true[,'label',drop=T],
                                     from = 'label',
                                     to = ontology_columns)
-   true <- true %>% mutate(label = factor(label,
-                                          ordered = TRUE)) 
+
+   true <- true %>% mutate(label = factor(label, ordered = TRUE)) 
+
    # read prediction summary for fold
    pred = data.table::fread(paste0(params$pred_path, '/fold', n, '/Prediction_Summary_',ontology_columns,'.tsv'), header = T)%>%
            column_to_rownames('cellname')
@@ -96,6 +98,11 @@ for(n in 1:fold){
 }
 
 train_lab = bind_rows(train_lab)
+
+train_lab$label <- apply_ontology(df_ontology = ontology,
+                                    pred = as.character(train_lab$label),
+                                    from = 'label',
+                                    to = ontology_columns)
 ```
 
 ```{r fig.width=10,echo=FALSE,message=FALSE,results="asis"}
@@ -104,13 +111,7 @@ cat("  \n#", params$ref_name , "{.tabset} \n")
 cat("  \n## Summary \n")
 cat("<h3>Average metric score per tool and class</h3>") 
 
-plot_mean_tool(list, accuracy_metric, tools)
-
-cat("\n")
-
-cat("<h3>Average number of cells per label and fold</h3>") 
-
-plot_n_cells_per_class(train_lab)
+plot_mean_tool(list, accuracy_metric, tools, train_lab)
 
 cat("\n")
 

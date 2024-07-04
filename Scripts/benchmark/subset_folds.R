@@ -39,7 +39,8 @@ downsample_stratified = as.logical(args[8])
 if(is.na(downsample_stratified)){
   stop("The downsample stratified specified is not a logical value")
 }
-downsample_stratified = if(downsample_stratified) "label" else NULL
+
+#downsample_stratified = if(downsample_stratified) "label" else NULL
 
 ontology_path = args[9]
 ontology_columns = strsplit(args[10], split = ' ')[[1]]
@@ -54,6 +55,7 @@ print(downsample_stratified)
 print(class(downsample_stratified))
 print(ontology_path)
 print(ontology_columns)
+
 #--------------- Data -------------------
 # read reference matrix 
 message('@ READ REF')
@@ -67,7 +69,7 @@ message('@ DONE')
 
 # downsample 
 if(downsample_value != 0){
-  labels = downsample(labels, downsample_per_class, downsample_value)
+  labels = downsample(labels, downsample_stratified, downsample_value)
 }
 
 # remove small clusters 
@@ -75,7 +77,7 @@ if(min_cells > 0){
   labels = remove_small_clusters(labels, min_cells)
 }
 
-ref =  ref[rownames(labels),]
+ref = ref[rownames(labels),]
 
 # save downsampled lables 
 save.df <- data.frame(cells= rownames(labels), 

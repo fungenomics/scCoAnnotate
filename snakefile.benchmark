@@ -31,7 +31,6 @@ tools_to_run = func.get_tools_to_run(config)
 consensus_tools = func.get_consensus_tools(config)
 
 func.set_benchmark_directory(config,mode = 'benchmarking')
-print(config)
 
 #----------------------------------------------------
 #  Final rule all 
@@ -45,7 +44,6 @@ def all_function():
         for ontology in config["references"][reference]["ontology"]["ontology_column"]
     ]
     
-print(all_function())
 rule all:
   input: 
       all_function()

@@ -21,7 +21,6 @@ consensus_type = args[5]
 min_agree = as.numeric(strsplit(args[6], split = ' ')[[1]])
 ontology_column = args[7]
 ontology_path = args[8]
-
 metrics_path = args[9]
 CAWPE_type = strsplit(args[10], split = ' ')[[1]]
 alpha = as.numeric(strsplit(args[11], split = ' ')[[1]])

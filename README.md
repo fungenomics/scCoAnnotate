@@ -302,9 +302,18 @@ scCoAnnotate offers two options for calculating the consensus between tools, Maj
 
 ```
 # consensus method
-consensus_type:
-      - majority
-      - CAWPE_T
+consensus:
+      tools: 
+            - 'all'
+      type:
+            majority:
+                  # (ex: [2], [2,3,4])
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  #(ex: ['CAWPE_T'], ['CAWPE_T','CAWPE_CT'])
+                  mode: <CAWPE MODE>
+                  #(ex: [4], [2,3,4])
+                  alpha: <alpha value>
 ```
 
 The pipeline will generate one table and one html report per consensus method. 

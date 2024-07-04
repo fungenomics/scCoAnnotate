@@ -10,6 +10,13 @@ import random
 # Set seed
 random.seed(123456)
 
+#def remove_batch(cell_id, batch):
+#    return cell_id.replace(f'-{batch}', '')
+
+def remove_batch(cell_id, batch):
+    parts = cell_id.rsplit(f'-{batch}', 1)
+    return ''.join(parts)
+
 #--------------- Parameters -------------------
 ref_path = str(sys.argv[1])
 lab_path = str(sys.argv[2])
@@ -108,8 +115,7 @@ scnym_api(
 )
 
 adata.obs['pred_label_reject'] = adata.obs.apply(lambda row: 'Unknown' if row['scNym_confidence'] < threshold else row['scNym'], axis=1)
-def remove_batch(cell_id, batch):
-    return cell_id.replace(f'-{batch}', '')
+
 
 adata.obs['cell_id'] = adata.obs.index.map(lambda cell_id: remove_batch(cell_id, adata.obs.loc[cell_id, 'batch']))
 
@@ -135,3 +141,14 @@ filename = out_other_path + '/scNym_output_object.h5ad'
 adata.write_h5ad(filename= filename,
                   compression='gzip')
 print('@ DONE ')
+
+# make prob output matrix
+pred_df['prob'] = df.scNym_confidence
+pred_df = pred_df.pivot_table(index=pred_df.columns[0], columns='scNym', values='prob', fill_value=0).reset_index()
+    
+# rename column names 
+pred_df.columns.name = None  # Remove the columns' name to match the R code
+pred_df.columns = [''] + list(pred_df.columns[1:])
+
+# save binary matrix
+pred_df.to_csv(out_other_path + '/scNym_pred_score.csv', index=False)

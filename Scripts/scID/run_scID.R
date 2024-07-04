@@ -15,6 +15,8 @@ lab_path = args[2]
 query_path = args[3]
 pred_path = args[4]
 threads = as.numeric(args[5])
+estimate_weights_from_target = as.logical(args[6])
+logFC = as.numeric(args[7])
 
 # path for other outputs (depends on tools)
 out_path = dirname(pred_path)
@@ -79,10 +81,10 @@ query <- scID:::counts_to_cpm(counts_gem = query)
 pred <- scid_multiclass(target_gem = query,
                                reference_gem = ref,
                                reference_clusters = label, 
-                               logFC = 0.5, #Default
+                               logFC = logFC, #Default
                                only_pos = FALSE, #Default
                                normalize_reference = FALSE, #I already normalized the reference
-                               estimate_weights_from_target = FALSE #Default
+                               estimate_weights_from_target = estimate_weights_from_target #Default
                                )
 
 pred_labels <- data.frame(cell = names(pred$labels),
@@ -105,4 +107,22 @@ save(pred,
      file =  glue('{out_path}/scID_output.Rdata')
      )
 
+message('@ DONE')
+
+# output binary matrix
+message('@ WRITE TABLE WITH BINARY OUTPUT')
+pred_labels = pred_labels %>% 
+            mutate(prob = 1) %>% 
+            pivot_wider(names_from = scID, 
+                        values_from = prob, 
+                        values_fill = 0)
+
+names(pred_labels)[1] = ""
+
+data.table::fwrite(pred_labels, 
+                   file = paste0(out_path, '/scID_pred_score.csv'),
+                   row.names = F,
+                   col.names = T,
+                   sep = ",",
+                   nThread = threads)
 message('@ DONE')

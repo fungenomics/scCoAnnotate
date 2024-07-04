@@ -12,6 +12,7 @@ ref_path = args[1]
 lab_path = args[2]
 model_path = args[3]
 threads = as.numeric(args[4])
+bootstrap_times = as.numeric(args[5])
 
 # path for other outputs (depends on tools)
 out_path = dirname(model_path)
@@ -57,7 +58,7 @@ high_varGene_names <- Feature_selection_M3Drop(expression_profile = ref,
 scLearn <- scLearn_model_learning(high_varGene_names = high_varGene_names,
                                   expression_profile = as.matrix(ref), #It need a matrix not a sparse matrix.
                                   sample_information_cellType = labels,
-                                  bootstrap_times = 10 #Default
+                                  bootstrap_times = bootstrap_times #Default
                                   ) 
 
 # save trained model 

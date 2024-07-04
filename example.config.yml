@@ -1,44 +1,62 @@
 # Example config for scCoAnnotate annotation and benchmarking workflow 
 
 # target directory 
-output_dir: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev
-output_dir_benchmark: /lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-dev/benchmark
+output_dir: <output directory for the annotation workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
-references: 
-      braindex1:
-            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
-            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
-      braindex2:
-            expression: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/expression.csv
-            labels: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/ref/labels.csv
+### Description of some non-tool specific parameters 
 
-# path to query datasets (cell x gene raw counts)
-query_datasets:
-      ct_p3: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p3/expression.csv
-      ct_p0: /lustre06/project/6004736/alvann/from_narval/DEV/reference-dev/Braindex_20210710/samples/ct_p0/expression.csv
+references:
+      <reference_name>:
+            expression: <path counts>
+            labels: <path labels>
+            # Convert gene symbols in reference from mouse to human
+            # Accepted values: True, False
+            output_dir_benchmark: <output directory for the benchmarking workflow>
+            convert_ref_mm_to_hg: False
+            # The ontology permits to specify different level of labels granularity.
+            # These parameters are optional
+            ontology:
+                  # Path to the csv containing the ontology path. Each column represents a different
+                  # granularity of labels. The columns should be named.
+                  ontology_path: <path to ontology.csv>
+                  # The column name(s) of the granularity to use, from the ontology file.
+                  # This parameter can take multiple column names, therefore they should be put in a list
+                  # (ex: ['level']     ['level1', 'level2'])
+                  ontology_column: <ontology_column to use>
+            # Some references are too big and cannot be used efficiently
+            # the following parameters permit to downsample the reference
+            downsample:
+                  # The number of cells to downsample to
+                  # If the value is > 1, it specifies the number of cells to select (ex: 500 will select 500 cells)
+                  # If the value is < 1, it is interpreted as a fraction of cells to keep (ex: 0.25 will select 25% of the cells)
+                  value: 500
+                  # Should the sample keep the same stratification as the complete dataset?
+                  # Accepted values: True, False
+                  stratified: True
+            # The minimal number of cells that each cluster should have, in the reference
+            # Clusters with less cells will be filtered out from the reference
+            min_cells_per_cluster: 100
 
 # classifiers to run
 tools_to_run:
-      - scPred
-      - SingleR
-      - scClassify
-      - SciBet
-      - singleCellNet
-      - scHPL
-      - SVMlinear
-      - Correlation
-      - scLearn
-      - ACTINN
-      - scID
-      - scAnnotate
-      - scNym
-      - CellTypist
+      - tool1
+      - tool2
 
-consensus_tools:
-      - all
-      
-# Benchmark parameters 
+# consensus method
+consensus:
+        tools: 
+            - 'all'
+        type:
+            majority:
+                  # (ex: [2]     [2,3,4])
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  #(ex: ['CAWPE_T'], ['CAWPE_T','CAWPE_CT'])
+                  mode: <CAWPE MODE>
+                  #(ex: [4], [2,3,4])
+                  alpha: <alpha value>
+
+# benchmark parameters 
 benchmark:
-  n_folds: 10 
-
+      n_folds: <number of folds to use in the benchmarking>

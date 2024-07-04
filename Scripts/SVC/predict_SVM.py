@@ -91,7 +91,7 @@ print('@ DONE')
 
 # Save the prob matrix
 print('@ WRITTING PROB MATRIX ')
-filename = out_other_path + '/prob_matrix.csv'
+filename = out_other_path + '/SVMlinear_pred_score.csv'
 df.to_csv(filename,
           index=True) #True because we want to conserve the rownames (cells)
 print('@ DONE ')

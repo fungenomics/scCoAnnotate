@@ -1,23 +1,30 @@
 
 #--- PREPROCESS ------
 
-# convert gene symbols in reference from mouse to human 
-convert_ref_mm_to_hg: False
+output_dir_benchmark: ""
 
 #--- CONSENSUS -------
-
-# specify consensus tools to include, either 'all' ot list of tool names
-consensus_tools:
-      - 'all'
-
-# specify consensus type, either 'majority' or numeric value 
-consensus_type: 'majority'
+consensus:
+  tools: 
+    - 'all'
+  type:
+    majority:
+      min_agree: [0]
+    CAWPE:
+      alpha: [0]
+      mode: ""
+      accuracy_metric: "F1"
 
 #--- NOTEBOOKS -------
 
 # genes of interest
 # space separated string: "PDGFRA MOG GFAP RBFOX1"
 marker_genes: ""
+
+#--- BENCHMARK -------
+
+benchmark:
+  n_folds: 5 
 
 #---- TOOLS ----------
 SingleR:
@@ -32,12 +39,21 @@ scPred:
 
 scClassify:
   threads: 1 
+  topN: 50 
+  weightsCal: False 
+  hopach_kmax: 5 
+  algorithm: "WKNN"
+  similarity: "pearson"
+  prob_threshold: 0.7
+  cor_threshold_static: 0.5
+  cor_threshold_high: 0.7
 
 SciBet:
   threads: 1
 
 singleCellNet:
   threads: 1
+  nTrees: 500 
 
 scHPL:
   threads: 1
@@ -60,9 +76,12 @@ ACTINN:
 
 scLearn:
   threads: 1
+  bootstrap_times: 10
 
 scID:
   threads: 1
+  estimate_weights_from_target: False
+  logFC: 0.5
 
 scAnnotate:
   threads: 1
@@ -77,4 +96,22 @@ CellTypist:
   feature_selection: 'True'
   majority_voting: 'True'
   threshold: 0.5
+
+Seurat:
+  threads: 1
+  nPC_computed: 50
+  nPC_used: 30
+  integration_method: 'CCAIntegration'
+
+scANVI:
+  threshold: 0.5
+  
+Symphony:
+  threads: 1
+  nPC_computed: 50
+
+CellBlast:
+  threads: 1
+  threshold: 0.5
+  n_models: 4
 #-----------------

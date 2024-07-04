@@ -10,9 +10,14 @@ output:
     code_folding: hide
 params: 
     tools: ''
+    min_agree: ''
     ref_name: ''
     pred_path: ''
     fold: ''
+    accuracy_metric: ''
+    ontology_path: ''
+    ontology_columns: ''
+    wd: !r getwd()
 ---
 
 ```{r, echo=FALSE}
@@ -24,178 +29,19 @@ set.seed(1234)
 library(tidyverse)
 library(caret)
 library(ComplexHeatmap)
+
+source(paste0(dirname(params$wd), '/Scripts/Functions/functions.R'))
 ```
 
 ```{r}
-get_pred = function(pred, tool, true){
-  pred %>%
-     select(tool) %>%
-     mutate(label = .data[[tool]],
-            label = ifelse(!label %in% true$label, NA, label),
-            label = factor(label, ordered = TRUE)) %>%
-  return()
-}
-
-# Plot confusion matrix as a heatmap 
-plot_cm = function(cm_table){
-  col_fun = circlize::colorRamp2(c(range(cm_table)[1], 
-                                   range(cm_table)[2]/2, 
-                                   range(cm_table)[2]), 
-                                 c("#5C80BC", "#F2EFC7", "#FF595E")) 
-  
-  h = Heatmap(cm_table,
-              name = 'Counts',
-              col = col_fun,
-              width = ncol(cm_table)*unit(2, "mm"),
-              height = nrow(cm_table)*unit(2, "mm"),
-              cluster_rows = F, 
-              cluster_columns = F, 
-              row_names_gp = gpar(fontsize = 7),
-              column_names_gp = gpar(fontsize = 7), 
-              column_title = 'True Class', 
-              row_title = 'Predicted Class')
-  
-  return(h)
-}
-
-# Plot class stat per fold (F1 etc) as barplot
-plot_stat = function(cm_byclass, stat){
-
-p = cm_byclass %>% 
-  as.data.frame() %>%
-  rownames_to_column('class') %>%
-  separate(class, into = c(NA, 'class'), sep = ': ') %>%
-  ggplot(aes(reorder(class, -.data[[stat]]), .data[[stat]])) +
-  geom_bar(stat = 'identity', col = 'white', fill = 'lightgrey') +
-  theme_bw() +
-  theme(text = element_text(size = 10), 
-        axis.title.x = element_blank(),
-        axis.line = element_line(size = 0.5), 
-        panel.border = element_blank(), 
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text.x = element_text(angle = 45,
-                                   vjust = 1, 
-                                   hjust=1),
-        aspect.ratio = 0.5) +
-  scale_y_continuous(expand = c(0, 0)) +
-  geom_hline(yintercept = c(1, 0.5), linetype = 'dotted', color = 'red')
-
-return(p)
-}
-
-# plot F1 accross folds for each class as a boxplot  
-plot_stat_boxplot = function(list, tool, stat){
-  
-df = lapply(list[[tool]], get_stat, stat = stat) %>% bind_rows()
-
-df[is.na(df)] = 0
-
-df %>%
-  ggplot(aes(reorder(class, -.data[[stat]], mean), .data[[stat]])) +
-  geom_boxplot() +
-  theme_bw() +
-  theme(text = element_text(size = 10), 
-        axis.title.x = element_blank(),
-        axis.line = element_line(size = 0.5), 
-        panel.border = element_blank(), 
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text.x = element_text(angle = 45,
-                                   vjust = 1, 
-                                   hjust=1),
-        aspect.ratio = 0.5) +
-  scale_y_continuous(limits = c(0, 1),
-                     expand = c(0, 0)) +
-  geom_hline(yintercept = c(1, 0.5), linetype = 'dotted', color = 'red')
-}
-
-# plot average stat for all tools 
-plot_mean_tool = function(list, stat, tools){
-
-df = lapply(list, function(x){lapply(x, get_stat, stat = stat) %>% bind_rows()})
-
-df = bind_rows(df) %>% 
-  group_by(class, tool) %>%
-  mutate(mean = mean(.data[[stat]])) %>%
-  distinct(class, tool, mean) %>% 
-  pivot_wider(names_from = 'class', values_from = mean) %>%
-  column_to_rownames('tool')
-
-df[is.na(df)] = 0
-
-col_fun = circlize::colorRamp2(c(0, 
-                                range(df)[2]/2, 
-                                range(df)[2]), 
-                                 c("#3B5B91", "#F2EFC7", "#CC0007")) 
-
-split = c('Consensus', rep('tools', length(tools)-1))
-
-h = Heatmap(df,
-            name = paste('Mean ', stat),
-            col = col_fun,
-            width = ncol(df)*unit(4, "mm"),
-            height = nrow(df)*unit(6, "mm"),
-            row_names_side = 'left',
-            row_names_gp = gpar(fontsize = 12),
-            show_column_dend = F,
-            show_row_dend = F, 
-	    row_split = split,
-	    cluster_row_slices = F, 
-	    row_title = NULL)
-
-return(h)
-}
-
-plot_n_cells_per_class = function(df){
- mean_n = df %>%
-  count(label, fold) %>%
-  group_by(label) %>%
-  summarise(mean = round(mean(n)))
-
- b = df %>%
-  count(label, fold) %>%
-  ggplot(aes(reorder(label, desc(mean)), mean)) +
-  geom_bar(data = mean_n, 
-           mapping = aes(reorder(label, desc(mean)), mean), 
-           stat = 'identity', 
-           fill = 'grey90') +
-  geom_text(data = mean_n, mapping = aes(label = mean), hjust = -0.2, vjust = -0.2, angle = 45) +
-  geom_point(aes(label, n), alpha = 0.5) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, max(mean_n$mean) + (max(mean_n$mean)*0.2))) +
-  ylab('N') +
-  theme(text = element_text(size = 10), 
-        axis.title.x = element_blank(),
-        axis.line = element_line(size = 0.5), 
-        panel.border = element_blank(), 
-        panel.background = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text.x = element_text(angle = 45,
-                                   vjust = 1, 
-                                   hjust=1))
-
-  return(b)
-}
-
-#--------- HELPER FUNCTIONS ----------------
-
-# gets stat for each fold and returns data frame 
-get_stat = function(x, stat){
-  x$byClass %>% 
-  as.data.frame() %>%
-  rownames_to_column('class') %>%
-  separate(class, into = c(NA, 'class'), sep = ': ') %>%
-  select(class, .data[[stat]]) %>%
-  mutate(fold = x$fold,
-         tool = x$tool)
-}
-#-------------------------------------------
-```
-
-```{r}
-tools = c('Consensus', strsplit(params$tools, split = ' ')[[1]])
+min_agree = strsplit(params$min_agree, split = ' ')[[1]]
+tools = c(paste0('Consensus_',min_agree), strsplit(params$tools, split = ' ')[[1]])
 fold = as.numeric(params$fold)
+accuracy_metric = params$accuracy_metric
+ontology_columns = params$ontology_columns
+ontology = data.table::fread(params$ontology_path,
+                             sep = ",",
+                             header = T) %>% as.data.frame()
 ```
 
 ```{r}
@@ -206,11 +52,17 @@ for(n in 1:fold){
    
    # read tru lables 
    true = data.table::fread(paste0(params$pred_path, '/fold', n, '/test_labels.csv'), header = T) %>%
-           column_to_rownames('V1') %>%
-           mutate(label = factor(label, ordered = TRUE))
+           column_to_rownames('V1')
+
+   true[,'label'] <- apply_ontology(df_ontology = ontology,
+                                    pred = true[,'label',drop=T],
+                                    from = 'label',
+                                    to = ontology_columns)
+
+   true <- true %>% mutate(label = factor(label, ordered = TRUE)) 
 
    # read prediction summary for fold
-   pred = data.table::fread(paste0(params$pred_path, '/fold', n, '/Prediction_Summary.tsv'), header = T)%>%
+   pred = data.table::fread(paste0(params$pred_path, '/fold', n, '/Prediction_Summary_',ontology_columns,'.tsv'), header = T)%>%
            column_to_rownames('cellname')
 
    for(t in tools){
@@ -227,11 +79,11 @@ for(n in 1:fold){
 }
 
 # save list object with all stats 
-save(list, file=paste0(params$pred_path, '/report/stats.Rda'))
+save(list, file=paste0(params$pred_path, '/report/stats_',ontology_columns,'.Rda'))
 
-# save F1 as table 
-F1 = lapply(list, function(x){lapply(x, get_stat, stat = 'F1') %>% bind_rows()}) %>% bind_rows()
-data.table::fwrite(F1, file=paste0(params$pred_path, '/report/F1.csv'))
+# save accuracy metrics as table 
+accuracy_metric_res = lapply(list, function(x){lapply(x, get_all_stats) %>% bind_rows()}) %>% bind_rows()
+data.table::fwrite(accuracy_metric_res, file=paste0(params$pred_path, '/report/metrics_',ontology_columns,'.csv'))
 ```
 
 ```{r}
@@ -246,28 +98,27 @@ for(n in 1:fold){
 }
 
 train_lab = bind_rows(train_lab)
+
+train_lab$label <- apply_ontology(df_ontology = ontology,
+                                    pred = as.character(train_lab$label),
+                                    from = 'label',
+                                    to = ontology_columns)
 ```
 
 ```{r fig.width=10,echo=FALSE,message=FALSE,results="asis"}
 cat("  \n#", params$ref_name , "{.tabset} \n")
 
 cat("  \n## Summary \n")
-cat("<h3>Average F1 score per tool and class</h3>") 
+cat("<h3>Average metric score per tool and class</h3>") 
 
-plot_mean_tool(list, 'F1', tools)
-
-cat("\n")
-
-cat("<h3>Average number of cells per label and fold</h3>") 
-
-plot_n_cells_per_class(train_lab)
+plot_mean_tool(list, accuracy_metric, tools, train_lab)
 
 cat("\n")
 
 for(t in tools) {
   cat("  \n##",  t, "{.tabset} \n")
   
-  print(plot_stat_boxplot(list, t, 'F1'))
+  print(plot_stat_boxplot(list, t, accuracy_metric))
   
   cat("\n")
   
@@ -278,9 +129,9 @@ for(t in tools) {
     
     draw(plot_cm(list[[t]][[n]]$table))
   
-    cat("<h3>F1</h3>")
+    cat("<h3>Metric</h3>")
     
-    print(plot_stat(list[[t]][[n]]$byClass, 'F1'))
+    print(plot_stat(list[[t]][[n]]$byClass, accuracy_metric))
     
     cat("\n")
   }
@@ -295,7 +146,6 @@ for(p in names(params)){
   cat(" \n -",p,": ", params[[p]], " \n")
 }
 ```
-
 
 ## Session  
 

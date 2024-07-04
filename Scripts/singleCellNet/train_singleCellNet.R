@@ -12,6 +12,7 @@ ref_path = args[1]
 lab_path = args[2]
 out_path = args[3]
 threads = as.numeric(args[4])
+nTrees = as.numeric(args[5])
 
 #--------------- Data -------------------
 # read reference matrix and transpose  
@@ -54,7 +55,7 @@ class_info = scn_train(stTrain = stTrain,
                         expTrain = expTrain, 
                         nTopGenes = 10, 
                         nRand = 70, 
-                        nTrees = 500, 
+                        nTrees = nTrees, 
                         nTopGenePairs = 25, 
                         dLevel = "label")
 message('@ DONE')

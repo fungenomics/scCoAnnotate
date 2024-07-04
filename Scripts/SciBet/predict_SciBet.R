@@ -43,11 +43,21 @@ query <- Seurat::NormalizeData(query) %>% as.data.frame() %>% WGCNA::transposeBi
 
 #----------- Predict SciBet --------
 
-pred <- Scibet_model(query,
-                     result = 'list')
+pred_matrix <- Scibet_model(query,
+                            result = 'table')
+rownames(pred_matrix) <- rownames(query)
 
-pred_labels <- data.frame(cell = rownames(query),
-                          SciBet = pred)
+##Get the max value score in the probabiliy matrix for each cell is the same as run the Scibet_model with result = 'list'
+## I take the max value for each row
+pred <- apply(pred_matrix,
+              1,
+              function(x){
+                names(which.max(x))
+                }
+              )
+#Since is a named vector I use the names (cells) and the values (labels)
+pred_labels <- data.frame(cell = names(pred),
+                          SciBet = as.character(pred))
 
 message('@ WRITTING PREDICTIONS')
 data.table::fwrite(pred_labels,
@@ -62,14 +72,11 @@ message('@ DONE')
 
 # I tested and the results are the same when you run the same model twice,
 # so I run it again to obtain the prob matrix.
-pred_matrix <- Scibet_model(query,
-                            result = 'table')
-rownames(pred_matrix) <- rownames(query)
 pred_matrix <- pred_matrix %>% as.data.frame() %>% tibble::rownames_to_column(" ")
 
 message('@ SAVE PRED MATRIX')
 data.table::fwrite(pred_matrix,
-                   file = glue('{out_path}/prob_matrix.csv'),
+                   file = glue('{out_path}/SciBet_pred_score.csv'),
                    row.names = F,
                    col.names = T,
                    sep = ",",

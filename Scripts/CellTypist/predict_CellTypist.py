@@ -97,4 +97,14 @@ adata.write_h5ad(filename= filename,
                   compression='gzip')
 print('@ DONE ')
 
+# make binary output matrix
+pred_df['prob'] = 1
+pred_df = pred_df.pivot_table(index=pred_df.columns[0], columns='CellTypist', values='prob', fill_value=0).reset_index()
+    
+# rename column names 
+pred_df.columns.name = None  # Remove the columns' name to match the R code
+pred_df.columns = [''] + list(pred_df.columns[1:])
+
+# save binary matrix
+pred_df.to_csv(out_other_path + '/CellTypist_pred_score.csv', index=False)
                                   

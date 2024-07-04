@@ -12,6 +12,9 @@ model_path = args[2]
 pred_path = args[3]
 threads = as.numeric(args[4])
 
+# get path for other output
+out_path = dirname(pred_path)
+
 #--------------- Data -------------------
 
 # read query matrix and transpose 
@@ -41,11 +44,19 @@ message('@ PREDICT LABELS')
 pred = classifySingleR(query, singler, assay.type = "logcounts")
 message('@ DONE')
 
+head(pred)
+
 pred_labs = data.frame(cell = rownames(pred),
 	               SingleR = pred$labels)
 
 # write prediction 
 data.table::fwrite(pred_labs, file = pred_path)
+
+# save correlaion matrix 
+cor = pred$scores %>% as.data.frame() %>% `rownames<-`(rownames(pred)) %>% rownames_to_column('cell')
+colnames(cor)[1] = ""
+
+data.table::fwrite(cor, file = paste0(out_path, '/SingleR_pred_score.csv'))
 
 #----------------------------------------
 

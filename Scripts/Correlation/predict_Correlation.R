@@ -9,8 +9,11 @@ set.seed(1234)
 args = commandArgs(trailingOnly = TRUE)
 sample_path = args[1]
 model_path = args[2]
-out_path = args[3]
+pred_path = args[3]
 threads = as.numeric(args[4])
+
+# get path for other output
+out_path = dirname(pred_path)
 
 #--------------- Data -------------------
 
@@ -65,7 +68,7 @@ label_correlation <- function(test_expr_mat,
   cor_matrix <- cor(mat1, mat2, method = "spearman", use = "complete.obs")
   
   # Getting the best one
-  cor_label <- as.data.frame(cor_matrix) %>%
+  predicted <- as.data.frame(cor_matrix) %>%
     mutate("cell" = rownames(cor_matrix)) %>%
     gather("celltype", "correlation", -cell) %>%
     group_by(cell) %>%
@@ -74,8 +77,9 @@ label_correlation <- function(test_expr_mat,
     arrange(cell)
   
   # Returning the results
-  return(cor_label)
-  
+  out = list(predicted = predicted, 
+             cor_matrix = cor_matrix)
+  return(out)
 }
 
 #----------- Predict Correlation ------------
@@ -86,13 +90,21 @@ message('@ PREDICT LABELS')
 # This does not affect current prediction as preprocessing is already subsetting common genes between reference and query
 # Therefore, 100% of query dataset genes should be in the reference dataset
 # However, this is something that could be explored in the future
-predicted = as.data.frame(label_correlation(query_mat,ref_mean_mat,0.3))
+out = label_correlation(query_mat,ref_mean_mat,0.3)
+
+print(names(out))
 message('@ DONE')
 
 # Rename columns 
-colnames(predicted) <- c("cell", "Correlation","Correlation_score")
+colnames(out[['predicted']]) <- c("cell", "Correlation", "Correlation_score")
 
 # write prediction 
-data.table::fwrite(predicted, file = out_path)
+data.table::fwrite(out[['predicted']], file = pred_path)
+
+# save correlaion matrix 
+out[['cor_matrix']] = out[['cor_matrix']] %>% as.data.frame() %>% rownames_to_column('cell')
+colnames(out[['cor_matrix']])[1] = ""
+
+data.table::fwrite(out[['cor_matrix']], file = paste0(out_path, '/Correlation_pred_score.csv'))
 
 #----------------------------------------

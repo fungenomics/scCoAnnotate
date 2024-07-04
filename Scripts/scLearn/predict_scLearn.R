@@ -61,10 +61,18 @@ data.table::fwrite(pred_labs,
 message('@ DONE')
 #----------------------------------------
 
-# Add the entire output with the Scores in Additional_information
-message('@ WRITE TABLE OUTPUT WITH ALL PROBABILITIES')
-data.table::fwrite(scLearn_predict_result, 
-                   file = glue('{out_path}/table_with_probabilities.csv'),
+# output binary matrix
+message('@ WRITE TABLE WITH BINARY OUTPUT')
+pred_labs = pred_labs %>% 
+            mutate(prob = 1) %>% 
+            pivot_wider(names_from = scLearn, 
+                        values_from = prob, 
+                        values_fill = 0)
+
+names(pred_labs)[1] = ""
+
+data.table::fwrite(pred_labs, 
+                   file = paste0(out_path, '/scLearn_pred_score.csv'),
                    row.names = F,
                    col.names = T,
                    sep = ",",

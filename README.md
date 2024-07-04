@@ -38,7 +38,7 @@ module load scCoAnnotate/2.0
 
 ### 2. Prepare reference
 
-The input format for the references is a **cell x gene matrix** (.csv) of raw counts and a **cell x label matrix** (.csv).   
+The input format for the references could be a **cell x gene matrix** (.csv) of raw counts and a **cell x label matrix** (.csv).   
 
 Both the **cell x gene matrix** and **cell x label matrix** need the first column to be the cell names in matching order with an empty column name.
 
@@ -59,10 +59,15 @@ cell2,label1
 cell3,label3
 cell4,label2
 ```
+Also, the input format for the reference could be a **Seurat** or **SingleCellExperiment** object. 
+In the expression the path to the object should be specified (formats .rda, .rds). And in the labels the metadata column used for the labels.
+If the format for the expression is .rda or .rds it assumes that the labels is a vector where it's the column name.
+In the **Seurat** objects are compatible until v4. 
+In the **SingleCellExperiment** it assumes that the raw counts is in the 'counts' assay.
 
 ### 3. Prepare query samples
 
-The input format for the query samples is a **cell x gene matrix** (.csv) of raw counts. 
+The input format for the query samples could be a **cell x gene matrix** (.csv) of raw counts, seurat object or single cell experiment object with raw counts. 
 
 The first column needs to be the cell names with an empty column name.
 
@@ -75,37 +80,65 @@ cell3,0,17,12
 cell4,54,20,61
 ```
 
+Also, the input format for the reference could be a **Seurat** or **SingleCellExperiment** object. 
+In the expression the path to the object should be specified (formats .rda, .rds). And in the labels the metadata column used for the labels.
+In the **Seurat** objects are compatible until v4. 
+In the **SingleCellExperiment** it assumes that the raw counts is in the 'counts' assay.
+
+
 ### 4. Prepare config file
 
 For each set of query samples a config file needs to be prepared with information about the samples, the reference, the tools you want to run and how to calculate the consensus. 
 
-Multiple references can be specified with an unique **reference name**. 
+Multiple references can be specified with an unique **reference name**. Aditionally parameters could be specified inside each reference.
+Additionally, an ontology could be specified to predict in a more granular label and group in a broader one.
 
 Full list of available tools can be found here: [Available tools](#hammer-and-wrench-available-tools)      
 Make sure that the names of the selected tools have the same capitalization and format as this list. 
 
 The consensus method selected in **consensus_tools** can either be 'all' (which uses all the tools in **tools_to_run**) or a list of tools to include. 
-
+The consensus could it be calculated with the majority vote, specifying the minimum of tool agreement or/and with CAWPE specifying the mode: CAWPE_CT (using the performance of each tool predicting an specific cell-type) or CAWPE_T (performance of each tool), and the alpha
+At least one consensus type should be specified.
 See: [Example Config](example.config.yml)
 
 ```yaml 
 # target directory 
 output_dir: <output directory for the annotation workflow>
-output_dir_benchmark: <output directory for the benchmarking workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
-references: 
-      <reference name>:
-            expression: <path to cell x gene matrix>
-            labels: <pth to cell x label matrix>
-      <reference name>:
-            expression: <path to cell x gene matrix>
-            labels: <pth to cell x label matrix>
+### Description of some non-tool specific parameters 
 
-# path to query datasets (cell x gene raw counts)
-query_datasets:
-      <sample1>: <path to sample1 cell x gene matrix>
-      <sample2>: <path to sample2 cell x gene matrix>
+references:
+      <reference_name>:
+            expression: <path to expression matrix, seurat object or single cell experiment>
+            labels: <path to labels files>
+            output_dir_benchmark: <output directory for the benchmarking workflow>
+            # Convert gene symbols in reference from mouse to human
+            # Accepted values: True, False
+            convert_ref_mm_to_hg: False
+            # The ontology permits to specify different level of labels granularity.
+            # These parameters are optional
+            ontology:
+                  # Path to the csv containing the ontology path. Each column represents a different
+                  # granularity of labels. The columns should be named.
+                  ontology_path: <path to ontology.csv>
+                  # The column name(s) of the granularity to use, from the ontology file.
+                  # This parameter can take multiple column names, therefore they should be put in a list
+                  # (ex: ['level']     ['level1', 'level2'])
+                  ontology_column: <ontology_column to use>
+            # Some references are too big and cannot be used efficiently
+            # the following parameters permit to downsample the reference
+            downsample:
+                  # The number of cells to downsample to
+                  # If the value is > 1, it specifies the number of cells to select (ex: 500 will select 500 cells)
+                  # If the value is < 1, it is interpreted as a fraction of cells to keep (ex: 0.25 will select 25% of the cells)
+                  value: 500
+                  # Should the sample keep the same stratification as the complete dataset?
+                  # Accepted values: True, False
+                  stratified: True
+            # The minimal number of cells that each cluster should have, in the reference
+            # Clusters with less cells will be filtered out from the reference
+            min_cells_per_cluster: 100
 
 # classifiers to run
 tools_to_run:
@@ -113,12 +146,22 @@ tools_to_run:
       - tool2
 
 # consensus method
-consensus_tools:
-      - all 
-      
+consensus:
+      tools: 
+            - 'all'
+      type:
+            majority:
+                  # (ex: [2]     [2,3,4])
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  #(ex: ['CAWPE_T'], ['CAWPE_T','CAWPE_CT'])
+                  mode: <CAWPE MODE>
+                  #(ex: [4], [2,3,4])
+                  alpha: <alpha value>
+
 # benchmark parameters 
 benchmark:
-  n_folds: <number of folds to use in the benchmarking>
+      n_folds: <number of folds to use in the benchmarking>
 ```
 
 See: [Changing Default Parameters](##changing-default-parameters)
@@ -173,7 +216,7 @@ The order of overwriting parameters are as follows:
 
 This section is found in the default config: 
 
-```ymal
+```yaml
 scHPL:
   threads: 1
   classifier: 'svm'
@@ -186,21 +229,23 @@ Create a corresponding section in your config and change the threshold value to 
 ```yaml 
 # target directory 
 output_dir: <output directory for the annotation workflow>
-output_dir_benchmark: <output directory for the benchmarking workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
-references: 
-      <reference name>:
-            expression: <path to cell x gene matrix>
-            labels: <path to cell x label matrix>
-      <reference name>:
-            expression: <path to cell x gene matrix>
-            labels: <path to cell x label matrix>
+### Description of some non-tool specific parameters 
 
-# path to query datasets (cell x gene raw counts)
-query_datasets:
-      <sample1>: <path to sample1 cell x gene matrix>
-      <sample2>: <path to sample2 cell x gene matrix>
+references:
+      <reference_name>:
+            experssion: <path counts>
+            labels: <path labels>
+            output_dir_benchmark: <path benchmarking folder>
+            convert_ref_mm_to_hg: False
+            ontology:
+                  ontology_path: <path to ontology.csv>
+                  ontology_column: <ontology_column to use>
+            downsample:
+                  value: 500
+                  stratified: True
+            min_cells_per_cluster: 100
 
 # classifiers to run
 tools_to_run:
@@ -208,16 +253,23 @@ tools_to_run:
       - tool2
 
 # consensus method
-consensus_tools:
-      - all 
-      
+consensus:
+      tools: 
+            - 'all'
+      type:
+            majority:
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  mode: <CAWPE MODE>
+                  alpha: <alpha value>
+
 # benchmark parameters 
 benchmark:
-  n_folds: <number of folds to use in the benchmarking>
+      n_folds: <number of folds to use in the benchmarking>
 
 # additional parameters
 scHPL:
-  threshold: 0.25 
+      threshold: 0.25 
 ```
 
 ### Option 2: Copy the whole default config and add it as an extra config file in the snakemake command  
@@ -240,9 +292,39 @@ snakemake -s ${snakefile} --configfile ${config} ${extra_config} --cores 5
 # convert gene symbols in reference from mouse to human 
 convert_ref_mm_to_hg: False
 
-# specify consensus type, either 'majority' or numeric value 
-consensus_type: 'majority'
+# TODO: add new example
+
 ```
+
+# :woman_judge: Consensus methods 
+
+scCoAnnotate offers two options for calculating the consensus between tools, Majority Vote and CAWPE (Cross-validation Accuracy Weighted Probabilistic Ensemble). The consensus method is specified in the config: 
+
+```
+# consensus method
+consensus:
+      tools: 
+            - 'all'
+      type:
+            majority:
+                  # (ex: [2], [2,3,4])
+                  min_agree: <minimum agreemeent to use>
+            CAWPE:
+                  #(ex: ['CAWPE_T'], ['CAWPE_T','CAWPE_CT'])
+                  mode: <CAWPE MODE>
+                  #(ex: [4], [2,3,4])
+                  alpha: <alpha value>
+```
+
+The pipeline will generate one table and one html report per consensus method. 
+
+## 1. Majority Vote 
+
+TODO: describe method 
+
+## 2. CAWPE 
+
+TODO: describe method 
 
 # :hatching_chick: Outputs 
 
@@ -266,7 +348,6 @@ out/
 ```
 
 <!--- ## Output files --->
-
 
 # :gear: Installation and Dependencies
 
@@ -316,7 +397,7 @@ pkg = c("SingleCellExperiment",
         "scAnnotate",
         "Orthology.eg.db",
         "org.Mm.eg.db",
-        "org.Hg.eg.db",
+        "org.Hs.eg.db",
         "scater")
 
 BiocManager::install(pkg)
@@ -363,12 +444,6 @@ pip install numpy pandas scHPL sklearn anndata matplotlib scanpy datetime tensor
 - scAnnotate
 - scNym
 - CellTypist
-```
-
-## Single cell RNA reference + spatial RNA query
-
-```yaml
-- Tangram
 ```
 
 <!--- # :floppy_disk: Resources  --->
@@ -423,6 +498,11 @@ snakemake -s ${snakefile} --configfile ${config} --unlock
 - Add `--rerun-incomplete` if snakemake finds incomplete files from a previous run that was not successfully removed 
 ```bash
 snakemake -s ${snakefile} --configfile ${config} --rerun-incomplete 
+```
+
+- Add `--keep-going` to allow independent rules to keep running when something fails 
+```bash
+snakemake -s ${snakefile} --configfile ${config} --keep-going
 ```
 
 - Update time stamp on files to avoid rerunning rules if code has changed 
@@ -672,18 +752,19 @@ Predicting:
   * `predicted_labels.csv`: The prediction for each cell, if majority_voting was true it has the information of the majority_voting labels AND the predicted_labels.
   * Generates some embedding plots.
   * An `.h5ad` object that has all the previous information (with the embeddings too) in a `.h5ad` object.
+  
+## Seurat
 
-## SciBet
+Documentation written by: Tomas Vega Waichman    
 
-Documentation written by: Tomas Vega Waichman
+Date written: 2024-05-23
 
-Date written: 2024-01-16
+The Seurat workflow was generated following the tutorial provided below:
+https://satijalab.org/seurat/articles/integration_mapping#cell-type-classification-using-an-integrated-reference
 
-The SciBet workflow was generated following the tutorial: http://scibet.cancer-pku.cn/document.html
-
-Training and test could be separated.
-Data inputs for SciBet were done with the default Seurat's log-normalization method. According to their paper (Li et al, Nat Comm): "For unique molecular identifier (UMI) data, we applied the widely-used pre-processing methods proposed by Seurat v3 with default parameters (normalizing the UMI count of each cell with size-factor 10,000, adding one and then log normalization)".
-All the parameters are the defaults
-The trained model is also export as a matrix and is saved in the `model_matrix.csv`
-The selected genes used in the model as markers for each cell-types are plot in `selected_markers_per_label.pdf` using the `scibet::Marker_heatmap` function and the marker table is on `selected_markers_per_label.csv`.
-For the query the score for each cell prediction is obtain also in the `SciBet_pred_score.csv`
+This methods is a integration method. So it integrate the reference with the query and use a kNN approach to transfer the labels from the nearest neighborg from the ref to the query. 
+* Input for `Seurat` is raw counts for both reference and query. Both the reference and the query are normalized using `Seurat::NormalizeData()`.
+* Training and prediction were separated. The training part is actually a preprocessing of the reference, were is normalized and PCA are calculated. The PC are uses to calculate the distances between ref and query cells.
+* The number of PC computed could be specified by the user (`nPC_computed`, default 50).
+* The number of PC used to the kNN could be specified by the user (`nPC_used`, default 30).
+* Then in the prediction script the query is processed and the labels transfered.

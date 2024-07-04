@@ -7,13 +7,35 @@ configfile: workflow.basedir + "/Config/config.default.yml"
 
 # import libraries
 import os
+import sys
+import pandas as pd
 from datetime import datetime
 
-# Get the names of query samples from the paths given in the query section of the config
-samples = config['query_datasets']
+# import custom functions 
+sys.path.insert(0, Path(workflow.basedir).parent.as_posix())
+import Scripts.Functions.functions as func
 
 now = datetime.now()
 dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+# Get the names of query samples from the paths given in the query section of the config
+samples = list(config['query_datasets'].keys())
+
+# get consensus methods to run 
+consensus_run = func.get_consensus_methods(config)
+
+# get tools to run
+tools_to_run = func.get_tools_to_run(config)
+consensus_tools = func.get_consensus_tools(config)
+print(consensus_tools)
+
+# set defult parameters
+func.set_reference_batch_parameters(config)
+func.set_downsampling_parameters(config)
+func.set_ontology_parameters(config, mode = 'annotation')
+func.set_gene_conversion_parameters(config)
+func.set_benchmark_directory(config, mode = 'annotation')
+print(config)
 
 #----------------------------------------------------
 #  Final rule all 
@@ -21,8 +43,10 @@ dt_string = now.strftime("%Y-%m-%d_%H-%M-%S")
 
 rule all:
   input:
-    expand(config['output_dir'] + '/{sample}/report/{sample}.prediction_report.' + dt_string + '.html',
-           sample = samples)
+    expand(config['output_dir'] + '/{sample}/report/{sample}.{consensus_type}.prediction_report.{reference}.' + dt_string + '.html',
+    reference = config['references'],
+    sample = samples,
+    consensus_type = consensus_run)
 
 #----------------------------------------------------
 #  Preprocess
@@ -31,18 +55,26 @@ rule all:
 rule preprocess:
   input:
     reference = lambda wildcards:config['references'][wildcards.reference]['expression'],
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
     query = config['query_datasets'].values()
   output:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    query = expand(config['output_dir'] + "/{sample}/{{reference}}/expression.csv", sample = samples)
+    query = expand(config['output_dir'] + "/{sample}/{{reference}}/expression.csv", sample = samples),
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   log: 
     config['output_dir'] + "/model/{reference}/preprocess.log"
   params:
     basedir = {workflow.basedir},
+    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
+    batch_path = lambda wildcards:config['references'][wildcards.reference]['batch'],
     out = config['output_dir'],
-    convert_genes = config['convert_ref_mm_to_hg'],
-    reference_name = "{reference}"
+    convert_genes = lambda wildcards:config["references"][wildcards.reference]['convert_ref_mm_to_hg'],
+    reference_name = "{reference}",
+    query_names = samples,
+    min_cells_per_cluster = lambda wildcards:config["references"][wildcards.reference]['min_cells_per_cluster'],
+    downsample_value = lambda wildcards:config["references"][wildcards.reference]['downsample']['value'],
+    downsample_per_class = lambda wildcards:config["references"][wildcards.reference]['downsample']['stratified'],
+    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
+    ontology_column = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"]
   shell:
     """
     Rscript {params.basedir}/Scripts/preprocess.R \
@@ -50,30 +82,43 @@ rule preprocess:
     "{input.query}" \
     {params.out} \
     {params.convert_genes} \
-    {input.labfile} \
+    {params.labfile} \
     {params.reference_name} \
+    "{params.query_names}" \
+    {params.min_cells_per_cluster} \
+    {params.downsample_value} \
+    {params.downsample_per_class} \
+    "{params.ontology_path}" \
+    "{params.ontology_column}" \
+    "{params.batch_path}" \
     &> {log} 
     """
 
 #----------------------------------------------------
-#  Consensus 
+#  Consensus
 #----------------------------------------------------
 
 rule consensus:
   input:
     results = expand(config["output_dir"] + "/{{sample}}/{{reference}}/{tool}/{tool}_pred.csv",
-                     tool=config['tools_to_run'])
+                     tool=tools_to_run)
   output:
-    prediction_summary = config["output_dir"] + "/{sample}/{reference}/Prediction_Summary.tsv"
+    prediction_summary = config['output_dir'] + "/{sample}/{reference}/{consensus_type}/Prediction_Summary_{ontology}.tsv"
   log: 
-    config["output_dir"] + "/{sample}/{reference}/Gatherpreds.log"
+    config["output_dir"] + "/{sample}/{reference}/{consensus_type}/Gatherpreds.{ontology}.log"
   params:
     basedir = {workflow.basedir}, 
-    tools = config['tools_to_run'],
-    consensus_tools = config['consensus_tools'],
-    consensus_type = config['consensus_type'],
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
-    sample = config["output_dir"] + "/{sample}/{reference}/"
+    tools = tools_to_run,
+    consensus_tools = consensus_tools,
+    consensus_type = "{consensus_type}",
+    sample = config["output_dir"] + "/{sample}/{reference}/",
+    min_agree = config["consensus"]["type"]["majority"]["min_agree"],
+    metrics_file =  lambda wildcards:(f'{config["references"][wildcards.reference]["output_dir_benchmark"]}/'f'{wildcards.reference}/report/metrics_label.csv'),
+    CAWPE_mode = config["consensus"]["type"]["CAWPE"]["mode"],
+    alpha = config["consensus"]["type"]["CAWPE"]["alpha"],
+    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"], 
+    ontology_label = "{ontology}",
+    accuracy_metric = config["consensus"]["type"]["CAWPE"]["accuracy_metric"]
   shell:
     """
     Rscript {params.basedir}/Scripts/calculate_consensus.R \
@@ -82,7 +127,13 @@ rule consensus:
     "{params.tools}" \
     "{params.consensus_tools}" \
     "{params.consensus_type}" \
-    {params.labfile} \
+    "{params.min_agree}" \
+    "{params.ontology_label}" \
+    "{params.ontology_path}" \
+    {params.metrics_file} \
+    "{params.CAWPE_mode}" \
+    "{params.alpha}" \
+    "{params.accuracy_metric}" \
     &> {log}
     """  
 
@@ -90,22 +141,31 @@ rule consensus:
 #  Knit Report 
 #----------------------------------------------------
 
+def ontology_function(wildcards):
+    return [
+        f"{config['output_dir']}/{wildcards.sample}/{wildcards.reference}/{wildcards.consensus_type}/Prediction_Summary_{ontology}.tsv"
+        for ontology in config["references"][wildcards.reference]["ontology"]["ontology_column"]
+    ]
+    
 rule knit_report:
   input: 
-    pred = expand(config['output_dir'] + "/{{sample}}/{reference}/Prediction_Summary.tsv", reference = config['references']),
+    pred = ontology_function,
     query = lambda wildcards:config['query_datasets'][wildcards.sample]
   output: 
-    report_path = config['output_dir'] + '/{sample}/report/{sample}.prediction_report.' + dt_string + '.html'
+    report_path = config['output_dir'] + '/{sample}/report/{sample}.{consensus_type}.prediction_report.{reference}.' + dt_string + '.html'
   log:
-    config['output_dir'] + "/{sample}/report/report.log"
+    config['output_dir'] + "/{sample}/report/report.{consensus_type}.{reference}.log"
   params:
     basedir = {workflow.basedir},
     output_dir = config['output_dir'], 
     sample = "{sample}",
-    tools = config['tools_to_run'], 
-    consensus = config['consensus_tools'],
-    refs = list(config['references'].keys()),
-    marker_genes = config['marker_genes']
+    tools = tools_to_run, 
+    consensus_tools = consensus_tools,
+    refs = "{reference}",
+    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
+    ontology_columns = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"],
+    marker_genes = config['marker_genes'],
+    cons_type = "{consensus_type}"
   threads: 1
   resources:
   shell:
@@ -113,13 +173,17 @@ rule knit_report:
     Rscript -e "rmarkdown::render(
             '{params.basedir}/Notebooks/annotate_report.Rmd',
             params = list(tools         = '{params.tools}',
-                          consensus     = '{params.consensus}',
+                          cons_tools    = '{params.consensus_tools}',
                           refs          = '{params.refs}',
                           output_dir    = '{params.output_dir}',
+                          consensus     = '{input.pred}',
+                          cons_type     = '{params.cons_type}',
                           sample        = '{params.sample}',
                           marker_genes  = '{params.marker_genes}',
                           threads       = '{threads}',
-                          query         = '{input.query}'),
+                          query         = '{input.query}',
+                          ontology_path = '{params.ontology_path}',
+                          ontology_columns = '{params.ontology_columns}'),
             output_file = '{output.report_path}')" \
     &> {log}
     """
@@ -131,7 +195,7 @@ rule knit_report:
 rule train_SingleR:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/SingleR/SingleR_model.Rda"
   params:
@@ -185,16 +249,16 @@ rule predict_SingleR:
 rule train_scPred:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
-    model = config['output_dir'] + "/model/{reference}/scPred/scPred_model.Rda"
+    model = config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}.Rda"
   params:
     basedir = {workflow.basedir},
-    classifier = config['scPred']['classifier'],
+    classifier = "{classifier}"
   log: 
-    config['output_dir'] + "/model/{reference}/scPred/scPred.log"
+    config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir'] + "/model/{reference}/scPred/scPred_train_benchmark.txt"
+    config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}_train_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources: 
@@ -212,15 +276,16 @@ rule train_scPred:
 rule predict_scPred:
   input:
     query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
-    model = config['output_dir'] + "/model/{reference}/scPred/scPred_model.Rda"
+    model = config['output_dir'] + "/model/{reference}/scPred_{classifier}/scPred_{classifier}.Rda"
   output:
-    pred = config['output_dir'] + "/{sample}/{reference}/scPred/scPred_pred.csv"
+    pred = config['output_dir'] + "/{sample}/{reference}/scPred_{classifier}/scPred_{classifier}_pred.csv"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    classifier = "{classifier}"
   log: 
-    config['output_dir'] + "/{sample}/{reference}/scPred/scPred.log"
+    config['output_dir'] + "/{sample}/{reference}/scPred_{classifier}/scPred_{classifier}.log"
   benchmark:
-    config['output_dir'] + "/{sample}/{reference}/scPred/scPred_predict_benchmark.txt"
+    config['output_dir'] + "/{sample}/{reference}/scPred_{classifier}/scPred_{classifier}_predict_benchmark.txt"
   threads: 
     config['scPred']['threads']
   resources: 
@@ -231,8 +296,15 @@ rule predict_scPred:
     {input.model} \
     {output.pred} \
     {threads} \
+    {params.classifier} \
     &> {log}
     """
+    
+rule gather_scPred:
+  input:
+    expand(config['output_dir'] + "/{{sample}}/{{reference}}/scPred_{classifier}/scPred_{classifier}_pred.csv",
+    classifier = config['scPred']['classifier'])
+    
 #----------------------------------------------------
 #   scClassify
 #----------------------------------------------------
@@ -240,11 +312,14 @@ rule predict_scPred:
 rule train_scClassify:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/scClassify/scClassify_model.Rda"
   params:
     basedir = {workflow.basedir},
+    topN = config['scClassify']['topN'], 
+    weightsCal = config['scClassify']['weightsCal'],
+    hopach_kmax = config['scClassify']['hopach_kmax']
   log:
     config['output_dir'] + "/model/{reference}/scClassify/scClassify.log"
   benchmark:
@@ -259,6 +334,9 @@ rule train_scClassify:
     {input.labfile} \
     {output.model} \
     {threads} \
+    {params.topN} \
+    {params.weightsCal} \
+    {params.hopach_kmax} \
     &> {log}
     """
 
@@ -269,7 +347,12 @@ rule predict_scClassify:
   output:
     pred = config['output_dir'] + "/{sample}/{reference}/scClassify/scClassify_pred.csv"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    algorithm = config['scClassify']['algorithm'],
+    similarity = config['scClassify']['similarity'],
+    prob_threshold = config['scClassify']['prob_threshold'],
+    cor_threshold_static = config['scClassify']['cor_threshold_static'],
+    cor_threshold_high = config['scClassify']['cor_threshold_high']
   log:
     config['output_dir'] + "/{sample}/{reference}/scClassify/scClassify.log"
   benchmark:
@@ -284,6 +367,11 @@ rule predict_scClassify:
     {input.model} \
     {output.pred} \
     {threads} \
+    {params.algorithm} \
+    {params.similarity} \
+    {params.prob_threshold} \
+    {params.cor_threshold_static} \
+    {params.cor_threshold_high} \
     &> {log}
     """
 
@@ -294,7 +382,7 @@ rule predict_scClassify:
 rule train_SciBet:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/SciBet/SciBet_model.Rda"
   params:
@@ -348,7 +436,7 @@ rule predict_SciBet:
 rule train_scHPL:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/scHPL/scHPL_model.pkl"
   params:
@@ -406,7 +494,7 @@ rule predict_scHPL:
 rule train_SVMlinear:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/SVMlinear/SVMlinear_model.pkl"
   params:
@@ -464,7 +552,7 @@ rule predict_SVMlinear:
 rule train_SVC:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/SVC" + config['SVC']['classifier'] + "/SVC" + config['SVC']['classifier'] + "_model.pkl"
   params:
@@ -524,11 +612,12 @@ rule predict_SVC:
 rule train_singleCellNet:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/singleCellNet/singleCellNet_model.Rda"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    nTrees = config['singleCellNet']['nTrees']
   log:
     config['output_dir'] + "/model/{reference}/singleCellNet/singleCellNet.log"
   benchmark:
@@ -543,6 +632,7 @@ rule train_singleCellNet:
     {input.labfile} \
     {output.model} \
     {threads} \
+    {params.nTrees} \
     &> {log}
     """
 
@@ -578,7 +668,7 @@ rule predict_singleCellNet:
 rule train_Correlation:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/Correlation/Correlation_model.Rda"
   params:
@@ -632,11 +722,12 @@ rule predict_Correlation:
 rule train_scLearn: 
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/scLearn/scLearn_model.Rda"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    bootstrap_times = config['scLearn']['bootstrap_times']
   log:
     config['output_dir'] + "/model/{reference}/scLearn/scLearn.log"
   benchmark:
@@ -651,6 +742,7 @@ rule train_scLearn:
     {input.labfile} \
     {output.model} \
     {threads} \
+    {params.bootstrap_times} \
     &> {log}
     """
 
@@ -686,7 +778,7 @@ rule predict_scLearn:
 rule train_ACTINN:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/ACTINN/ACTINN_model.pkl"
   params:
@@ -737,12 +829,14 @@ rule predict_ACTINN:
 rule run_scID:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv",
     query = config['output_dir'] + "/{sample}/{reference}/expression.csv"
   output:
     pred = config['output_dir'] + "/{sample}/{reference}/scID/scID_pred.csv"
   params:
-    basedir = {workflow.basedir}
+    basedir = {workflow.basedir},
+    estimate_weights_from_target = config['scID']['estimate_weights_from_target'],
+    logFC = config['scID']['logFC']
   log:
     config['output_dir'] + "/{sample}/{reference}/scID/scID.log"
   benchmark:
@@ -757,6 +851,8 @@ rule run_scID:
 	    {input.query} \
 	    {output.pred} \
 	    {threads} \
+      {params.estimate_weights_from_target} \
+      {params.logFC} \
     &> {log}
     """
 
@@ -767,7 +863,7 @@ rule run_scID:
 rule run_scAnnotate:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv",
     query = config['output_dir'] + "/{sample}/{reference}/expression.csv"
   output:
     pred = config['output_dir'] + "/{sample}/{reference}/scAnnotate/scAnnotate_pred.csv"
@@ -799,7 +895,7 @@ rule run_scAnnotate:
 rule run_scNym:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels'],
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv",
     query = config['output_dir'] + "/{sample}/{reference}/expression.csv"
   output:
     pred = config['output_dir'] + "/{sample}/{reference}/scNym/scNym_pred.csv"
@@ -830,7 +926,7 @@ rule run_scNym:
 rule train_CellTypist:
   input:
     reference = config['output_dir'] + "/model/{reference}/expression.csv",
-    labfile = lambda wildcards:config['references'][wildcards.reference]['labels']
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
   output:
     model = config['output_dir'] + "/model/{reference}/CellTypist/CellTypist_model.pkl"
   params:
@@ -880,6 +976,277 @@ rule predict_CellTypist:
     {params.threshold} \
     {threads} \
     {params.majority_voting} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   Seurat
+#----------------------------------------------------
+
+rule train_Seurat:
+  input:
+    reference = config['output_dir'] + "/model/{reference}/expression.csv",
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
+  output:
+    model = config['output_dir'] + "/model/{reference}/Seurat/Seurat_model.Rda"
+  params:
+    basedir = {workflow.basedir},
+    nPC_computed = config['Seurat']['nPC_computed'],
+    integration_method = config['Seurat']['integration_method']
+  log:
+    config['output_dir'] + "/model/{reference}/Seurat/Seurat.log"
+  benchmark:
+    config['output_dir'] + "/model/{reference}/Seurat/Seurat_train_benchmark.txt"
+  threads: 
+    config['Seurat']['threads']
+  resources:
+  shell:
+    """
+    source /opt/conda/etc/profile.d/conda.sh && conda activate seurat5 && \
+    Rscript {params.basedir}/Scripts/Seurat/train_Seurat.R \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.nPC_computed} \
+    {params.integration_method} \
+    &> {log} && \
+    conda deactivate
+    """
+
+rule predict_Seurat:
+  input:
+    query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
+    model = config['output_dir'] + "/model/{reference}/Seurat/Seurat_model.Rda"
+  output:
+    pred = config['output_dir'] + "/{sample}/{reference}/Seurat/Seurat_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    nPC_used = config['Seurat']['nPC_used']
+  log:
+    config['output_dir'] + "/{sample}/{reference}/Seurat/Seurat.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/{reference}/Seurat/Seurat_predict_benchmark.txt"
+  threads: 
+    config['Seurat']['threads']
+  resources:
+  shell:
+    """
+    source /opt/conda/etc/profile.d/conda.sh && conda activate seurat5 && \
+    Rscript {params.basedir}/Scripts/Seurat/predict_Seurat.R \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {threads} \
+    {params.nPC_used} \
+    &> {log} && \
+    conda deactivate
+    """
+
+
+#----------------------------------------------------
+#   Symphony
+#----------------------------------------------------
+
+rule train_Symphony:
+  input:
+    reference = config['output_dir'] + "/model/{reference}/expression.csv",
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
+  output:
+    model = config['output_dir'] + "/model/{reference}/Symphony/Symphony_model.Rda"
+  params:
+    basedir = {workflow.basedir},
+    nPC_computed = config['Symphony']['nPC_computed']
+  log:
+    config['output_dir'] + "/model/{reference}/Symphony/Symphony.log"
+  benchmark:
+    config['output_dir'] + "/model/{reference}/Symphony/Symphony_train_benchmark.txt"
+  threads: 
+    config['Symphony']['threads']
+  resources:
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/Symphony/train_Symphony.R \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.nPC_computed} \
+    &> {log}
+    """
+
+rule predict_Symphony:
+  input:
+    query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
+    model = config['output_dir'] + "/model/{reference}/Symphony/Symphony_model.Rda"
+  output:
+    pred = config['output_dir'] + "/{sample}/{reference}/Symphony/Symphony_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+  log:
+    config['output_dir'] + "/{sample}/{reference}/Symphony/Symphony.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/{reference}/Symphony/Symphony_predict_benchmark.txt"
+  threads: 
+    config['Symphony']['threads']
+  resources:
+  shell:
+    """
+    Rscript {params.basedir}/Scripts/Symphony/predict_Symphony.R \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {threads} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   scPoli
+#----------------------------------------------------
+
+rule train_scPoli:
+  input:
+    reference = config['output_dir'] + "/model/{reference}/expression.csv",
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
+  output:
+    model = config['output_dir'] + "/model/{reference}/scPoli/scPoli_model.pkl"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/model/{reference}/scPoli/scPoli.log"
+  benchmark:
+    config['output_dir'] + "/model/{reference}/scPoli/scPoli_train_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scPoli/train_scPoli.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    &> {log}
+    """
+
+rule predict_scPoli:
+  input:
+    query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
+    model = config['output_dir'] + "/model/{reference}/scPoli/scPoli_model.pkl"
+  output:
+    pred = config['output_dir'] + "/{sample}/{reference}/scPoli/scPoli_pred.csv"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/{sample}/{reference}/scPoli/scPoli.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/{reference}/scPoli/scPoli_predict_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scPoli/predict_scPoli.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   scANVI
+#----------------------------------------------------
+
+rule train_scANVI:
+  input:
+    reference = config['output_dir'] + "/model/{reference}/expression.csv",
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
+  output:
+    model = config['output_dir'] + "/model/{reference}/scANVI/model.pt"
+  params:
+    basedir = {workflow.basedir}
+  log:
+    config['output_dir'] + "/model/{reference}/scANVI/scANVI.log"
+  benchmark:
+    config['output_dir'] + "/model/{reference}/scANVI/scANVI_train_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scANVI/train_scANVI.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    &> {log}
+    """
+
+rule predict_scANVI:
+  input:
+    query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
+    model = config['output_dir'] + "/model/{reference}/scANVI/model.pt"
+  output:
+    pred = config['output_dir'] + "/{sample}/{reference}/scANVI/scANVI_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = config['scANVI']['threshold']
+  log:
+    config['output_dir'] + "/{sample}/{reference}/scANVI/scANVI.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/{reference}/scANVI/scANVI_predict_benchmark.txt"
+  shell:
+    """
+    python {params.basedir}/Scripts/scANVI/predict_scANVI.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {params.threshold} \
+    &> {log}
+    """
+
+#----------------------------------------------------
+#   CellBlast
+#----------------------------------------------------
+
+rule train_CellBlast:
+  input:
+    reference = config['output_dir'] + "/model/{reference}/expression.csv",
+    labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
+  output:
+    model = config['output_dir'] + "/model/{reference}/CellBlast/models/ref.h5ad"
+  params:
+    basedir = {workflow.basedir},
+    n_models = config['CellBlast']['n_models']
+  log:
+    config['output_dir'] + "/model/{reference}/CellBlast/CellBlast.log"
+  benchmark:
+    config['output_dir'] + "/model/{reference}/CellBlast/CellBlast_train_benchmark.txt"
+  threads: 
+    config['CellBlast']['threads']
+  shell:
+    """
+    python {params.basedir}/Scripts/CellBlast/train_CellBlast.py \
+    {input.reference} \
+    {input.labfile} \
+    {output.model} \
+    {threads} \
+    {params.n_models} \
+    &> {log}
+    """
+
+rule predict_CellBlast:
+  input:
+    query = config['output_dir'] + "/{sample}/{reference}/expression.csv",
+    model = config['output_dir'] + "/model/{reference}/CellBlast/models/ref.h5ad"
+  output:
+    pred = config['output_dir'] + "/{sample}/{reference}/CellBlast/CellBlast_pred.csv"
+  params:
+    basedir = {workflow.basedir},
+    threshold = config['CellBlast']['threshold']
+  log:
+    config['output_dir'] + "/{sample}/{reference}/CellBlast/CellBlast.log"
+  benchmark:
+    config['output_dir'] + "/{sample}/{reference}/CellBlast/CellBlast_predict_benchmark.txt"
+  threads: 
+    config['CellBlast']['threads']
+  shell:
+    """
+    python {params.basedir}/Scripts/CellBlast/predict_CellBlast.py \
+    {input.query} \
+    {input.model} \
+    {output.pred} \
+    {params.threshold} \
+    {threads} \
     &> {log}
     """
 

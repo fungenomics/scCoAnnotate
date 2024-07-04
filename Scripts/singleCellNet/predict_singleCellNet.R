@@ -10,8 +10,11 @@ set.seed(1234)
 args = commandArgs(trailingOnly = TRUE)
 sample_path = args[1]
 model_path = args[2]
-out_path = args[3]
+pred_path = args[3]
 threads = as.numeric(args[4])
+
+# get path for other output
+out_path = dirname(pred_path)
 
 #--------------- Data -------------------
 
@@ -48,6 +51,12 @@ pred_labs = data.frame(cell = rownames(query_res),
 	               singleCellNet = query_res$category)
 
 # write prediction 
-data.table::fwrite(pred_labs, file = out_path)
+data.table::fwrite(pred_labs, file = pred_path)
+
+# save correlaion matrix 
+pred = t(pred) %>% as.data.frame() %>% rownames_to_column('cell')
+colnames(pred)[1] = ""
+
+data.table::fwrite(pred, file = paste0(out_path, '/singleCellNet_pred_score.csv'))
 
 #----------------------------------------

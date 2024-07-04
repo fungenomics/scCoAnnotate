@@ -2,15 +2,17 @@
 
 # target directory 
 output_dir: <output directory for the annotation workflow>
-output_dir_benchmark: <output directory for the benchmarking workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
 ### Description of some non-tool specific parameters 
 
 references:
       <reference_name>:
+            expression: <path counts>
+            labels: <path labels>
             # Convert gene symbols in reference from mouse to human
             # Accepted values: True, False
+            output_dir_benchmark: <output directory for the benchmarking workflow>
             convert_ref_mm_to_hg: False
             # The ontology permits to specify different level of labels granularity.
             # These parameters are optional

@@ -67,7 +67,7 @@ In the **SingleCellExperiment** it assumes that the raw counts is in the 'counts
 
 ### 3. Prepare query samples
 
-The input format for the query samples could be a **cell x gene matrix** (.csv) of raw counts. 
+The input format for the query samples could be a **cell x gene matrix** (.csv) of raw counts, seurat object or single cell experiment object with raw counts. 
 
 The first column needs to be the cell names with an empty column name.
 
@@ -104,13 +104,15 @@ See: [Example Config](example.config.yml)
 ```yaml 
 # target directory 
 output_dir: <output directory for the annotation workflow>
-output_dir_benchmark: <output directory for the benchmarking workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
 ### Description of some non-tool specific parameters 
 
 references:
       <reference_name>:
+            expression: <path to expression matrix, seurat object or single cell experiment>
+            labels: <path to labels files>
+            output_dir_benchmark: <output directory for the benchmarking workflow>
             # Convert gene symbols in reference from mouse to human
             # Accepted values: True, False
             convert_ref_mm_to_hg: False
@@ -227,13 +229,15 @@ Create a corresponding section in your config and change the threshold value to 
 ```yaml 
 # target directory 
 output_dir: <output directory for the annotation workflow>
-output_dir_benchmark: <output directory for the benchmarking workflow>
 
 # path to reference to train classifiers on (cell x gene raw counts)
 ### Description of some non-tool specific parameters 
 
 references:
       <reference_name>:
+            experssion: <path counts>
+            labels: <path labels>
+            output_dir_benchmark: <path benchmarking folder>
             convert_ref_mm_to_hg: False
             ontology:
                   ontology_path: <path to ontology.csv>

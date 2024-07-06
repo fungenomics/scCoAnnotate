@@ -99,12 +99,12 @@ if(convert_genes){
 
   # throw error if more than threshold % genes not converted
   threshold = 0.5
-  if(length(not_converted) > threshold*length(colnames(l[['ref']]))){
+  if(length(not_converted) > threshold*length(colnames(data[['ref']]))){
     stop(paste0("@ More than ",threshold*100,"% of mouse genes in reference could not be converted to human"))
   }
 
   # modify reference matrix to contain converted genes
-  data[['ref']] = l[['ref']] %>%
+  data[['ref']] = data[['ref']] %>%
     transposeBigData() %>%
     rownames_to_column('Mouse_symbol') %>%
     inner_join(hg %>% filter(!is.na(Human_symbol)), 

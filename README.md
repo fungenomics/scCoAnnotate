@@ -140,6 +140,12 @@ references:
             # Clusters with less cells will be filtered out from the reference
             min_cells_per_cluster: 100
 
+# path to query datasets (cell x gene raw counts)
+query_datasets:
+      <query_name_1>: <path to counts 1>
+      <query_name_2>: <path to counts 2>
+      <query_name_3>: <path to counts 3>
+
 # classifiers to run
 tools_to_run:
       - tool1
@@ -246,6 +252,12 @@ references:
                   value: 500
                   stratified: True
             min_cells_per_cluster: 100
+
+# path to query datasets (cell x gene raw counts)
+query_datasets:
+      <query_name_1>: <path to counts 1>
+      <query_name_2>: <path to counts 2>
+      <query_name_3>: <path to counts 3>
 
 # classifiers to run
 tools_to_run:

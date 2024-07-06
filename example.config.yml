@@ -8,14 +8,14 @@ output_dir: <output directory for the annotation workflow>
 
 references:
       <reference_name>:
-            expression: <path counts>
-            labels: <path labels>
+            expression: <path to counts>
+            labels: <path to labels>
             # Convert gene symbols in reference from mouse to human
             # Accepted values: True, False
             output_dir_benchmark: <output directory for the benchmarking workflow>
             convert_ref_mm_to_hg: False
             # The ontology permits to specify different level of labels granularity.
-            # These parameters are optional
+            # These parameters are optional - delete if unused
             ontology:
                   # Path to the csv containing the ontology path. Each column represents a different
                   # granularity of labels. The columns should be named.
@@ -37,6 +37,12 @@ references:
             # The minimal number of cells that each cluster should have, in the reference
             # Clusters with less cells will be filtered out from the reference
             min_cells_per_cluster: 100
+
+# path to query datasets (cell x gene raw counts)
+query_datasets:
+      <query_name_1>: <path to counts 1>
+      <query_name_2>: <path to counts 2>
+      <query_name_3>: <path to counts 3>
 
 # classifiers to run
 tools_to_run:

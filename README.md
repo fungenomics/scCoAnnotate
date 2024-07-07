@@ -105,9 +105,7 @@ See: [Example Config](example.config.yml)
 # target directory 
 output_dir: <output directory for the annotation workflow>
 
-# path to reference to train classifiers on (cell x gene raw counts)
 ### Description of some non-tool specific parameters 
-
 references:
       <reference_name>:
             expression: <path to expression matrix, seurat object or single cell experiment>
@@ -236,9 +234,7 @@ Create a corresponding section in your config and change the threshold value to 
 # target directory 
 output_dir: <output directory for the annotation workflow>
 
-# path to reference to train classifiers on (cell x gene raw counts)
 ### Description of some non-tool specific parameters 
-
 references:
       <reference_name>:
             experssion: <path counts>

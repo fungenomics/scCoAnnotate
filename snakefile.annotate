@@ -969,6 +969,7 @@ rule predict_CellTypist:
   resources:
   shell:
     """
+    export CELLTYPIST_FOLDER='/root/.celltypist' && \
     python {params.basedir}/Scripts/CellTypist/predict_CellTypist.py \
     {input.query} \
     {input.model} \

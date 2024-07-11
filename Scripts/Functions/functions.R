@@ -603,10 +603,6 @@ col_fun = circlize::colorRamp2(c(0,
 
 cons_number = length(grep(pattern = "^Consensus_",x = tools))
 split = c(rep("Consensus",cons_number), rep('tools', length(tools)-cons_number))
-
-save(count, file = '/lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-apptainer/count.test.Rda')
-save(df, file = '/lustre06/project/6004736/alvann/from_narval/DEV/test-scCoAnnotate-apptainer/df.test.Rda')
-
 ha = columnAnnotation('N Cells' = anno_barplot(count, border = F, gp = gpar(fill = '#596475', col = '#596475')))
 
 h = Heatmap(df,

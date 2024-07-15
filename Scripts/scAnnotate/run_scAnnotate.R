@@ -74,7 +74,8 @@ ref   <- ref[common.genes,]
 ref <- NormalizeData(ref) %>% as.data.frame() %>% transposeBigData()
 
 # The label should be in the first column
-ref <- cbind(labels, ref)
+ref <- cbind(labels[,"label",drop=F],
+             ref)
 
 # Prepare the query: Normalization
 query <- NormalizeData(query) %>% as.data.frame() %>% transposeBigData()

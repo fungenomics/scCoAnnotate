@@ -70,7 +70,7 @@ sc.pp.log1p(adata)
 
 # They provided this solution here: https://github.com/lcmmichielsen/scHPL/issues/7
 tree = utils.create_tree('root')
-tree = learn._construct_tree(tree, labels)
+tree = learn._construct_tree(tree, labels.label)
 
 #------------- Train scHPL -------------
 # classifier could be svm, svm_occ, knn

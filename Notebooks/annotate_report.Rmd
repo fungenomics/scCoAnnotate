@@ -80,17 +80,14 @@ for(ont in ontology_columns){
 }
 
 # read expression matrix for sample  
-query = data.table::fread(paste0(params$query), 
-                                 nThread=threads, 
-                                 header=T, 
-                                 data.table=F) %>%
-        column_to_rownames('V1') 
+query = get_data_query(params$query)
 ```
 
 ```{r, results='hide'}
 # create seurat object from expression matrix 
 set.seed(12345)
-query = t(query)
+
+query = t(query) 
 query = CreateSeuratObject(query, row.names = colnames(query))
 
 query = query %>% 
@@ -197,8 +194,8 @@ for(ont in ontology_columns){
     if(length(l)<= 6){
       cowplot::plot_grid(plotlist = l[1:6], ncol = 3) %>% print()
     }else{
-      for(i in seq(from = 1, by = 4, length.out = round(length(l)/6))){
-      cowplot::plot_grid(plotlist = l[i:(i+5)], ncol = 3) %>% print()
+      for(i in seq(from = 1, by = 6, length.out = round(length(l)/6))){
+      cowplot::plot_grid(plotlist = l[i:(i+5)], ncol = 3, nrow = 2) %>% print()
       }
     }
 

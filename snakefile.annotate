@@ -73,8 +73,6 @@ rule preprocess:
     min_cells_per_cluster = lambda wildcards:config["references"][wildcards.reference]['min_cells_per_cluster'],
     downsample_value = lambda wildcards:config["references"][wildcards.reference]['downsample']['value'],
     downsample_per_class = lambda wildcards:config["references"][wildcards.reference]['downsample']['stratified'],
-    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
-    ontology_column = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"]
   shell:
     """
     Rscript {params.basedir}/Scripts/preprocess.R \
@@ -88,11 +86,38 @@ rule preprocess:
     {params.min_cells_per_cluster} \
     {params.downsample_value} \
     {params.downsample_per_class} \
-    "{params.ontology_path}" \
-    "{params.ontology_column}" \
     "{params.batch_path}" \
     &> {log} 
     """
+
+
+#----------------------------------------------------
+#  Ontology 
+#----------------------------------------------------
+
+rule ontology:
+  input:
+     labfile = config['output_dir'] + "/model/{reference}/downsampled_labels.csv"
+  output:
+     ontology = config['output_dir'] + "/model/{reference}/ontology/ontology.csv"
+  log:
+     config['output_dir'] + "/model/{reference}/ontology.log"
+  params:
+     basedir = {workflow.basedir},
+     out = config['output_dir'],
+     reference_name = "{reference}",
+     ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
+     ontology_column = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"]
+  shell:
+     """
+      Rscript {params.basedir}/Scripts/ontology.R \
+       {params.out} \
+       {params.reference_name} \
+       {input.labfile} \
+       "{params.ontology_path}" \
+       "{params.ontology_column}" \
+      &> {log}
+     """
 
 #----------------------------------------------------
 #  Consensus
@@ -101,7 +126,8 @@ rule preprocess:
 rule consensus:
   input:
     results = expand(config["output_dir"] + "/{{sample}}/{{reference}}/{tool}/{tool}_pred.csv",
-                     tool=tools_to_run)
+                     tool=tools_to_run), 
+    ontology = config['output_dir'] + "/model/{reference}/ontology/ontology.csv"
   output:
     prediction_summary = config['output_dir'] + "/{sample}/{reference}/{consensus_type}/Prediction_Summary_{ontology}.tsv"
   log: 
@@ -116,7 +142,6 @@ rule consensus:
     metrics_file =  lambda wildcards:(f'{config["references"][wildcards.reference]["output_dir_benchmark"]}/'f'{wildcards.reference}/report/metrics_label.csv'),
     CAWPE_mode = config["consensus"]["type"]["CAWPE"]["mode"],
     alpha = config["consensus"]["type"]["CAWPE"]["alpha"],
-    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"], 
     ontology_label = "{ontology}",
     accuracy_metric = config["consensus"]["type"]["CAWPE"]["accuracy_metric"]
   shell:
@@ -129,7 +154,7 @@ rule consensus:
     "{params.consensus_type}" \
     "{params.min_agree}" \
     "{params.ontology_label}" \
-    "{params.ontology_path}" \
+    "{input.ontology}" \
     {params.metrics_file} \
     "{params.CAWPE_mode}" \
     "{params.alpha}" \
@@ -150,7 +175,8 @@ def ontology_function(wildcards):
 rule knit_report:
   input: 
     pred = ontology_function,
-    query = lambda wildcards:config['query_datasets'][wildcards.sample]
+    query = lambda wildcards:config['query_datasets'][wildcards.sample],
+    ontology = config['output_dir'] + "/model/{reference}/ontology/ontology.csv"
   output: 
     report_path = config['output_dir'] + '/{sample}/report/{sample}.{consensus_type}.prediction_report.{reference}.' + dt_string + '.html'
   log:
@@ -162,7 +188,6 @@ rule knit_report:
     tools = tools_to_run, 
     consensus_tools = consensus_tools,
     refs = "{reference}",
-    ontology_path = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_path"],
     ontology_columns = lambda wildcards:config["references"][wildcards.reference]["ontology"]["ontology_column"],
     marker_genes = config['marker_genes'],
     cons_type = "{consensus_type}"
@@ -182,7 +207,7 @@ rule knit_report:
                           marker_genes  = '{params.marker_genes}',
                           threads       = '{threads}',
                           query         = '{input.query}',
-                          ontology_path = '{params.ontology_path}',
+                          ontology_path = '{input.ontology}',
                           ontology_columns = '{params.ontology_columns}'),
             output_file = '{output.report_path}')" \
     &> {log}

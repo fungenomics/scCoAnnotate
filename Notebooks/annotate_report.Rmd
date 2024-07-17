@@ -103,7 +103,7 @@ query = query %>%
 cluster_pal = create_color_pal(query$seurat_clusters)
 ```
 
-```{r echo=FALSE,message=FALSE,results="asis"}
+```{r echo=FALSE,message=FALSE,results="asis",fig.height=10,fig.width=10}
 set.seed(12345)
 cat("\n")
 

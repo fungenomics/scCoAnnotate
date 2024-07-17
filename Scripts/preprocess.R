@@ -33,12 +33,9 @@ if(is.na(downsample_per_class)){
   stop("The downsample stratified specified is not a logical value")
 }
 
-ontology_path = args[11]
-ontology_columns = strsplit(args[12], split = ' ')[[1]]
-
 names(query_paths) = query_names
 
-batch_path = args[13]
+batch_path = args[11]
 if(batch_path == 'None'){
   batch_path = NULL
 }
@@ -172,17 +169,5 @@ for(q in query_names){
   data.table::fwrite(tmp, file = paste0(out, '/', q, '/', reference_name, '/expression.csv'), sep = ',')
 }
 
-#----- SAVE BASE ONTOLOGY ------------------------------
+#---------------------------------------------------------
 
-if(length(ontology_columns) == 1 & ontology_columns[1] == 'label'){
-  
-  dir.create(paste0(out, '/model/', reference_name, '/ontology/'), recursive = T)
-  
-  lab = data.frame(label = unique(lab$label))
-
-  data.table::fwrite(lab, 
-                     file = paste0(out, '/model/', reference_name, '/ontology/ontology.csv'),
-                     sep = ',')
-}
-
-#--------------------------------------------------------
